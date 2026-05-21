@@ -1,0 +1,18 @@
+{
+  "name": "vanished-sea",
+  "version": "1.0.0",
+  "description": "사라진 바다 — 아랄해, 그리고 우리들의 이야기 (세계시민교육 교육용 RPG)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": ["education", "global-citizenship", "aral-sea", "phaser", "electron", "rpg"],
+  "author": "공도중학교 이용빈",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "dependencies": {
+    "phaser": "^3.86.0"
+  }
+}

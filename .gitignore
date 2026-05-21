@@ -1,0 +1,19 @@
+# 의존성 — npm install 로 재생성됨
+node_modules/
+
+# Electron 빌드 결과
+dist/
+out/
+
+# OS 부산물
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 에디터
+.vscode/
+.idea/
+
+# 로그
+*.log
+npm-debug.log*

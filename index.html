@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>사라진 바다 — 아랄해, 그리고 우리들의 이야기</title>
+  <style>
+    /* 픽셀 한글 폰트 (대회 출품용, 로컬 번들) */
+    @font-face {
+      font-family: 'NeoDunggeunmo';
+      src: url('assets/fonts/NeoDunggeunmoPro-Regular.ttf') format('truetype');
+      font-weight: normal; font-style: normal; font-display: block;
+    }
+    @font-face {
+      font-family: 'PFStardust';
+      src: url('assets/fonts/PFStardust-Regular.ttf') format('truetype');
+      font-weight: normal; font-style: normal; font-display: block;
+    }
+    @font-face {
+      font-family: 'PFStardust';
+      src: url('assets/fonts/PFStardust-Bold.ttf') format('truetype');
+      font-weight: bold; font-style: normal; font-display: block;
+    }
+    @font-face {
+      font-family: 'PFStardust';
+      src: url('assets/fonts/PFStardust-ExtraBold.ttf') format('truetype');
+      font-weight: 900; font-style: normal; font-display: block;
+    }
+
+    html, body {
+      margin: 0; padding: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: 'NeoDunggeunmo', 'Malgun Gothic', sans-serif;
+      /* 8비트 픽셀 렌더링 보장 */
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      -ms-interpolation-mode: nearest-neighbor;
+    }
+
+    /* 게임 컨테이너 — 8비트 CRT 느낌의 무대 */
+    #game {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+      /* 살짝 어두운 비네트 + 노란 톤(CRT 인광관 잔향) */
+      background:
+        radial-gradient(ellipse at center,
+          rgba(40,30,15,0) 0%,
+          rgba(0,0,0,0.6) 100%),
+        #1a0e08;
+    }
+    #game canvas {
+      image-rendering: pixelated !important;
+      image-rendering: crisp-edges !important;
+      /* 약한 채도/대비 보정으로 NES 톤 흉내 */
+      filter: contrast(1.08) saturate(1.10);
+    }
+
+    /* 스캔라인 — 게임 캔버스 위에 가는 가로줄 */
+    #crt-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(0,0,0,0.18) 0px,
+          rgba(0,0,0,0.18) 1px,
+          rgba(0,0,0,0.00) 2px,
+          rgba(0,0,0,0.00) 3px
+        );
+      mix-blend-mode: multiply;
+    }
+    /* 끝부분 살짝 어둡게 (비네트) */
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9998;
+      background: radial-gradient(ellipse at center,
+        rgba(0,0,0,0) 50%,
+        rgba(0,0,0,0.55) 100%);
+    }
+
+    .preload-font {
+      position: absolute; left: -9999px; top: -9999px; visibility: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="vignette"></div>
+  <div id="crt-overlay"></div>
+
+  <!-- 글리프 미리 로드 -->
+  <div class="preload-font" style="font-family: 'NeoDunggeunmo';">한글 로드 ABC 123</div>
+  <div class="preload-font" style="font-family: 'PFStardust'; font-weight: bold;">한글 로드 ABC 123</div>
+  <div class="preload-font" style="font-family: 'PFStardust'; font-weight: 900;">한글 로드 ABC 123</div>
+
+  <script src="node_modules/phaser/dist/phaser.min.js"></script>
+  <script src="src/dialogue.js"></script>
+  <script src="src/cases.js"></script>
+  <script src="src/quizzes.js"></script>
+  <script src="src/game.js"></script>
+</body>
+</html>
