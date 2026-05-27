@@ -892,11 +892,12 @@ class TitleScene extends Phaser.Scene {
 
     // 타이틀 패널
     panel(this, 480, 150, 560, 150, 0x10202e, 0xe8b86a);
-    this.add.text(480, 120, '사라진 바다', {
-      fontFamily: FONT_TITLE, fontSize: '54px', color: '#ffe9b8', fontStyle: 'bold',
+    // 메인 타이틀 — 계획서 공식 제목 그대로 (P.E.A.C.E. 로 통하는 국제 분쟁 탐구)
+    this.add.text(480, 118, 'P.E.A.C.E.', {
+      fontFamily: FONT_TITLE, fontSize: '52px', color: '#ffe9b8', fontStyle: 'bold',
       stroke: '#3a2410', strokeThickness: 8
     }).setOrigin(0.5);
-    this.add.text(480, 178, '— P.E.A.C.E. 에이전시 · 국제 분쟁 조사관의 기록 —', {
+    this.add.text(480, 180, '— 통(通)하는 국제 분쟁 탐구하기 —', {
       fontFamily: FONT, fontSize: '20px', color: '#f0c98a'
     }).setOrigin(0.5);
 

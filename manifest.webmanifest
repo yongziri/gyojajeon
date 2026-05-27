@@ -1,7 +1,7 @@
 {
-  "name": "사라진 바다 — 아랄해, 그리고 우리들의 이야기",
-  "short_name": "사라진 바다",
-  "description": "세계시민교육(GCED) 컨셉의 교육용 픽셀 RPG — 아랄해를 통해 지속가능한 발전을 배웁니다.",
+  "name": "P.E.A.C.E. — 통(通)하는 국제 분쟁 탐구하기",
+  "short_name": "P.E.A.C.E.",
+  "description": "P.E.A.C.E. 학습 모델로 국제 분쟁을 탐구하는 세계시민교육 RPG — 사회·역사·영어 교과 융합.",
   "id": "kr.gd.dgsh.vanishedsea",
   "start_url": "./index.html?mobile=1",
   "scope": "./",
