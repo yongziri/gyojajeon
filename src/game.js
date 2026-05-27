@@ -2315,7 +2315,10 @@ function fancyButton(scene, x, y, w, h, label, cb, theme) {
     g.fillStyle(0x000000, 0.35); g.fillRect(lx + 6, ly + h - 8, w - 12, 2);
   };
   draw(theme.base);
-  const zone = scene.add.zone(x, y, w, h)
+  // 터치 친화: 모바일에서는 hit area를 사방으로 10px 씩 확장 (시각은 그대로)
+  // 손가락 평균 너비 9-12mm → 작은 버튼이 잘 안 눌리는 문제 완화
+  const padTouch = window.IS_MOBILE ? 10 : 0;
+  const zone = scene.add.zone(x, y, w + padTouch * 2, h + padTouch * 2)
     .setInteractive({ useHandCursor: true });
   const t = scene.add.text(x, y, label, {
     fontFamily: FONT, fontSize: '18px', color: theme.text
@@ -3326,7 +3329,9 @@ class InvestigationScene extends Phaser.Scene {
       g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 10);
     };
     draw(0x352910);
-    const zone = this.add.zone(x, y, w, h)
+    // 모바일 hit area 살짝 확장 (시각은 그대로)
+    const pad = window.IS_MOBILE ? 8 : 0;
+    const zone = this.add.zone(x, y, w + pad * 2, h + pad * 2)
       .setInteractive({ useHandCursor: true }).setDepth(6);
     const t = this.add.text(x, y, label, {
       fontFamily: FONT, fontSize: '18px', color: '#ffe9b8'
@@ -3929,7 +3934,9 @@ class LetterScene extends Phaser.Scene {
     this.add.text(x + 26, y + 9, label, {
       fontFamily: FONT, fontSize: '15px', color: '#1a1a2e'
     }).setOrigin(0, 0.5).setDepth(3);
-    const zone = this.add.zone(x + w / 2, y + 9, w, 22)
+    // 손가락 친화: 모바일에서 hit zone 높이 22 → 36으로 확장
+    const zoneH = window.IS_MOBILE ? 36 : 22;
+    const zone = this.add.zone(x + w / 2, y + 9, w, zoneH)
       .setInteractive({ useHandCursor: true }).setDepth(4);
     zone.on('pointerdown', () => cb());
   }
@@ -4054,13 +4061,19 @@ ${pledges.join('\n')}
         const star = this.add.text(sx, sy, '★', {
           fontFamily: FONT_TITLE, fontSize: '22px',
           color: s <= 3 ? '#ffd96a' : '#3a4a5a'
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        star.on('pointerdown', () => {
+        }).setOrigin(0.5);
+        // 손가락 친화 hit zone — 별 위에 큰 투명 zone (모바일은 더 크게)
+        const hitW = window.IS_MOBILE ? 80 : 50;
+        const hitH = window.IS_MOBILE ? 60 : 40;
+        const zone = this.add.zone(sx, sy, hitW, hitH)
+          .setInteractive({ useHandCursor: true });
+        zone.on('pointerdown', () => {
           this.reviewScores[row.key] = s;
           stars.forEach((st, idx) => {
             st.setColor(idx < s ? '#ffd96a' : '#3a4a5a');
           });
           scoreText.setText('★ ' + s + ' / 5');
+          if (window.SFX) window.SFX.play('click');
         });
         stars.push(star);
       }
