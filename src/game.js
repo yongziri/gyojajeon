@@ -2713,9 +2713,9 @@ class WorldScene extends Phaser.Scene {
   //  각 버튼은 setInteractive + pointerdown/up + setScrollFactor(0)으로
   //  화면 고정. update()에서 this.touchDir 플래그를 cursors와 함께 검사.
   buildDPad() {
-    const cx = 80, cy = 480;           // D-pad 중심
-    const r  = 36;                      // 중심에서 각 버튼까지 거리
-    const btnR = 30;                    // 각 버튼 반지름
+    const cx = 105, cy = 470;          // D-pad 중심 (화면 좌하단, 마진 충분히)
+    const r  = 60;                      // 중심에서 각 버튼까지 거리 (버튼 사이 여백)
+    const btnR = 28;                    // 각 버튼 반지름
     const mk = (dx, dy, label, key) => {
       const x = cx + dx, y = cy + dy;
       // 버튼 도형
@@ -2746,7 +2746,7 @@ class WorldScene extends Phaser.Scene {
     ];
 
     // 가운데 살짝 어둡게 (디자인 통일감)
-    const center = this.add.circle(cx, cy, 14, 0x000000, 0.5)
+    const center = this.add.circle(cx, cy, 10, 0x000000, 0.45)
       .setScrollFactor(0).setDepth(3999);
     this.dpad.push({ circle: center });
   }
