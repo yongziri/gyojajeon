@@ -508,6 +508,32 @@ function drawWall(g) {
   pxMap(g, WALL_MAP, WALL_PAL, 2);
 }
 
+// ── 외벽 (우크라이나): 회색 콘크리트 + 균열, 40x40 ────────────
+function drawWallKyiv(g) {
+  g.clear();
+  // 기본 회색 콘크리트
+  g.fillStyle(0x6e7480, 1); g.fillRect(0, 0, 40, 40);
+  // 밝은 윗면 (반사광)
+  g.fillStyle(0x8c93a0, 1); g.fillRect(0, 0, 40, 4);
+  // 벽돌 격자 — 윗줄/아랫줄 어긋남
+  g.fillStyle(0x4e5660, 1);
+  g.fillRect(0, 19, 40, 2);  // 가로 줄눈
+  g.fillRect(19, 0, 2, 19);  // 윗단 세로 줄눈 (중앙)
+  g.fillRect(9, 21, 2, 18);  // 아랫단 세로 줄눈 (어긋)
+  g.fillRect(29, 21, 2, 18);
+  // 어두운 그림자
+  g.fillStyle(0x3a3a40, 1);
+  g.fillRect(0, 38, 40, 2); g.fillRect(38, 0, 2, 40);
+  // 균열·금
+  g.fillStyle(0x2a2a30, 1);
+  g.fillRect(6, 7, 6, 1); g.fillRect(12, 8, 4, 1);
+  g.fillRect(26, 12, 8, 1); g.fillRect(14, 28, 5, 1);
+  g.fillRect(30, 30, 6, 1);
+  // 콘크리트 얼룩
+  g.fillStyle(0x5a5e68, 1);
+  g.fillRect(4, 12, 4, 4); g.fillRect(24, 4, 6, 3); g.fillRect(14, 24, 8, 4);
+}
+
 // 현장 배경 (800 x 440)
 const BG_W = 960, BG_H = 440;
 
@@ -1219,6 +1245,9 @@ class BootScene extends Phaser.Scene {
     g.generateTexture('ground_concrete', GAME_W, MH);
     drawWall(g);
     g.generateTexture('wall', TILE, TILE);
+    // 우크라이나 사건용 외벽 (회색 콘크리트 + 균열)
+    drawWallKyiv(g);
+    g.generateTexture('wall_kyiv', TILE, TILE);
 
     // 우크라이나 데코 sprite (사건 2 WorldScene 용)
     g.clear(); drawSandbag(g);      g.generateTexture('sandbag', 32, 24);
@@ -2903,14 +2932,31 @@ class WorldScene extends Phaser.Scene {
     const isUkraine = (caseId === 'ukraine');
     this.add.image(0, 0, isUkraine ? 'ground_concrete' : 'ground').setOrigin(0, 0);
     this.walls = this.physics.add.staticGroup();
+    const wallKey = isUkraine ? 'wall_kyiv' : 'wall';
     for (let r = 0; r < MAP.length; r++) {
       for (let c = 0; c < MAP[r].length; c++) {
         if (MAP[r][c] === 1) {
           const wall = this.add.image(
-            c * TILE + TILE / 2, r * TILE + TILE / 2, 'wall');
+            c * TILE + TILE / 2, r * TILE + TILE / 2, wallKey);
           this.walls.add(wall);
         }
       }
+    }
+    // MAP은 4:3(20열) 기준이라 16:10(24열)로 확장 시 우측 외벽 단절.
+    // 상단·하단 외벽 + 우측 끝 외벽을 동적으로 보강한다.
+    const colMax = Math.floor(GAME_W / TILE);   // 24
+    for (let c = MAP[0].length; c < colMax; c++) {
+      // 상단 외벽 연장
+      this.walls.add(this.add.image(c * TILE + TILE/2, 0 + TILE/2, wallKey));
+      // 하단 외벽 연장
+      this.walls.add(this.add.image(c * TILE + TILE/2,
+        (MAP.length - 1) * TILE + TILE/2, wallKey));
+    }
+    // 우측 끝 (c=23) 세로 외벽 — 모든 행에 추가
+    const rightC = colMax - 1;
+    for (let r = 1; r < MAP.length - 1; r++) {
+      this.walls.add(this.add.image(rightC * TILE + TILE/2,
+        r * TILE + TILE/2, wallKey));
     }
 
     // 플레이어
