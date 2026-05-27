@@ -2616,6 +2616,11 @@ class WorldScene extends Phaser.Scene {
     mood.fillRect(0, 24, W, 14); mood.fillRect(0, H - 38, W, 14);
 
     this.cursors = this.input.keyboard.createCursorKeys();
+    // 모바일/터치 환경에서만 가상 D-Pad 표시 (PC는 키보드 사용)
+    this.touchDir = { left: false, right: false, up: false, down: false };
+    if (window.IS_MOBILE) {
+      this.buildDPad();
+    }
 
     // 좌상단 — 조사관 정체성 + 현재 사건명 (사건 확장 대비 시각 일관성)
     this.add.text(10, 8, '🌐 UN 조사관', {
@@ -2676,14 +2681,20 @@ class WorldScene extends Phaser.Scene {
       return;
     }
 
-    if (this.cursors.left.isDown) {
+    // 키보드 또는 가상 D-Pad — 어느 쪽이든 눌리면 이동
+    const td = this.touchDir || {};
+    const left  = this.cursors.left.isDown  || td.left;
+    const right = this.cursors.right.isDown || td.right;
+    const up    = this.cursors.up.isDown    || td.up;
+    const down  = this.cursors.down.isDown  || td.down;
+    if (left) {
       p.body.setVelocityX(-speed); dir = 'side'; p.setFlipX(true); moving = true;
-    } else if (this.cursors.right.isDown) {
+    } else if (right) {
       p.body.setVelocityX(speed); dir = 'side'; p.setFlipX(false); moving = true;
     }
-    if (this.cursors.up.isDown) {
+    if (up) {
       p.body.setVelocityY(-speed); dir = 'up'; moving = true;
-    } else if (this.cursors.down.isDown) {
+    } else if (down) {
       p.body.setVelocityY(speed); dir = 'down'; moving = true;
     }
 
@@ -2695,6 +2706,49 @@ class WorldScene extends Phaser.Scene {
       p.setTexture('hero_' + this.facing + '_0');
     }
     p.setDepth(p.y); // 건물 앞/뒤 정렬
+  }
+
+  // ── 모바일 가상 D-Pad ─────────────────────────────────────
+  //  화면 좌하단에 네 방향 버튼을 십자형으로 배치.
+  //  각 버튼은 setInteractive + pointerdown/up + setScrollFactor(0)으로
+  //  화면 고정. update()에서 this.touchDir 플래그를 cursors와 함께 검사.
+  buildDPad() {
+    const cx = 80, cy = 480;           // D-pad 중심
+    const r  = 36;                      // 중심에서 각 버튼까지 거리
+    const btnR = 30;                    // 각 버튼 반지름
+    const mk = (dx, dy, label, key) => {
+      const x = cx + dx, y = cy + dy;
+      // 버튼 도형
+      const circle = this.add.circle(x, y, btnR, 0x1a2a3a, 0.65)
+        .setStrokeStyle(3, 0xffd96a, 0.9)
+        .setScrollFactor(0).setDepth(4000)
+        .setInteractive({ useHandCursor: true });
+      const txt = this.add.text(x, y, label, {
+        fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(4001);
+
+      const press   = () => { this.touchDir[key] = true; circle.fillColor = 0x3a5a82; };
+      const release = () => { this.touchDir[key] = false; circle.fillColor = 0x1a2a3a; };
+
+      circle.on('pointerdown', press);
+      circle.on('pointerup',   release);
+      circle.on('pointerout',  release);   // 손가락이 버튼 밖으로 나가면 해제
+      circle.on('pointerupoutside', release);
+      return { circle, txt };
+    };
+
+    this.dpad = [
+      mk(0,  -r, '▲', 'up'),
+      mk(0,   r, '▼', 'down'),
+      mk(-r,  0, '◀', 'left'),
+      mk( r,  0, '▶', 'right'),
+    ];
+
+    // 가운데 살짝 어둡게 (디자인 통일감)
+    const center = this.add.circle(cx, cy, 14, 0x000000, 0.5)
+      .setScrollFactor(0).setDepth(3999);
+    this.dpad.push({ circle: center });
   }
 
   refreshCoreHud() {
@@ -4771,6 +4825,19 @@ class BattleScene extends Phaser.Scene {
   }
 }
 
+// 모바일/터치 환경 감지 (가상 D-Pad 표시 여부 등에 사용)
+// — pointer가 'coarse'면 손가락 입력 환경 (폰·태블릿)
+// — 너비가 800 미만이거나 세로형이면 모바일로 간주
+window.IS_MOBILE = (function () {
+  try {
+    const ua  = (navigator.userAgent || '').toLowerCase();
+    const uaMobile = /android|iphone|ipad|ipod|mobile|opera mini|iemobile/.test(ua);
+    const coarse  = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const small   = window.innerWidth < 800 || window.innerHeight < 600;
+    return uaMobile || coarse || small;
+  } catch (e) { return false; }
+})();
+
 new Phaser.Game({
   type: Phaser.AUTO,
   width: 800,
@@ -4778,6 +4845,17 @@ new Phaser.Game({
   parent: 'game',
   backgroundColor: '#3a2f1f',
   pixelArt: true,
+  // 반응형 스케일 — 폰·태블릿·PC 어디서나 화면에 자동 맞춤
+  //   FIT: 비율 유지하며 가능한 한 크게 (위·아래 또는 좌·우에 검은 띠)
+  //   CENTER_BOTH: 항상 화면 중앙
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 800,
+    height: 600,
+  },
+  // 터치 입력 강제 활성화 (모바일 WebView에서 안정)
+  input: { activePointers: 3 },
   physics: {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false }
