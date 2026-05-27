@@ -319,6 +319,160 @@ function drawGround(g, w, h) {
     g.fillRect(Math.floor(rnd() * (w / 2)) * 2, Math.floor(rnd() * (h / 2)) * 2, 2, 2);
 }
 
+// ── 키이우 거리 바닥: 회색 보도 + 부서진 콘크리트 패치 ──────────
+function drawConcrete(g, w, h) {
+  g.clear();
+  // 기본 회색 콘크리트
+  g.fillStyle(0x6e7480, 1); g.fillRect(0, 0, w, h);
+  let s = 24680;
+  const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  // 보도블록 격자 (40x40)
+  g.fillStyle(0x55606c, 1);
+  for (let y = 0; y < h; y += 40) g.fillRect(0, y, w, 1);
+  for (let x = 0; x < w; x += 40) g.fillRect(x, 0, 1, h);
+  // 잔금·균열
+  const dark = [0x5a626d, 0x4e5660, 0x3d434c];
+  for (let i = 0; i < 280; i++) {
+    g.fillStyle(dark[i % dark.length], 1);
+    const bx = Math.floor(rnd() * (w / 4)) * 4;
+    const by = Math.floor(rnd() * (h / 4)) * 4;
+    const bw = (1 + Math.floor(rnd() * 4)) * 4;
+    const bh = (1 + Math.floor(rnd() * 2)) * 4;
+    g.fillRect(bx, by, bw, bh);
+  }
+  // 잔해 부스러기 (밝은 잿빛 + 검은 점)
+  g.fillStyle(0x8c93a0, 1);
+  for (let i = 0; i < 200; i++)
+    g.fillRect(Math.floor(rnd() * (w / 2)) * 2, Math.floor(rnd() * (h / 2)) * 2, 2, 2);
+  g.fillStyle(0x2a3038, 1);
+  for (let i = 0; i < 140; i++)
+    g.fillRect(Math.floor(rnd() * (w / 2)) * 2, Math.floor(rnd() * (h / 2)) * 2, 2, 2);
+  // 폭격 그을음 (어두운 큰 패치 3개)
+  g.fillStyle(0x2a2a30, 0.55);
+  g.fillEllipse(220, 280, 130, 70);
+  g.fillEllipse(620, 380, 160, 80);
+  g.fillEllipse(820, 180, 100, 60);
+}
+
+// ── 우크라이나 데코 sprite (각 32x40 정도) ──────────────────────
+// 모래주머니 — 바리케이드용 (32x24)
+function drawSandbag(g) {
+  g.clear();
+  // 4개 자루 더미
+  g.fillStyle(0x9a7a4a, 1); g.fillRect(2, 8, 28, 14);
+  g.fillStyle(0xb8966a, 1); g.fillRect(2, 8, 28, 4);
+  g.fillStyle(0xa68856, 1); g.fillRect(6, 0, 20, 10);
+  g.fillStyle(0xc8aa78, 1); g.fillRect(6, 0, 20, 3);
+  // 자루 사이 그림자
+  g.fillStyle(0x6a4a2a, 1);
+  g.fillRect(0, 22, 32, 2); g.fillRect(15, 0, 2, 8);
+  // 매듭
+  g.fillStyle(0x5a3a1a, 1);
+  g.fillRect(14, 9, 4, 3); g.fillRect(10, 1, 3, 2); g.fillRect(20, 1, 3, 2);
+}
+
+// 부서진 벤치 (40x24)
+function drawBrokenBench(g) {
+  g.clear();
+  // 좌측 다리·시트 (정상)
+  g.fillStyle(0x5a4a32, 1); g.fillRect(2, 14, 6, 10);    // 좌측 다리
+  g.fillStyle(0x8a6a3a, 1); g.fillRect(0, 10, 22, 4);    // 시트 (왼쪽 반)
+  g.fillStyle(0x6a4f2a, 1); g.fillRect(0, 12, 22, 2);    // 시트 그림자
+  // 우측 (부서진)
+  g.fillStyle(0x8a6a3a, 1); g.fillRect(24, 12, 10, 4);   // 시트 조각
+  g.fillStyle(0x5a4a32, 1);
+  g.fillRect(28, 18, 6, 6);   // 비스듬한 다리 조각
+  g.fillRect(34, 20, 4, 4);   // 떨어진 조각
+}
+
+// 우크라이나 국기 (24x32)
+function drawUkraineFlag(g) {
+  g.clear();
+  // 깃대
+  g.fillStyle(0x6a5a3a, 1); g.fillRect(2, 0, 3, 32);
+  // 깃발 배경 (파랑·노랑)
+  g.fillStyle(0x4a9adf, 1); g.fillRect(5, 2, 18, 10);
+  g.fillStyle(0xffd24a, 1); g.fillRect(5, 12, 18, 10);
+  // 음영
+  g.fillStyle(0x2a6acf, 1); g.fillRect(5, 2, 18, 2);
+  g.fillStyle(0xe7b840, 1); g.fillRect(5, 20, 18, 2);
+}
+
+// 평화 비둘기 동상 (40x40, 받침대 위 비둘기)
+function drawPeaceDove(g) {
+  g.clear();
+  // 받침대
+  g.fillStyle(0x6e7480, 1); g.fillRect(8, 30, 24, 10);
+  g.fillStyle(0x8c93a0, 1); g.fillRect(8, 30, 24, 2);
+  g.fillStyle(0x4e5660, 1); g.fillRect(8, 38, 24, 2);
+  // 명판 (Peace)
+  g.fillStyle(0x3a4350, 1); g.fillRect(11, 33, 18, 4);
+  // 비둘기 몸 (흰)
+  g.fillStyle(0xeae6d8, 1); g.fillRect(12, 14, 18, 10);
+  g.fillRect(18, 8, 10, 8);  // 머리
+  g.fillStyle(0xffffff, 1); g.fillRect(13, 14, 14, 3);
+  // 날개
+  g.fillStyle(0xcfcbbb, 1); g.fillRect(10, 16, 8, 5);
+  // 부리·눈
+  g.fillStyle(0xffa84a, 1); g.fillRect(28, 11, 4, 2);
+  g.fillStyle(0x1a1a1a, 1); g.fillRect(24, 11, 2, 2);
+  // 올리브 가지 (부리에)
+  g.fillStyle(0x6a8a4a, 1); g.fillRect(32, 11, 6, 2); g.fillRect(34, 9, 2, 2);
+}
+
+// UN 텐트 (40x36)
+function drawUNTent(g) {
+  g.clear();
+  // 텐트 본체 (흰)
+  g.fillStyle(0xdfe5ea, 1); g.fillRect(2, 12, 36, 22);
+  // 지붕 (계단 삼각형)
+  g.fillRect(4, 8, 32, 4);
+  g.fillRect(8, 4, 24, 4);
+  g.fillRect(14, 0, 12, 4);
+  // 텐트 바닥 그림자
+  g.fillStyle(0x9aa6ad, 1); g.fillRect(2, 32, 36, 2);
+  // UN 파란 라벨
+  g.fillStyle(0x4a9adf, 1); g.fillRect(10, 14, 20, 10);
+  // UN 흰 글자
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(13, 16, 2, 6); g.fillRect(15, 20, 2, 2); g.fillRect(17, 16, 2, 6);  // U
+  g.fillRect(22, 16, 2, 6); g.fillRect(24, 18, 2, 2); g.fillRect(26, 16, 2, 6);  // N
+  // 입구 (검은 사각)
+  g.fillStyle(0x14202c, 1); g.fillRect(16, 26, 8, 8);
+}
+
+// 부서진 차량 (40x24)
+function drawBrokenCar(g) {
+  g.clear();
+  // 차체
+  g.fillStyle(0x4a4a52, 1); g.fillRect(2, 8, 36, 12);
+  g.fillStyle(0x5a5a62, 1); g.fillRect(2, 8, 36, 3);
+  // 지붕 (한쪽 찌그러진)
+  g.fillStyle(0x5a5a62, 1); g.fillRect(10, 2, 20, 8);
+  g.fillRect(28, 4, 4, 4);  // 찌그러진 부분
+  // 창문 (깨진)
+  g.fillStyle(0x2a3a4a, 1); g.fillRect(12, 4, 6, 4);
+  g.fillStyle(0x1a1a1a, 1); g.fillRect(20, 4, 4, 4);  // 깨진 창
+  // 바퀴 (한쪽 빠짐)
+  g.fillStyle(0x1a1a1a, 1); g.fillRect(6, 18, 6, 6);
+  g.fillStyle(0x6a5a4a, 1); g.fillRect(28, 19, 6, 4);  // 부서진 바퀴 잔해
+  // 연료 새는 흔적
+  g.fillStyle(0x4a3a2a, 0.6); g.fillRect(20, 22, 18, 2);
+}
+
+// 폭격 자국 (크레이터, 40x16)
+function drawCrater(g) {
+  g.clear();
+  // 어두운 타원 모양 패치
+  g.fillStyle(0x1a1a1a, 1); g.fillEllipse(20, 8, 36, 12);
+  g.fillStyle(0x2a2a30, 1); g.fillEllipse(20, 8, 28, 8);
+  // 가장자리 돌무더기
+  g.fillStyle(0x5a626d, 1);
+  g.fillRect(2, 6, 4, 4); g.fillRect(34, 6, 4, 4);
+  g.fillRect(8, 1, 3, 3); g.fillRect(28, 1, 3, 3);
+  g.fillRect(12, 12, 3, 3); g.fillRect(24, 13, 3, 3);
+}
+
 // ── 벽: 사암 + 청록 타일 띠 (도트, 40x40) ───────────────────────
 const WALL_PAL = {
   '.': null,
@@ -403,6 +557,20 @@ function drawPort(g) {
   g.fillStyle(0x5a3d1c, 1); g.fillRect(115, 280, 6, 42);
   g.fillStyle(0xeae0cf, 1);
   for (let i = 0; i < 5; i++) g.fillRect(121, 280 + i*8, 47 - i*9, 8);
+  // 부두 위 흩어진 소금 결정 (흰 점들)
+  g.fillStyle(0xeae6d8, 1);
+  for (let i = 0; i < 36; i++) g.fillRect((i*47) % BG_W, 376 + (i*9 % 56), 3, 3);
+  // 깨진 닻 (좌측 부두)
+  g.fillStyle(0x2a3a4a, 1);
+  g.fillRect(210, 384, 4, 30); g.fillRect(196, 410, 32, 4);
+  g.fillRect(196, 408, 4, 8); g.fillRect(224, 408, 4, 8);
+  // 멀리 마을 주민 실루엣 (부두 끝)
+  g.fillStyle(0x1a1a1a, 1);
+  g.fillRect(750, 354, 4, 12); g.fillRect(751, 346, 2, 8);
+  g.fillRect(770, 358, 4, 10); g.fillRect(771, 350, 2, 8);
+  // 떠다니는 모래 먼지 (수평선 위)
+  g.fillStyle(0xc89866, 0.4);
+  for (let i = 0; i < 14; i++) g.fillEllipse(60 + i*70, 210 + (i*7 % 12), 50, 6);
 }
 
 // ── 해협 감시소: 도트 ──────────────────────────────────────────
@@ -442,6 +610,23 @@ function drawStrait(g) {
   g.fillStyle(0x2b343a, 1); g.fillRect(632, 244, 8, 28);
   g.fillStyle(0x5a6770, 1);
   g.fillRect(540, 348, 220, 4); g.fillRect(560, 352, 200, 4);
+  // 해도 위 1960·1990·2020 연도 마커 (작은 사각, 흰)
+  g.fillStyle(0xffe9b8, 1);
+  g.fillRect(82, 100, 12, 3); g.fillRect(82, 158, 12, 3); g.fillRect(82, 216, 12, 3);
+  // 노트 (해도 위, 펼친 책)
+  g.fillStyle(0xeae6d8, 1); g.fillRect(118, 218, 50, 36);
+  g.fillStyle(0xcfcbbb, 1); g.fillRect(118, 218, 50, 4);
+  g.fillStyle(0x8a99a0, 1);
+  for (let i = 0; i < 5; i++) g.fillRect(124, 226 + i*5, 38, 1);
+  // 연필
+  g.fillStyle(0xc89866, 1); g.fillRect(170, 236, 24, 4);
+  g.fillStyle(0x2a2a2a, 1); g.fillRect(192, 236, 4, 4);
+  // 등대 빛 더 진하게 + 추가 빛줄기
+  g.fillStyle(0xfff0b0, 0.25);
+  for (let i = 0; i < 18; i++) g.fillRect(420 + i*16, 75 + i*6, 18, 6);
+  // 인물 실루엣 (지도실 한쪽)
+  g.fillStyle(0x1a1a1a, 1);
+  g.fillRect(330, 280, 8, 24); g.fillRect(330, 264, 12, 18);
 }
 
 // ── 마을 시장: 도트 ────────────────────────────────────────────
@@ -493,6 +678,26 @@ function drawMarket(g) {
   g.fillStyle(0xcfcbbb, 1); g.fillRect(656, 258, 60, 56);
   g.fillStyle(0x2b343a, 1); g.fillRect(700, 200, 4, 40);
   g.fillStyle(0xffe9a8, 1); g.fillRect(696, 192, 12, 12);
+  // 면화 자루 (시장 한쪽, "Made in Cotton" 무역의 흔적)
+  g.fillStyle(0xeae6d8, 1);
+  g.fillRect(800, 320, 40, 50); g.fillRect(820, 290, 40, 40);
+  g.fillStyle(0xcfcbbb, 1); g.fillRect(800, 320, 40, 4); g.fillRect(820, 290, 40, 4);
+  g.fillStyle(0x6a4a2a, 1); g.fillRect(810, 332, 20, 2);  // 매듭
+  g.fillRect(830, 302, 20, 2);
+  // 옷 진열대 (오른쪽 끝, 청바지·티셔츠)
+  g.fillStyle(0x4a6a8a, 1); g.fillRect(880, 270, 24, 36);
+  g.fillStyle(0xc0392b, 1); g.fillRect(908, 268, 22, 32);
+  g.fillStyle(0x6a8a4a, 1); g.fillRect(932, 274, 24, 30);
+  // 진료소 십자 마크 (좌측 위)
+  g.fillStyle(0xc0392b, 1);
+  g.fillRect(140, 76, 24, 6); g.fillRect(149, 64, 6, 30);
+  // 멀리 의사·환자 실루엣
+  g.fillStyle(0x1a1a1a, 1);
+  g.fillRect(166, 220, 5, 14); g.fillRect(167, 212, 3, 8);   // 의사
+  g.fillRect(180, 226, 5, 12); g.fillRect(181, 218, 3, 8);   // 환자
+  // 소금 먼지 흩날림 (시장 전체)
+  g.fillStyle(0xeae6d8, 0.5);
+  for (let i = 0; i < 28; i++) g.fillRect((i*49) % BG_W, 100 + (i*11 % 200), 2, 2);
 }
 
 // ── 우크라이나 1: 폭격받은 학교 ───────────────────────────────
@@ -547,6 +752,22 @@ function drawSchool(g) {
   // 바닥 파편
   g.fillStyle(0x8a6b54, 1);
   for (let i = 0; i < 30; i++) g.fillRect((i*53) % BG_W, 400 + (i*13 % 30), 6, 4);
+  // 멀리 보이는 작은 인물 실루엣 (남은 주민/구조대원)
+  g.fillStyle(0x2a2a2a, 1);
+  g.fillRect(800, 200, 6, 12); g.fillRect(802, 192, 4, 8);   // 인물 1
+  g.fillRect(150, 100, 5, 10); g.fillRect(151, 92, 3, 8);    // 인물 2 (좌측 멀리)
+  // 잔해 위 유리 파편 (반짝임)
+  g.fillStyle(0xeae6d8, 0.7);
+  for (let i = 0; i < 14; i++) g.fillRect(40 + (i*60) % 880, 376 + (i*7 % 24), 2, 2);
+  // 우크라이나어 'УКРАЇНА' 벽 흔적 (스텐실 풍, 좌측 외벽)
+  g.fillStyle(0x4a9adf, 0.45);
+  g.fillRect(38, 360, 4, 4); g.fillRect(46, 360, 4, 4); g.fillRect(54, 360, 4, 4);
+  g.fillRect(38, 366, 4, 4); g.fillRect(46, 366, 4, 4); g.fillRect(54, 366, 4, 4);
+  // 연기 기둥 (구멍에서 올라옴)
+  g.fillStyle(0x4a4a52, 0.35);
+  for (let i = 0; i < 8; i++) {
+    g.fillEllipse(450 + (i % 2) * 8, 170 - i*18, 60 + i*4, 22);
+  }
 }
 
 // ── 우크라이나 2: 오데사 곡물 항구 ────────────────────────────
@@ -604,6 +825,25 @@ function drawGrainPort(g) {
   // 빈 항구 식당 (배경 우측 끝)
   g.fillStyle(0x4a3a2a, 1); g.fillRect(870, 280, 80, 50);
   g.fillStyle(0xffd24a, 0.4); g.fillRect(884, 296, 22, 16);
+  // 갈매기 추가 (더 풍부하게)
+  g.fillStyle(0xffffff, 1);
+  [[60, 140], [200, 150], [320, 130], [560, 110], [640, 150], [900, 130]].forEach(([x, y]) => {
+    g.fillRect(x, y, 8, 2); g.fillRect(x-2, y+2, 12, 2);
+  });
+  // 항구 노동자 실루엣 (부두 위, 멀리)
+  g.fillStyle(0x1a1a1a, 1);
+  g.fillRect(120, 318, 5, 12); g.fillRect(121, 310, 3, 8);   // 인물 1 (좌측)
+  g.fillRect(820, 320, 5, 12); g.fillRect(821, 312, 3, 8);   // 인물 2 (우측, 식당 옆)
+  // 가격 게시판에 'WHEAT $/T' 라벨 흔적
+  g.fillStyle(0xe8b86a, 0.8);
+  g.fillRect(55, 270, 3, 6); g.fillRect(60, 270, 3, 6); g.fillRect(65, 270, 3, 6);   // W H E
+  g.fillRect(55, 280, 3, 6); g.fillRect(60, 280, 3, 6); g.fillRect(65, 280, 3, 6);   // A T
+  // 곡식 자루에 떨어진 알갱이 (부두 바닥)
+  g.fillStyle(0xe7c168, 1);
+  for (let i = 0; i < 24; i++) g.fillRect(700 + (i*7) % 80, 332 + (i*5 % 8), 2, 2);
+  // 멀리 배 한 척 (수평선 너머)
+  g.fillStyle(0x2a2a3a, 1); g.fillRect(20, 195, 28, 6);
+  g.fillRect(28, 188, 4, 8);
 }
 
 // ── 우크라이나 3: 키이우 지하철 대피소 ────────────────────────
@@ -663,6 +903,32 @@ function drawShelter(g) {
     g.fillStyle(0xffffff, 1); g.fillRect(x+24, y+24, 24, 6); g.fillRect(x+30, y+18, 12, 6); // 비둘기 몸+머리
     g.fillStyle(0xc89866, 1); g.fillRect(x+42, y+22, 4, 4); // 부리
   });
+  // 앉아 있는 피난민 실루엣 (매트 옆, 무릎 안고 앉은 모습)
+  g.fillStyle(0x3a4a5a, 1);
+  g.fillRect(210, 340, 16, 24);          // 몸통
+  g.fillRect(212, 326, 12, 14);          // 머리
+  g.fillStyle(0x2a3a4a, 1);
+  g.fillRect(206, 350, 24, 8);           // 어깨/팔 더 넓게
+  // 책가방 (매트 옆)
+  g.fillStyle(0xc0392b, 1); g.fillRect(240, 380, 22, 22);
+  g.fillStyle(0x8a2a1a, 1); g.fillRect(240, 380, 22, 4);    // 어깨끈 흔적
+  g.fillRect(244, 392, 4, 6);                                // 버클
+  // 우크라이나어 슬로건 포스터 'МИР·PEACE·평화' — 좌측 벽 상단
+  g.fillStyle(0xeae6d8, 1); g.fillRect(80, 110, 110, 36);
+  g.fillStyle(0x4a9adf, 1); g.fillRect(80, 110, 110, 4);
+  g.fillStyle(0xffd24a, 1); g.fillRect(80, 142, 110, 4);
+  g.fillStyle(0x1a1a1a, 1);
+  // M И P  (МИР)
+  g.fillRect(96, 122, 3, 14); g.fillRect(116, 122, 3, 14); g.fillRect(100, 124, 3, 3); g.fillRect(108, 128, 3, 3); g.fillRect(112, 124, 3, 3);
+  g.fillRect(124, 122, 3, 14); g.fillRect(140, 122, 3, 14); g.fillRect(128, 130, 12, 3);
+  g.fillRect(148, 122, 3, 14); g.fillRect(152, 122, 12, 3); g.fillRect(160, 122, 3, 8); g.fillRect(152, 130, 12, 3);
+  // 평화 비둘기 작은 모형 (매트 위)
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(120, 342, 12, 4); g.fillRect(126, 338, 6, 4);
+  g.fillStyle(0xffa84a, 1); g.fillRect(132, 339, 3, 2);
+  // 천장에서 떨어지는 먼지 (공습 진동 흔적)
+  g.fillStyle(0xdfe5ea, 0.5);
+  for (let i = 0; i < 18; i++) g.fillRect((i*53) % BG_W, 70 + (i*7 % 80), 2, 2);
 }
 
 // ── 입구 표지판 (40x40) ─────────────────────────────────────────
@@ -948,8 +1214,20 @@ class BootScene extends Phaser.Scene {
     const MW = MAP[0].length * TILE, MH = MAP.length * TILE;
     drawGround(g, GAME_W, MH);
     g.generateTexture('ground', GAME_W, MH);
+    // 우크라이나 사건용 회색 콘크리트 바닥
+    drawConcrete(g, GAME_W, MH);
+    g.generateTexture('ground_concrete', GAME_W, MH);
     drawWall(g);
     g.generateTexture('wall', TILE, TILE);
+
+    // 우크라이나 데코 sprite (사건 2 WorldScene 용)
+    g.clear(); drawSandbag(g);      g.generateTexture('sandbag', 32, 24);
+    g.clear(); drawBrokenBench(g);  g.generateTexture('broken_bench', 40, 24);
+    g.clear(); drawUkraineFlag(g);  g.generateTexture('ua_flag', 24, 32);
+    g.clear(); drawPeaceDove(g);    g.generateTexture('peace_dove', 40, 40);
+    g.clear(); drawUNTent(g);       g.generateTexture('un_tent', 40, 36);
+    g.clear(); drawBrokenCar(g);    g.generateTexture('broken_car', 40, 24);
+    g.clear(); drawCrater(g);       g.generateTexture('crater', 40, 16);
 
     // 우측 16:10 영역용 도트 데코 — 사라진 바다 주제
     // (1) 녹슨 작은 보트 — 사막에 박힌 옛 어선
@@ -2618,7 +2896,12 @@ class WorldScene extends Phaser.Scene {
     this.time.delayedCall(450, () => { this.cooldown = false; });
 
     // 바닥(16:10 폭 GAME_W=960으로 통째로 채움) + 벽만 타일
-    this.add.image(0, 0, 'ground').setOrigin(0, 0);
+    // ── 사건별 분기 ──
+    //  aralsea : 사막 흙 (카라칼팍 마을)
+    //  ukraine : 회색 콘크리트 보도 (키이우 거리)
+    const caseId = this.registry.get('caseId') || 'aralsea';
+    const isUkraine = (caseId === 'ukraine');
+    this.add.image(0, 0, isUkraine ? 'ground_concrete' : 'ground').setOrigin(0, 0);
     this.walls = this.physics.add.staticGroup();
     for (let r = 0; r < MAP.length; r++) {
       for (let c = 0; c < MAP[r].length; c++) {
@@ -2669,7 +2952,7 @@ class WorldScene extends Phaser.Scene {
       yoyo: true, repeat: -1, ease: 'Sine.inOut'
     });
     this.portal.setDepth(this.portal.y);
-    this.add.text(4 * TILE, 11 * TILE - 30, '아랄해 조사', {
+    this.add.text(4 * TILE, 11 * TILE - 30, isUkraine ? '키이우 조사' : '아랄해 조사', {
       fontFamily: FONT, fontSize: '12px', color: '#ffe082',
       backgroundColor: '#00000088', padding: { x: 4, y: 2 }
     }).setOrigin(0.5).setDepth(2000);
@@ -2779,7 +3062,7 @@ class WorldScene extends Phaser.Scene {
       this.scene.start('ReflectionScene');
     });
 
-    // 테헤란풍 건물/조경
+    // 사건별 건물·조경
     this.solids = [];
     const building = (key, x, baseY, bw, bh) => {
       this.add.image(x, baseY, key).setOrigin(0.5, 1).setDepth(baseY);
@@ -2787,15 +3070,11 @@ class WorldScene extends Phaser.Scene {
       this.physics.add.existing(body, true);
       this.solids.push(body);
     };
-    const prop = (key, x, baseY) =>
-      this.add.image(x, baseY, key).setOrigin(0.5, 1).setDepth(baseY);
-
-    building('mosque', 690, 132, 86, 26);
-    building('minaret', 610, 132, 18, 24);
-    building('house', 560, 470, 74, 24);
-    building('fountain', 300, 360, 62, 16);
-    prop('palm', 300, 196);
-    prop('palm', 470, 478);
+    const prop = (key, x, baseY, scale) => {
+      const img = this.add.image(x, baseY, key).setOrigin(0.5, 1).setDepth(baseY);
+      if (scale) img.setScale(scale);
+      return img;
+    };
 
     // Kenney Tiny Town(CC0) 데코 — 트리·덤불 (16x16 → 스케일 2 = 32x32)
     const tinyProp = (frame, x, baseY, solid, footW, footH) => {
@@ -2807,36 +3086,78 @@ class WorldScene extends Phaser.Scene {
         this.solids.push(body);
       }
     };
-    // 침엽수 (단단·통과 불가)
-    tinyProp(4, 400, 100, true, 16, 10);
-    tinyProp(4, 520, 240, true, 16, 10);
-    tinyProp(16, 700, 290, true, 16, 10);
-    tinyProp(16, 60,  220, true, 16, 10);
-    // 덤불 (통과 가능 데코)
-    tinyProp(5, 440, 140, false);
-    tinyProp(17, 220, 440, false);
-    tinyProp(17, 160, 380, false);
-    tinyProp(5,  660, 460, false);
 
-    // ── 16:10 우측 영역(800~960) 데코 — 사라진 바다 주제 ─────
-    //  사막에 박힌 옛 보트·말라붙은 우물·모래 더미·Kenney 트리·덤불
-    //  플레이어가 우측 끝까지 가도 시각적으로 풍성하게.
-    // (1) 녹슨 보트 — 환경 재앙의 상징, 사막에 박힌 옛 어선
-    this.add.image(870, 200, 'rusty_boat')
-      .setOrigin(0.5, 1).setDepth(200).setScale(2);
-    // (2) 말라붙은 우물 — 사라진 물
-    this.add.image(890, 360, 'dry_well')
-      .setOrigin(0.5, 1).setDepth(360).setScale(2);
-    // (3) 모래 더미 — 사막 형성
-    this.add.image(840, 450, 'sand_pile')
-      .setOrigin(0.5, 1).setDepth(450).setScale(2);
-    this.add.image(910, 530, 'sand_pile')
-      .setOrigin(0.5, 1).setDepth(530).setScale(2);
-    // (4) Kenney Tiny Town 트리·덤불 (우측 영역)
-    tinyProp(16, 850, 130, true, 16, 10);    // 침엽수
-    tinyProp(4,  920, 280, true, 16, 10);    // 침엽수
-    tinyProp(17, 870, 565, false);            // 덤불 (통과 가능)
-    tinyProp(5,  920, 175, false);            // 덤불
+    if (isUkraine) {
+      // ─────────── 사건 2 — 키이우 거리 ───────────
+      // 평화 비둘기 동상 (광장의 중심·상징물)
+      prop('peace_dove', 600, 200, 2);
+      // UN 텐트 (구호 거점)
+      prop('un_tent', 180, 220, 2);
+      this.add.text(180, 224, 'UN', {
+        fontFamily: FONT, fontSize: '10px', color: '#dff1ff',
+        backgroundColor: '#00000088', padding: { x: 3, y: 1 }
+      }).setOrigin(0.5).setDepth(2000);
+      // 우크라이나 국기 (두 곳에 휘날림)
+      prop('ua_flag', 700, 180, 1.5);
+      prop('ua_flag', 380, 240, 1.5);
+      // 모래주머니 바리케이드 (입구 방어 라인 — 3개 일렬)
+      prop('sandbag', 80,  500, 1.5);
+      prop('sandbag', 130, 500, 1.5);
+      prop('sandbag', 180, 500, 1.5);
+      prop('sandbag', 700, 540, 1.5);
+      prop('sandbag', 750, 540, 1.5);
+      // 부서진 벤치 (광장 산책로 흔적)
+      prop('broken_bench', 540, 380, 1.5);
+      prop('broken_bench', 350, 510, 1.5);
+      // 부서진 차량 (도로 옆)
+      prop('broken_car', 820, 250, 1.5);
+      // 폭격 자국 (크레이터 — 바닥에 가까운 depth)
+      this.add.image(220, 350, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.5);
+      this.add.image(620, 530, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.5);
+      this.add.image(880, 400, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.2);
+      // 도시 가로수 (Kenney tiny_town tree — 잎이 풍성한 활엽수)
+      tinyProp(4,  50,  240, true, 16, 10);
+      tinyProp(4,  430, 130, true, 16, 10);
+      tinyProp(4,  900, 130, true, 16, 10);
+      tinyProp(4,  920, 460, true, 16, 10);
+      tinyProp(16, 230, 200, true, 16, 10);
+      // 덤불 (도시 화단)
+      tinyProp(5,  100, 280, false);
+      tinyProp(17, 880, 560, false);
+      tinyProp(5,  450, 160, false);
+    } else {
+      // ─────────── 사건 1 — 카라칼팍 사막 마을 ───────────
+      building('mosque', 690, 132, 86, 26);
+      building('minaret', 610, 132, 18, 24);
+      building('house', 560, 470, 74, 24);
+      building('fountain', 300, 360, 62, 16);
+      prop('palm', 300, 196);
+      prop('palm', 470, 478);
+      // 침엽수 (단단·통과 불가)
+      tinyProp(4, 400, 100, true, 16, 10);
+      tinyProp(4, 520, 240, true, 16, 10);
+      tinyProp(16, 700, 290, true, 16, 10);
+      tinyProp(16, 60,  220, true, 16, 10);
+      // 덤불 (통과 가능 데코)
+      tinyProp(5, 440, 140, false);
+      tinyProp(17, 220, 440, false);
+      tinyProp(17, 160, 380, false);
+      tinyProp(5,  660, 460, false);
+
+      // ── 16:10 우측 영역(800~960) 데코 — 사라진 바다 주제 ─────
+      this.add.image(870, 200, 'rusty_boat')
+        .setOrigin(0.5, 1).setDepth(200).setScale(2);
+      this.add.image(890, 360, 'dry_well')
+        .setOrigin(0.5, 1).setDepth(360).setScale(2);
+      this.add.image(840, 450, 'sand_pile')
+        .setOrigin(0.5, 1).setDepth(450).setScale(2);
+      this.add.image(910, 530, 'sand_pile')
+        .setOrigin(0.5, 1).setDepth(530).setScale(2);
+      tinyProp(16, 850, 130, true, 16, 10);
+      tinyProp(4,  920, 280, true, 16, 10);
+      tinyProp(17, 870, 565, false);
+      tinyProp(5,  920, 175, false);
+    }
 
     // 시민 NPC (Kenney Tiny Dungeon CC0) — 상호작용 + 퀴즈
     const solved = this.registry.get('quizSolved') || {};
@@ -2913,7 +3234,7 @@ class WorldScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
       backgroundColor: '#00000088', padding: { x: 6, y: 3 }
     }).setDepth(2000);
-    const caseId = this.registry.get('caseId') || 'aralsea';
+    // caseId 는 create() 상단에서 이미 선언됨
     const curCase = (typeof CASE_LIST !== 'undefined')
       ? CASE_LIST.find(x => x.id === caseId) : null;
     if (curCase) {
