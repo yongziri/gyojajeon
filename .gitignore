@@ -21,3 +21,6 @@ desktop.ini
 # 로그
 *.log
 npm-debug.log*
+
+# PWA 검증용 임시 결과
+_test/

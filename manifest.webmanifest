@@ -1,0 +1,28 @@
+{
+  "name": "사라진 바다 — 아랄해, 그리고 우리들의 이야기",
+  "short_name": "사라진 바다",
+  "description": "세계시민교육(GCED) 컨셉의 교육용 픽셀 RPG — 아랄해를 통해 지속가능한 발전을 배웁니다.",
+  "id": "kr.gd.dgsh.vanishedsea",
+  "start_url": "./index.html?mobile=1",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1a0e08",
+  "theme_color": "#1a0e08",
+  "lang": "ko",
+  "categories": ["education", "games"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

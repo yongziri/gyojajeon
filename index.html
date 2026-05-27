@@ -2,6 +2,14 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#1a0e08" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/icons/icon-192.png" />
   <title>사라진 바다 — 아랄해, 그리고 우리들의 이야기</title>
   <style>
     /* 픽셀 한글 폰트 (대회 출품용, 로컬 번들) */
@@ -245,13 +253,22 @@
     })();
   </script>
 
-  <script src="node_modules/phaser/dist/phaser.min.js"></script>
-  <script src="node_modules/mqtt/dist/mqtt.min.js"></script>
+  <script src="vendor/phaser.min.js"></script>
+  <script src="vendor/mqtt.min.js"></script>
   <script src="src/audio.js"></script>
   <script src="src/telemetry.js"></script>
   <script src="src/dialogue.js"></script>
   <script src="src/cases.js"></script>
   <script src="src/quizzes.js"></script>
   <script src="src/game.js"></script>
+
+  <script>
+    // 서비스 워커 등록 — HTTPS(또는 localhost)에서만 등록됨
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      });
+    }
+  </script>
 </body>
 </html>
