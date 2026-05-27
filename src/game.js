@@ -5,6 +5,15 @@
 
 const TILE = 40;
 
+// ── 게임 캔버스 사이즈 — 16:10 비율 (태블릿·폰 가로 모드에 fit) ───
+//  이전(800x600, 4:3) → 현재(960x600, 16:10)
+//  · 가운데 정렬: x = GAME_W / 2 = 480
+//  · 풀스크린 사각형: (0, 0, GAME_W, GAME_H)
+//  · 우측 HUD: GAME_W - margin
+//  · 월드맵은 좌우 80px씩 자연스럽게 늘어남 (배경 빈 영역 추가)
+const GAME_W = 960;
+const GAME_H = 600;
+
 // ── 폰트 (대회 출품용 픽셀 한글) ───────────────────────────────
 //  본문은 NeoDunggeunmo, 타이틀·강조는 PFStardust
 const FONT = 'NeoDunggeunmo, "Malgun Gothic", sans-serif';
@@ -818,7 +827,7 @@ class TitleScene extends Phaser.Scene {
   create() {
     setCfgBarVisible(true);   // 타이틀에선 참가 설정 바 표시
     this.cameras.main.fadeIn(320, 0, 0, 0);  // 부드러운 페이드인
-    const W = 800, H = 600;
+    const W = GAME_W, H = GAME_H;
     // 노을 그라데이션 하늘
     const sky = this.add.graphics();
     sky.fillGradientStyle(0x1b2a4a, 0x1b2a4a, 0xe8915a, 0xf2b56b, 1);
@@ -845,24 +854,24 @@ class TitleScene extends Phaser.Scene {
     sky.fillRect(560, 408, 36, 22);
 
     // 타이틀 패널
-    panel(this, 400, 150, 560, 150, 0x10202e, 0xe8b86a);
-    this.add.text(400, 120, '사라진 바다', {
+    panel(this, 480, 150, 560, 150, 0x10202e, 0xe8b86a);
+    this.add.text(480, 120, '사라진 바다', {
       fontFamily: FONT_TITLE, fontSize: '54px', color: '#ffe9b8', fontStyle: 'bold',
       stroke: '#3a2410', strokeThickness: 8
     }).setOrigin(0.5);
-    this.add.text(400, 178, '— UN 환경계획 · 아랄해 현지 조사관의 기록 —', {
+    this.add.text(480, 178, '— UN 환경계획 · 아랄해 현지 조사관의 기록 —', {
       fontFamily: FONT, fontSize: '20px', color: '#f0c98a'
     }).setOrigin(0.5);
 
     // 라일라 등장
-    const kid = this.add.sprite(400, 470, 'kid_0').setScale(7);
+    const kid = this.add.sprite(480, 470, 'kid_0').setScale(7);
     kid.play('kid_idle');
     this.tweens.add({
       targets: kid, y: 458, duration: 900,
       yoyo: true, repeat: -1, ease: 'Sine.inOut'
     });
 
-    const start = this.add.text(400, 560, '▶  클릭하여 시작', {
+    const start = this.add.text(480, 560, '▶  클릭하여 시작', {
       fontFamily: FONT, fontSize: '24px', color: '#ffffff',
       backgroundColor: '#0008', padding: { x: 16, y: 8 }
     }).setOrigin(0.5);
@@ -883,7 +892,7 @@ class TitleScene extends Phaser.Scene {
     };
 
     // 시작 버튼은 강조해서 중앙 상단에
-    fancyButton(this, 400, 525, 240, 44, '▶  시작하기', newGame,
+    fancyButton(this, 480, 525, 240, 44, '▶  시작하기', newGame,
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
     // 보조 버튼 3개는 아래쪽에
     const openHelp = () => {
@@ -893,7 +902,7 @@ class TitleScene extends Phaser.Scene {
     fancyButton(this, 160, 578, 160, 36, '❓ 도움말',
       openHelp,
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0xffd96a, text: '#ffe9b8' });
-    fancyButton(this, 400, 578, 200, 36, '🎓 교사용 가이드',
+    fancyButton(this, 480, 578, 200, 36, '🎓 교사용 가이드',
       () => this.scene.start('TeacherGuideScene'),
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
     fancyButton(this, 640, 578, 160, 36, '에셋·라이선스',
@@ -917,13 +926,13 @@ class CreditsScene extends Phaser.Scene {
     setCfgBarVisible(true);
     this.cameras.main.setBackgroundColor('#10202e');
 
-    panel(this, 400, 60, 720, 80, 0x1a2a3a, 0xe8b86a);
-    this.add.text(400, 60, '에셋·라이선스 출처', {
+    panel(this, 480, 60, 720, 80, 0x1a2a3a, 0xe8b86a);
+    this.add.text(480, 60, '에셋·라이선스 출처', {
       fontFamily: FONT_TITLE, fontSize: '28px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    panel(this, 400, 330, 740, 450, 0x101a26, 0xc9a36b);
+    panel(this, 480, 330, 740, 450, 0x101a26, 0xc9a36b);
 
     // 좌측 단 — 게임·폰트·스프라이트
     const left = [
@@ -980,7 +989,7 @@ class CreditsScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '15px', color: '#f3ece0', lineSpacing: 6
     });
 
-    fancyButton(this, 400, 560, 240, 44, '← 처음으로',
+    fancyButton(this, 480, 560, 240, 44, '← 처음으로',
       () => this.scene.start('TitleScene'),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
   }
@@ -1000,12 +1009,12 @@ class HelpScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#10202e');
 
     // 타이틀
-    panel(this, 400, 50, 760, 64, 0x1a2a3a, 0xe8b86a);
-    this.add.text(400, 38, '❓  도움말  ·  How to Play', {
+    panel(this, 480, 50, 760, 64, 0x1a2a3a, 0xe8b86a);
+    this.add.text(480, 38, '❓  도움말  ·  How to Play', {
       fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.add.text(400, 64, '게임을 처음 시작한다면 한번 읽고 가세요', {
+    this.add.text(480, 64, '게임을 처음 시작한다면 한번 읽고 가세요', {
       fontFamily: FONT, fontSize: '12px', color: '#9ab3c5'
     }).setOrigin(0.5);
 
@@ -1077,12 +1086,12 @@ class HelpScene extends Phaser.Scene {
     });
 
     // 하단 — 닫기
-    this.add.text(400, 562,
+    this.add.text(480, 562,
       '※ ESC 또는 ← 버튼을 누르면 닫힙니다',
       { fontFamily: FONT, fontSize: '11px', color: '#9aa6ad' }
     ).setOrigin(0.5);
 
-    fancyButton(this, 400, 580, 200, 32, '← 닫기',
+    fancyButton(this, 480, 580, 200, 32, '← 닫기',
       () => this.closeHelp(),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
 
@@ -1115,12 +1124,12 @@ class TeacherGuideScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#10202e');
 
     // 타이틀 배너
-    panel(this, 400, 56, 760, 76, 0x1a2a3a, 0xe8b86a);
-    this.add.text(400, 44, '🎓  교사용 활용 가이드', {
+    panel(this, 480, 56, 760, 76, 0x1a2a3a, 0xe8b86a);
+    this.add.text(480, 44, '🎓  교사용 활용 가이드', {
       fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.add.text(400, 72, '교육자료전·디지털교육연구대회 — 세계시민교육 RPG', {
+    this.add.text(480, 72, '교육자료전·디지털교육연구대회 — 세계시민교육 RPG', {
       fontFamily: FONT, fontSize: '13px', color: '#9ab3c5'
     }).setOrigin(0.5);
 
@@ -1194,7 +1203,7 @@ class TeacherGuideScene extends Phaser.Scene {
     });
 
     // 하단 — 단축 안내 + 닫기
-    this.add.text(400, 590, '※ 교사 실시간 대시보드는 dashboard.html 을 브라우저로 여세요',
+    this.add.text(480, 590, '※ 교사 실시간 대시보드는 dashboard.html 을 브라우저로 여세요',
       { fontFamily: FONT, fontSize: '11px', color: '#9aa6ad' }).setOrigin(0.5);
 
     // 좌측: 교육과정 연계표 화면 진입 / 우측: 타이틀 복귀
@@ -1220,12 +1229,12 @@ class CurriculumScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#10202e');
 
     // 상단 배너
-    panel(this, 400, 56, 760, 76, 0x1a2a3a, 0xe8b86a);
-    this.add.text(400, 44, '📑  교육과정 연계표', {
+    panel(this, 480, 56, 760, 76, 0x1a2a3a, 0xe8b86a);
+    this.add.text(480, 44, '📑  교육과정 연계표', {
       fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.add.text(400, 72, '2022 개정 × UNESCO GCED × P.E.A.C.E. 학습 모델', {
+    this.add.text(480, 72, '2022 개정 × UNESCO GCED × P.E.A.C.E. 학습 모델', {
       fontFamily: FONT, fontSize: '13px', color: '#9ab3c5'
     }).setOrigin(0.5);
 
@@ -1313,11 +1322,11 @@ class CurriculumScene extends Phaser.Scene {
     });
 
     // 하단 출처 표기
-    this.add.text(400, 590,
+    this.add.text(480, 590,
       '※ 출처: 교육부 고시 제2022-33호 / UNESCO(2015) Global Citizenship Education: Topics and Learning Objectives',
       { fontFamily: FONT, fontSize: '10px', color: '#7c8c98' }).setOrigin(0.5);
 
-    fancyButton(this, 400, 562, 240, 36, '← 교사용 가이드로',
+    fancyButton(this, 480, 562, 240, 36, '← 교사용 가이드로',
       () => this.scene.start('TeacherGuideScene'),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
   }
@@ -1398,7 +1407,7 @@ class CaseSelectScene extends Phaser.Scene {
   create() {
     setCfgBarVisible(false);
     this.leaving = false;   // 빠른 다중 클릭으로 fadeOut 중복 방지
-    const W = 800, H = 600;
+    const W = GAME_W, H = GAME_H;
 
     // 부드러운 페이드인 — 타이틀/엔딩 등 어디서 들어와도 자연스럽게
     this.cameras.main.fadeIn(320, 0, 0, 0);
@@ -1427,10 +1436,10 @@ class CaseSelectScene extends Phaser.Scene {
     const idChip = this.add.graphics();
     idChip.fillStyle(0x0e2238, 1); idChip.fillRect(620, 22, 160, 38);
     idChip.lineStyle(2, 0x2a5a82, 1); idChip.strokeRect(620, 22, 160, 38);
-    this.add.text(700, 33, 'UN INSPECTOR', {
+    this.add.text(860, 33, 'UN INSPECTOR', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     }).setOrigin(0.5);
-    this.add.text(700, 49, '🌐  GLOBAL  CITIZEN', {
+    this.add.text(860, 49, '🌐  GLOBAL  CITIZEN', {
       fontFamily: FONT, fontSize: '10px', color: '#7aa6c8'
     }).setOrigin(0.5);
 
@@ -1812,7 +1821,7 @@ class CaseSelectScene extends Phaser.Scene {
   // 임시 안내 토스트
   flashToast(msg) {
     if (this.toast && this.toast.active) this.toast.destroy();
-    this.toast = this.add.text(400, 540, msg, {
+    this.toast = this.add.text(480, 540, msg, {
       fontFamily: FONT, fontSize: '13px', color: '#ffe9b8',
       backgroundColor: '#000000cc', padding: { x: 10, y: 6 }
     }).setOrigin(0.5).setDepth(5000);
@@ -1839,18 +1848,18 @@ class LearningTreeScene extends Phaser.Scene {
     // 배경: 숲처럼 따뜻한 다크 그린-블루
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x0a1818, 0x0a1818, 0x122422, 0x081a28, 1);
-    bg.fillRect(0, 0, 800, 600);
+    bg.fillRect(0, 0, 960, 600);
     bg.lineStyle(1, 0x1a3a3a, 0.3);
-    for (let x = 0; x < 800; x += 40) bg.lineBetween(x, 0, x, 600);
-    for (let y = 0; y < 600; y += 40) bg.lineBetween(0, y, 800, y);
+    for (let x = 0; x < GAME_W; x += 40) bg.lineBetween(x, 0, x, GAME_H);
+    for (let y = 0; y < GAME_H; y += 40) bg.lineBetween(0, y, GAME_W, y);
 
     // 상단 타이틀
-    panel(this, 400, 40, 760, 56, 0x1a2a2a, 0x7fd07f);
-    this.add.text(400, 30, '🌳  나의 학습 트리  ·  Learning Portfolio', {
+    panel(this, 480, 40, 760, 56, 0x1a2a2a, 0x7fd07f);
+    this.add.text(480, 30, '🌳  나의 학습 트리  ·  Learning Portfolio', {
       fontFamily: FONT_TITLE, fontSize: '18px', color: '#dfffdf',
       fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.add.text(400, 54, '내가 거쳐온 사건들의 학습 흔적', {
+    this.add.text(480, 54, '내가 거쳐온 사건들의 학습 흔적', {
       fontFamily: FONT, fontSize: '12px', color: '#a8d4b0'
     }).setOrigin(0.5);
 
@@ -2031,7 +2040,7 @@ class BriefingScene extends Phaser.Scene {
 
   create() {
     setCfgBarVisible(false);
-    const W = 800, H = 600;
+    const W = GAME_W, H = GAME_H;
     const id = this.registry.get('caseId') || 'aralsea';
     const c = CASE_LIST.find(x => x.id === id) || CASE_LIST[0];
 
@@ -2144,10 +2153,10 @@ class BriefingScene extends Phaser.Scene {
     };
     fillBar(0);
 
-    const loadingText = this.add.text(400, 540, '현장으로 이동 중', {
+    const loadingText = this.add.text(480, 540, '현장으로 이동 중', {
       fontFamily: FONT, fontSize: '14px', color: '#cfe9ff'
     }).setOrigin(0.5);
-    const skipText = this.add.text(400, 565, '클릭하여 건너뛰기  ·  SPACE / ENTER', {
+    const skipText = this.add.text(480, 565, '클릭하여 건너뛰기  ·  SPACE / ENTER', {
       fontFamily: FONT, fontSize: '11px', color: '#5a7894'
     }).setOrigin(0.5);
 
@@ -2353,6 +2362,10 @@ class WorldScene extends Phaser.Scene {
     // 입장 직후 짧은 쿨다운 — 돌아온 위치가 NPC와 겹쳐있을 수 있어 즉시 발동 방지
     this.cooldown = true;
     this.time.delayedCall(450, () => { this.cooldown = false; });
+
+    // 16:10 캔버스(960×600)에서 ground(800×600) 우측 160px 모래색 여백을
+    // 자연스럽게 채움 (이전엔 검은 띠로 보였음)
+    this.cameras.main.setBackgroundColor('#c89868');
 
     // 바닥(이음새 없는 한 장) + 벽만 타일
     this.add.image(0, 0, 'ground').setOrigin(0, 0);
@@ -2641,7 +2654,7 @@ class WorldScene extends Phaser.Scene {
     }
 
     // 우상단 — 핵심 단서 카운터 (관찰 단계부터 의미)
-    this.coreHud = this.add.text(790, 8, '', {
+    this.coreHud = this.add.text(950, 8, '', {
       fontFamily: FONT, fontSize: '13px', color: '#ffe082',
       backgroundColor: '#00000088', padding: { x: 6, y: 3 }
     }).setOrigin(1, 0).setDepth(2000);
@@ -2651,7 +2664,7 @@ class WorldScene extends Phaser.Scene {
     this.buildStageHud();
 
     // 하단 — 현재 목표 (단계별 자동 갱신)
-    this.objective = this.add.text(400, 580, '', {
+    this.objective = this.add.text(480, 580, '', {
       fontFamily: FONT, fontSize: '14px', color: '#ffe082',
       backgroundColor: '#000000bb', padding: { x: 10, y: 5 }
     }).setOrigin(0.5).setDepth(2000);
@@ -2901,7 +2914,7 @@ class WorldScene extends Phaser.Scene {
     if (window.SFX) window.SFX.play('stage');   // 단계 전환 팡파레
 
     const layer = [];
-    const dim = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.65)
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.65)
       .setDepth(3000).setInteractive().setAlpha(0);
     layer.push(dim);
     // 부드러운 페이드인
@@ -2985,7 +2998,7 @@ class WorldScene extends Phaser.Scene {
   // 단계가 부족한 경우 토스트로 안내 (트리거 게이팅용)
   showLockToast(message) {
     if (this.lockToast && this.lockToast.active) return;
-    this.lockToast = this.add.text(400, 530, message, {
+    this.lockToast = this.add.text(480, 530, message, {
       fontFamily: FONT, fontSize: '13px', color: '#ffdcdc',
       backgroundColor: '#000000cc', padding: { x: 8, y: 6 },
       align: 'center'
@@ -3044,7 +3057,7 @@ class DialogueScene extends Phaser.Scene {
     if (window.SFX) window.SFX.play('talk');   // 대화 시작 신호음
 
     // 배경 없음 — 월드 위에 오버레이. 살짝 어둡게 깔아 가독성↑
-    this.add.rectangle(400, 300, 800, 600, 0x000000, 0.45);
+    this.add.rectangle(480, 300, 960, 600, 0x000000, 0.45);
 
     // 좌측 큰 캐릭터 — portrait_aijoli 일러스트가 있으면 상반신 컷, 없으면 도트
     if (this.textures.exists('portrait_aijoli')) {
@@ -3054,7 +3067,7 @@ class DialogueScene extends Phaser.Scene {
       this.portrait.setScale(720 / tex.height);
       const maskShape = this.make.graphics({ add: false });
       maskShape.fillStyle(0xffffff);
-      maskShape.fillRect(0, 0, 800, 420);
+      maskShape.fillRect(0, 0, 960, 420);
       this.portrait.setMask(maskShape.createGeometryMask());
       this.tweens.add({
         targets: this.portrait, y: 18, duration: 900,
@@ -3072,12 +3085,12 @@ class DialogueScene extends Phaser.Scene {
 
     // 우상단 이해도 칩
     panel(this, 712, 30, 160, 40, 0x12283a, 0x6fb7d6);
-    this.loveText = this.add.text(712, 30, '', {
+    this.loveText = this.add.text(872, 30, '', {
       fontFamily: FONT, fontSize: '16px', color: '#bfe6ff'
     }).setOrigin(0.5);
 
     // 하단 대사 박스 (전체 너비)
-    panel(this, 400, 510, 780, 170, 0x0c1620, 0xe8b86a);
+    panel(this, 480, 510, 780, 170, 0x0c1620, 0xe8b86a);
 
     // 이름표 [아이졸리] - 박스 상단 좌측
     this.nameText = this.add.text(54, 438, '', {
@@ -3092,7 +3105,7 @@ class DialogueScene extends Phaser.Scene {
     });
 
     // 하단 ▼ 진행 안내
-    this.hint = this.add.text(750, 578, '▼', {
+    this.hint = this.add.text(910, 578, '▼', {
       fontFamily: FONT, fontSize: '18px', color: '#e8b86a'
     }).setOrigin(1, 1);
     this.tweens.add({
@@ -3249,12 +3262,12 @@ class InvestigationScene extends Phaser.Scene {
     };
     const photoKey = photoMap[loc.bg];
     if (photoKey && this.textures.exists(photoKey)) {
-      const photo = this.add.image(400, BG_H / 2, photoKey).setDisplaySize(800, BG_H);
+      const photo = this.add.image(480, BG_H / 2, photoKey).setDisplaySize(800, BG_H);
       // 사진도 도트 풍으로 픽셀화
       // 8비트 청크감 — 픽셀 블록 크기 ↑
       if (photo.postFX && photo.postFX.addPixelate) photo.postFX.addPixelate(8);
     } else {
-      this.add.image(400, BG_H / 2, loc.bg);
+      this.add.image(480, BG_H / 2, loc.bg);
     }
     // 장소 이름 칩
     const np = this.add.graphics().setDepth(5);
@@ -3269,7 +3282,7 @@ class InvestigationScene extends Phaser.Scene {
 
     // 우상단 단서 카운터 (이 화면에서 실시간 갱신)
     const tot = this.totalEvidence();
-    this.evHud = this.add.text(780, 20, '', {
+    this.evHud = this.add.text(940, 20, '', {
       fontFamily: FONT, fontSize: '14px', color: '#ffe082',
       backgroundColor: '#00000088', padding: { x: 8, y: 4 }
     }).setOrigin(1, 0).setDepth(6);
@@ -3291,7 +3304,7 @@ class InvestigationScene extends Phaser.Scene {
 
     // 하단 명령 바
     const bar = this.add.graphics().setDepth(4);
-    bar.fillStyle(0x000000, 0.4); bar.fillRect(0, 440, 800, 160);
+    bar.fillStyle(0x000000, 0.4); bar.fillRect(0, 480, 960, 120);
     bar.fillGradientStyle(0x14202c, 0x14202c, 0x0c141c, 0x0c141c, 1);
     bar.fillRect(6, 446, 788, 148);
     bar.lineStyle(2, 0xe8b86a, 1); bar.strokeRect(6, 446, 788, 148);
@@ -3390,7 +3403,7 @@ class InvestigationScene extends Phaser.Scene {
     ];
 
     const layer = [];
-    const dim = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7)
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.7)
       .setDepth(3500).setInteractive();
     layer.push(dim);
 
@@ -3400,11 +3413,11 @@ class InvestigationScene extends Phaser.Scene {
     pg.lineStyle(3, 0xc9a36b, 1); pg.strokeRect(px, py, pw, ph);
     layer.push(pg);
 
-    layer.push(this.add.text(400, py + 22, '💭  잠깐 — 이 단서에 대한 내 생각은?', {
+    layer.push(this.add.text(480, py + 22, '💭  잠깐 — 이 단서에 대한 내 생각은?', {
       fontFamily: FONT_TITLE, fontSize: '16px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3502));
-    layer.push(this.add.text(400, py + 50, '【 ' + evidence.name + ' 】', {
+    layer.push(this.add.text(480, py + 50, '【 ' + evidence.name + ' 】', {
       fontFamily: FONT, fontSize: '13px', color: '#cfe9ff'
     }).setOrigin(0.5).setDepth(3502));
 
@@ -3455,7 +3468,7 @@ class InvestigationScene extends Phaser.Scene {
   }
 
   flash(label) {
-    const t = this.add.text(400, 230, label, {
+    const t = this.add.text(480, 230, label, {
       fontFamily: FONT_TITLE, fontSize: '34px', color: '#ffe082',
       stroke: '#000000', strokeThickness: 5
     }).setOrigin(0.5).setDepth(25);
@@ -3475,7 +3488,7 @@ class InvestigationScene extends Phaser.Scene {
     };
     loc.moves.forEach((m, i) => {
       const y = 478 + i * 48;
-      const b = fancyButton(this, 400, y, 380, 40, '▶  ' + m.label, () => {
+      const b = fancyButton(this, 480, y, 380, 40, '▶  ' + m.label, () => {
         this.registry.set('invLoc', m.to);
         this.scene.restart();
       }, theme);
@@ -3487,19 +3500,19 @@ class InvestigationScene extends Phaser.Scene {
   showRecord() {
     if (this.examine) this.toggleExamine();
     this.clearOverlay();
-    const bg = this.add.rectangle(400, 300, 800, 600, 0x070b12, 0.88)
+    const bg = this.add.rectangle(480, 300, 960, 600, 0x070b12, 0.88)
       .setDepth(30).setInteractive();
     const tp = this.add.graphics().setDepth(31);
     tp.fillStyle(0x101a26, 0.95); tp.fillRoundedRect(250, 36, 300, 46, 12);
     tp.lineStyle(2, 0xe8b86a, 1); tp.strokeRoundedRect(250, 36, 300, 46, 12);
-    const title = this.add.text(400, 59, '📘  수집한 단서', {
+    const title = this.add.text(480, 59, '📘  수집한 단서', {
       fontFamily: FONT_TITLE, fontSize: '23px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(32);
     this.overlay.push(bg, tp, title);
 
     if (this.collected.length === 0) {
-      this.overlay.push(this.add.text(400, 280,
+      this.overlay.push(this.add.text(480, 280,
         '아직 모은 단서가 없습니다.', {
           fontFamily: FONT, fontSize: '20px', color: '#ffffff'
         }).setOrigin(0.5).setDepth(31));
@@ -3538,7 +3551,7 @@ class InvestigationScene extends Phaser.Scene {
           }).setDepth(31));
       });
     }
-    const close = this.add.text(400, 545, '[ 닫기 ]', {
+    const close = this.add.text(480, 545, '[ 닫기 ]', {
       fontFamily: FONT, fontSize: '20px', color: '#ffe082'
     }).setOrigin(0.5).setDepth(31);
     close.setInteractive({ useHandCursor: true });
@@ -3587,7 +3600,7 @@ class QuizScene extends Phaser.Scene {
     this.locked = false;
 
     // 월드 위 오버레이 (배경 없음)
-    this.add.rectangle(400, 300, 800, 600, 0x000000, 0.5);
+    this.add.rectangle(480, 300, 960, 600, 0x000000, 0.5);
 
     // 좌측 큰 NPC 초상 — portrait 일러스트 우선, 없으면 도트 스프라이트 확대
     const hasPortrait = this.citizen.portrait && this.textures.exists(this.citizen.portrait);
@@ -3601,7 +3614,7 @@ class QuizScene extends Phaser.Scene {
       // 대화창(상단 y≈425) 위쪽까지만 보이게 마스크
       const maskShape = this.make.graphics({ add: false });
       maskShape.fillStyle(0xffffff);
-      maskShape.fillRect(0, 0, 800, 420);
+      maskShape.fillRect(0, 0, 960, 420);
       this.portrait.setMask(maskShape.createGeometryMask());
       this.tweens.add({
         targets: this.portrait, y: 18, duration: 900,
@@ -3617,7 +3630,7 @@ class QuizScene extends Phaser.Scene {
     }
 
     // 하단 대사 박스
-    panel(this, 400, 510, 780, 170, 0x0c1620, 0xe8b86a);
+    panel(this, 480, 510, 780, 170, 0x0c1620, 0xe8b86a);
     this.nameText = this.add.text(54, 438, '[' + this.citizen.name + ']', {
       fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffd96a',
       fontStyle: 'bold'
@@ -3628,7 +3641,7 @@ class QuizScene extends Phaser.Scene {
       wordWrap: { width: 700 }, lineSpacing: 6
     });
 
-    this.hint = this.add.text(750, 578, '▼', {
+    this.hint = this.add.text(910, 578, '▼', {
       fontFamily: FONT, fontSize: '18px', color: '#e8b86a'
     }).setOrigin(1, 1);
     this.tweens.add({
@@ -3762,7 +3775,7 @@ class QuizScene extends Phaser.Scene {
     solved[this.citizen.id] = true;
     this.registry.set('quizSolved', solved);
 
-    const flash = this.add.text(400, 230, '★ 핵심 단서 ★', {
+    const flash = this.add.text(480, 230, '★ 핵심 단서 ★', {
       fontFamily: FONT_TITLE, fontSize: '36px', color: '#ffe082',
       stroke: '#000000', strokeThickness: 6
     }).setOrigin(0.5).setDepth(50);
@@ -3840,11 +3853,11 @@ class LetterScene extends Phaser.Scene {
     this.clearAll();
 
     // 배경: 양피지 패널
-    panel(this, 400, 300, 780, 580, 0xefe6cc, 0x6a4f2a);
+    panel(this, 480, 300, 780, 580, 0xefe6cc, 0x6a4f2a);
     // 헤더 띠
     const hdr = this.add.graphics().setDepth(2);
     hdr.fillStyle(0x6a4f2a, 1); hdr.fillRect(20, 24, 760, 50);
-    this.add.text(400, 49, '📋  UN 조사 보고서 작성', {
+    this.add.text(480, 49, '📋  UN 조사 보고서 작성', {
       fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3);
 
@@ -3946,11 +3959,11 @@ class LetterScene extends Phaser.Scene {
     this.mode = 'preview';
     this.clearAll();
 
-    panel(this, 400, 300, 780, 580, 0xfff8e7, 0x6a4f2a);
+    panel(this, 480, 300, 780, 580, 0xfff8e7, 0x6a4f2a);
     // 헤더 띠
     const hdr = this.add.graphics().setDepth(2);
     hdr.fillStyle(0x6a4f2a, 1); hdr.fillRect(20, 24, 760, 40);
-    this.add.text(400, 44, '📋  보고서 미리보기', {
+    this.add.text(480, 44, '📋  보고서 미리보기', {
       fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3);
 
@@ -4017,15 +4030,15 @@ ${pledges.join('\n')}
     // 배경
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x10202e, 0x10202e, 0x1a2a3a, 0x152033, 1);
-    bg.fillRect(0, 0, 800, 600);
+    bg.fillRect(0, 0, 960, 600);
 
     // 타이틀
-    panel(this, 400, 40, 760, 56, 0x1a2a3a, 0xc9a36b);
-    this.add.text(400, 28, '📋  임무 회고  ·  Self-Evaluation', {
+    panel(this, 480, 40, 760, 56, 0x1a2a3a, 0xc9a36b);
+    this.add.text(480, 28, '📋  임무 회고  ·  Self-Evaluation', {
       fontFamily: FONT_TITLE, fontSize: '18px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.add.text(400, 52, '내가 이번 임무에서 얼마나 배웠는지 스스로 평가해 보세요', {
+    this.add.text(480, 52, '내가 이번 임무에서 얼마나 배웠는지 스스로 평가해 보세요', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     }).setOrigin(0.5);
 
@@ -4051,7 +4064,7 @@ ${pledges.join('\n')}
         fontFamily: FONT, fontSize: '11px', color: '#a8c4dc'
       });
       // 5개 별 버튼 (1~5점)
-      const scoreText = this.add.text(720, y + 12, '★ 3 / 5', {
+      const scoreText = this.add.text(880, y + 12, '★ 3 / 5', {
         fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffd96a'
       }).setOrigin(1, 0);
       const stars = [];
@@ -4172,15 +4185,15 @@ ${pledges.join('\n')}
 
     // 어두운 배경 + 상단 빛
     const bg = this.add.graphics();
-    bg.fillStyle(0x0a0e1a, 1); bg.fillRect(0, 0, 800, 600);
-    bg.fillStyle(0xf6d79b, 0.10); bg.fillRect(0, 0, 800, 92);
+    bg.fillStyle(0x0a0e1a, 1); bg.fillRect(0, 0, 960, 600);
+    bg.fillStyle(0xf6d79b, 0.10); bg.fillRect(0, 0, 960, 92);
 
     // 제목 + 안내 (패널 없이 텍스트만)
-    this.add.text(400, 30, '✨  조사 보고서가 UN으로 전송되었습니다  ✨', {
+    this.add.text(480, 30, '✨  조사 보고서가 UN으로 전송되었습니다  ✨', {
       fontFamily: FONT_TITLE, fontSize: '21px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.add.text(400, 62,
+    this.add.text(480, 62,
       '💡 이 화면을 캡처해 저장하면 보고서 결과물로 쓸 수 있어요', {
       fontFamily: FONT, fontSize: '13px', color: '#ffe082'
     }).setOrigin(0.5);
@@ -4202,7 +4215,7 @@ ${pledges.join('\n')}
     }
 
     // 완성 보고서 패널 (넉넉히)
-    panel(this, 400, 330, 760, 456, 0xfff8e7, 0x6a4f2a);
+    panel(this, 480, 330, 760, 456, 0xfff8e7, 0x6a4f2a);
     this.add.text(44, 120, finalBody, {
       fontFamily: FONT, fontSize: '12px', color: '#1a1a2e',
       wordWrap: { width: 712 }, lineSpacing: 3
@@ -4431,15 +4444,15 @@ class ReflectionScene extends Phaser.Scene {
     // 배경
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x10202e, 0x10202e, 0x1a2a3a, 0x152033, 1);
-    bg.fillRect(0, 0, 800, 600);
+    bg.fillRect(0, 0, 960, 600);
 
     // 상단 타이틀
-    panel(this, 400, 38, 760, 56, 0x1a2a3a, 0xc9a36b);
-    this.add.text(400, 28, '🪞  성찰  ·  Connecting', {
+    panel(this, 480, 38, 760, 56, 0x1a2a3a, 0xc9a36b);
+    this.add.text(480, 28, '🪞  성찰  ·  Connecting', {
       fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.add.text(400, 50, '흩어진 사실을 하나의 그림으로 잇기', {
+    this.add.text(480, 50, '흩어진 사실을 하나의 그림으로 잇기', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     }).setOrigin(0.5);
 
@@ -4513,13 +4526,13 @@ class ReflectionScene extends Phaser.Scene {
     this.drawAllStatements();
 
     // ── 하단 진행 안내 + 완료 버튼 ────────────────────────────
-    this.statusText = this.add.text(400, 522,
+    this.statusText = this.add.text(480, 522,
       '인과 사슬 0/3   ·   자기성찰 미선택', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     }).setOrigin(0.5);
     this.refreshStatus();
 
-    this.finishBtn = fancyButton(this, 400, 568, 280, 42, '✓  성찰 마치기',
+    this.finishBtn = fancyButton(this, 480, 568, 280, 42, '✓  성찰 마치기',
       () => this.tryFinish(),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
 
@@ -4588,7 +4601,7 @@ class ReflectionScene extends Phaser.Scene {
     const available = this.allClues.filter(c => !usedIds.includes(c.id));
 
     const overlay = [];
-    const dim = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.78)
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.78)
       .setDepth(3000).setInteractive();
     overlay.push(dim);
 
@@ -4599,14 +4612,14 @@ class ReflectionScene extends Phaser.Scene {
     pg.lineStyle(3, 0xc9a36b, 1); pg.strokeRect(px, py, panelW, panelH);
     overlay.push(pg);
 
-    overlay.push(this.add.text(400, py + 22,
+    overlay.push(this.add.text(480, py + 22,
       '[ ' + this.slotLabels[slotIndex] + ' ]  슬롯에 넣을 단서를 골라요', {
       fontFamily: FONT_TITLE, fontSize: '16px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3002));
 
     if (available.length === 0) {
-      overlay.push(this.add.text(400, 300,
+      overlay.push(this.add.text(480, 300,
         '사용할 수 있는 단서가 더 이상 없어요.\n다른 슬롯의 선택을 바꿔보세요.', {
         fontFamily: FONT, fontSize: '13px', color: '#cfe9ff',
         align: 'center', lineSpacing: 6
@@ -4656,7 +4669,7 @@ class ReflectionScene extends Phaser.Scene {
     }
 
     // 슬롯 비우기 버튼
-    const clearBtn = fancyButton(this, 400, py + panelH - 32, 200, 32,
+    const clearBtn = fancyButton(this, 480, py + panelH - 32, 200, 32,
       '이 슬롯 비우기',
       () => {
         this.slots[slotIndex] = null;
@@ -4733,7 +4746,7 @@ class ReflectionScene extends Phaser.Scene {
   // 짧은 안내 토스트
   flashToast(msg) {
     if (this.toast && this.toast.active) this.toast.destroy();
-    this.toast = this.add.text(400, 480, msg, {
+    this.toast = this.add.text(480, 480, msg, {
       fontFamily: FONT, fontSize: '13px', color: '#ffdcdc',
       backgroundColor: '#000000cc', padding: { x: 10, y: 6 },
       align: 'center'
@@ -4753,32 +4766,32 @@ class BattleScene extends Phaser.Scene {
     this.over = false;
 
     this.cameras.main.setBackgroundColor('#15152b');
-    this.add.text(400, 45, '⚔  전  투  ⚔', {
+    this.add.text(480, 45, '⚔  전  투  ⚔', {
       fontFamily: FONT, fontSize: '28px', color: '#ffd54f'
     }).setOrigin(0.5);
 
     // 적
-    const slime = this.add.sprite(400, 170, 'kid_0').setScale(3);
+    const slime = this.add.sprite(480, 170, 'kid_0').setScale(3);
     slime.play('kid_idle');
     this.tweens.add({
       targets: slime, y: 160, duration: 600,
       yoyo: true, repeat: -1, ease: 'Sine.inOut'
     });
-    this.enemyHpText = this.add.text(400, 240, '', {
+    this.enemyHpText = this.add.text(480, 240, '', {
       fontFamily: FONT, fontSize: '20px', color: '#ce93d8'
     }).setOrigin(0.5);
 
     // 아군
-    const hero = this.add.sprite(400, 330, 'hero_up_0').setScale(3);
+    const hero = this.add.sprite(480, 330, 'hero_up_0').setScale(3);
     this.tweens.add({
       targets: hero, scaleY: 3.1, duration: 500,
       yoyo: true, repeat: -1, ease: 'Sine.inOut'
     });
-    this.playerHpText = this.add.text(400, 385, '', {
+    this.playerHpText = this.add.text(480, 385, '', {
       fontFamily: FONT, fontSize: '20px', color: '#a5d6a7'
     }).setOrigin(0.5);
 
-    this.log = this.add.text(400, 425, '명령을 선택하세요', {
+    this.log = this.add.text(480, 425, '명령을 선택하세요', {
       fontFamily: FONT, fontSize: '18px', color: '#ffffff'
     }).setOrigin(0.5);
 
@@ -4858,8 +4871,8 @@ window.IS_MOBILE = (function () {
 // 일부 환경에서 텍스처 렌더링을 깨뜨릴 수 있어 안전하게 분기.
 const phaserConfig = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
+  width: GAME_W,
+  height: GAME_H,
   parent: 'game',
   backgroundColor: '#3a2f1f',
   pixelArt: true,
@@ -4875,8 +4888,8 @@ if (window.IS_MOBILE) {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     parent: 'game',
-    width: 800,
-    height: 600,
+    width: GAME_W,
+    height: GAME_H,
   };
 }
 const game = new Phaser.Game(phaserConfig);
