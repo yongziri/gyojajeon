@@ -3455,11 +3455,14 @@ class DialogueScene extends Phaser.Scene {
       base: 0x1c3344, hover: 0x2c5066,
       edge: 0x6fb7d6, text: '#dff1ff'
     };
-    // 본문 위에 선택지 — 본문 영역을 보조 문구로 비우고
-    this.bodyText.setText('');
+    // 본문은 박스 안에 그대로 유지 — 사용자가 다 읽을 수 있도록
+    // 선택지는 본문 박스 위쪽 (portrait 우측 영역)에 별도 표시
+    const n = choices.length;
+    const blockH = n * 36;
+    const startY = 410 - blockH;   // 박스(425~) 위에 쌓아 올림
     choices.forEach((ch, idx) => {
-      const y = 478 + idx * 36;
-      const b = fancyButton(this, 480, y, 700, 30, ch.label,
+      const y = startY + idx * 36;
+      const b = fancyButton(this, 620, y, 580, 32, ch.label,
         () => this.pick(ch), theme);
       this.choiceBtns.push(b.g, b.zone, b.t);
     });
