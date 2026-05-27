@@ -495,6 +495,176 @@ function drawMarket(g) {
   g.fillStyle(0xffe9a8, 1); g.fillRect(696, 192, 12, 12);
 }
 
+// ── 우크라이나 1: 폭격받은 학교 ───────────────────────────────
+function drawSchool(g) {
+  g.clear();
+  // 흐린 회색 하늘 (전쟁의 우울)
+  g.fillStyle(0x4a5566, 1); g.fillRect(0, 0, BG_W, 80);
+  g.fillStyle(0x5a6678, 1); g.fillRect(0, 80, BG_W, 60);
+  g.fillStyle(0x6b7a8c, 1); g.fillRect(0, 140, BG_W, 60);
+  // 검게 그을린 연기 자국
+  g.fillStyle(0x2a2a2a, 0.4);
+  for (let i = 0; i < 6; i++) g.fillRect(120 + i*120, 30, 60, 50 + i*10);
+  // 부서진 학교 외벽 (벽돌 + 구멍)
+  g.fillStyle(0x8a6b54, 1); g.fillRect(0, 200, BG_W, 180);
+  g.fillStyle(0x6a4b34, 1);
+  for (let y = 200; y < 380; y += 20) {
+    for (let x = (y/20 % 2) * 30; x < BG_W; x += 60) g.fillRect(x, y, 58, 2);
+  }
+  // 큰 구멍 (폭격 자국) — 중앙 + 우측
+  g.fillStyle(0x14202c, 1);
+  g.fillRect(380, 220, 140, 100);
+  g.fillRect(750, 240, 100, 80);
+  // 구멍 가장자리 부서진 벽돌
+  g.fillStyle(0x6a4b34, 1);
+  for (let i = 0; i < 8; i++) g.fillRect(370 + i*8, 320 + (i%2)*4, 6, 6);
+  for (let i = 0; i < 6; i++) g.fillRect(745 + i*8, 320 + (i%2)*4, 6, 6);
+  // 좌측 칠판 (남은 흔적, 우크라이나어 "...мир..." 평화)
+  g.fillStyle(0x2a3a30, 1); g.fillRect(40, 220, 280, 130);
+  g.fillStyle(0x8c6a44, 1); g.fillRect(38, 218, 284, 4); g.fillRect(38, 350, 284, 4);
+  g.fillStyle(0x38493e, 1); g.fillRect(40, 220, 280, 6);
+  // 칠판 위 분필 글자 — мир (평화)
+  g.fillStyle(0xeae6d8, 0.85);
+  // м
+  g.fillRect(80, 260, 4, 30); g.fillRect(100, 260, 4, 30); g.fillRect(84, 264, 4, 4); g.fillRect(92, 268, 4, 4); g.fillRect(96, 264, 4, 4);
+  // и
+  g.fillRect(120, 260, 4, 30); g.fillRect(140, 260, 4, 30); g.fillRect(124, 282, 4, 4); g.fillRect(132, 274, 4, 4);
+  // р
+  g.fillRect(160, 260, 4, 40); g.fillRect(164, 260, 16, 4); g.fillRect(176, 260, 4, 16); g.fillRect(164, 276, 16, 4);
+  // 칠판 끝에 점점점
+  g.fillStyle(0xeae6d8, 0.5); g.fillRect(220, 280, 4, 4); g.fillRect(230, 280, 4, 4); g.fillRect(240, 280, 4, 4);
+  // 흩어진 책상·의자 (전경, 부서진)
+  g.fillStyle(0x6a4f2a, 1);
+  g.fillRect(540, 360, 40, 22); g.fillRect(550, 348, 4, 14);  // 책상 1
+  g.fillRect(610, 370, 36, 16); g.fillRect(620, 362, 4, 10);  // 의자 1 (쓰러진)
+  g.fillRect(680, 360, 32, 22); g.fillRect(700, 348, 4, 14);  // 책상 2
+  // 작은 신발 (빨강) — 슬픈 디테일
+  g.fillStyle(0xc0392b, 1); g.fillRect(870, 386, 18, 8); g.fillRect(870, 380, 12, 6);
+  // 우크라이나 국기 잔재 — 무너진 깃대 + 노랑·파랑 천 조각
+  g.fillStyle(0x6a4b34, 1); g.fillRect(450, 80, 4, 110);
+  g.fillStyle(0x4a9adf, 1); g.fillRect(440, 96, 30, 14);
+  g.fillStyle(0xffd24a, 1); g.fillRect(440, 110, 30, 14);
+  // 바닥 파편
+  g.fillStyle(0x8a6b54, 1);
+  for (let i = 0; i < 30; i++) g.fillRect((i*53) % BG_W, 400 + (i*13 % 30), 6, 4);
+}
+
+// ── 우크라이나 2: 오데사 곡물 항구 ────────────────────────────
+function drawGrainPort(g) {
+  g.clear();
+  // 흑해 노을·구름 하늘
+  g.fillStyle(0x3a3a4a, 1); g.fillRect(0, 0, BG_W, 60);
+  g.fillStyle(0x5a4a5a, 1); g.fillRect(0, 60, BG_W, 60);
+  g.fillStyle(0x7a5a4a, 1); g.fillRect(0, 120, BG_W, 50);
+  g.fillStyle(0xa07050, 1); g.fillRect(0, 170, BG_W, 30);
+  // 갈매기
+  g.fillStyle(0xffffff, 1);
+  [[120, 60], [240, 90], [380, 50], [720, 80], [840, 70]].forEach(([x, y]) => {
+    g.fillRect(x, y, 8, 2); g.fillRect(x-2, y+2, 12, 2);
+  });
+  // 흑해 (어두운 물)
+  g.fillStyle(0x1a2a3a, 1); g.fillRect(0, 200, BG_W, 130);
+  g.fillStyle(0x2a3a4a, 1);
+  for (let i = 0; i < 40; i++) g.fillRect((i*37) % BG_W, 220 + (i*17 % 100), 22, 3);
+  // 부두 (콘크리트)
+  g.fillStyle(0x5a5a5a, 1); g.fillRect(0, 330, BG_W, 110);
+  g.fillStyle(0x4a4a4a, 1);
+  for (let i = 0; i < 24; i++) g.fillRect(i*42, 330, 4, 110);
+  // 멈춘 곡물선 (큰 회색 컨테이너 선박)
+  g.fillStyle(0x3a4a5a, 1); g.fillRect(180, 250, 480, 90);
+  g.fillStyle(0x4a5a6a, 1); g.fillRect(180, 250, 480, 14);
+  g.fillStyle(0xc0392b, 1); g.fillRect(180, 326, 480, 14);  // 하단 빨간 줄
+  // 선실 (선수)
+  g.fillStyle(0xdfe5ea, 1); g.fillRect(550, 200, 80, 52);
+  g.fillStyle(0x9aa6ad, 1); g.fillRect(570, 178, 8, 24);
+  g.fillStyle(0x14202c, 1);
+  g.fillRect(560, 214, 16, 12); g.fillRect(584, 214, 16, 12); g.fillRect(608, 214, 16, 12);
+  // 컨테이너 (선상에 색색)
+  const cont = [0xc89866, 0x4a9adf, 0xc0392b, 0xe7c168, 0x6a8a4a, 0xc89866];
+  cont.forEach((c, i) => {
+    g.fillStyle(c, 1);
+    g.fillRect(200 + i*55, 220, 50, 30);
+  });
+  // 곡물 자루 산 (우측 부두 위)
+  g.fillStyle(0xb88a4e, 1);
+  g.fillRect(700, 290, 60, 40); g.fillRect(720, 270, 50, 24);
+  g.fillRect(740, 250, 36, 24); g.fillRect(750, 234, 24, 18);
+  g.fillStyle(0xe7c168, 1);
+  g.fillRect(704, 296, 10, 8); g.fillRect(722, 276, 10, 8); g.fillRect(746, 256, 8, 8);
+  // 가격 게시판 (좌측, 가격이 치솟는 그래프)
+  g.fillStyle(0x6a5326, 1); g.fillRect(78, 350, 18, 70);
+  g.fillStyle(0x1b232c, 1); g.fillRect(40, 260, 130, 100);
+  g.fillStyle(0xe8b86a, 1);
+  g.fillRect(40, 260, 130, 3); g.fillRect(40, 357, 130, 3);
+  g.fillRect(40, 260, 3, 100); g.fillRect(167, 260, 3, 100);
+  // 그래프 — 가파르게 상승
+  g.fillStyle(0xc0392b, 1);
+  const pts = [[50, 340], [62, 332], [74, 326], [86, 314], [98, 300], [110, 288], [122, 276], [134, 268], [146, 266]];
+  pts.forEach(([x, y]) => g.fillRect(x, y, 8, 4));
+  // 빈 항구 식당 (배경 우측 끝)
+  g.fillStyle(0x4a3a2a, 1); g.fillRect(870, 280, 80, 50);
+  g.fillStyle(0xffd24a, 0.4); g.fillRect(884, 296, 22, 16);
+}
+
+// ── 우크라이나 3: 키이우 지하철 대피소 ────────────────────────
+function drawShelter(g) {
+  g.clear();
+  // 어두운 지하 배경
+  g.fillStyle(0x14202c, 1); g.fillRect(0, 0, BG_W, BG_H);
+  // 천장 (둥근 아치 흉내)
+  g.fillStyle(0x2a3a4a, 1); g.fillRect(0, 0, BG_W, 50);
+  for (let i = 0; i < BG_W; i += 40) g.fillRect(i, 40, 36, 6);
+  // 형광등 (밝은 사각 + 빛)
+  g.fillStyle(0xfff0b0, 1);
+  [80, 280, 480, 680, 880].forEach(x => {
+    g.fillRect(x, 20, 60, 8);
+    g.fillStyle(0xfff0b0, 0.15); g.fillRect(x-10, 28, 80, 30); g.fillStyle(0xfff0b0, 1);
+  });
+  // 타일 벽 (밝은 회색, 격자)
+  g.fillStyle(0xdfe5ea, 1); g.fillRect(0, 60, BG_W, 220);
+  g.fillStyle(0x9aa6ad, 1);
+  for (let y = 60; y < 280; y += 30) g.fillRect(0, y, BG_W, 2);
+  for (let x = 0; x < BG_W; x += 50) g.fillRect(x, 60, 2, 220);
+  // 플랫폼 가장자리 (안전선 노랑)
+  g.fillStyle(0xffd24a, 1); g.fillRect(0, 280, BG_W, 6);
+  // 플랫폼 바닥 (어두운 콘크리트)
+  g.fillStyle(0x4a4a4a, 1); g.fillRect(0, 286, BG_W, 154);
+  g.fillStyle(0x3a3a3a, 1);
+  for (let i = 0; i < 20; i++) g.fillRect((i*47) % BG_W, 300 + (i*23 % 100), 10, 4);
+  // 매트·이불 더미 (좌측, 파랑 담요)
+  g.fillStyle(0x6fb7d6, 1); g.fillRect(60, 360, 140, 60);
+  g.fillStyle(0x4a8597, 1); g.fillRect(60, 360, 140, 8);
+  g.fillStyle(0xeae6d8, 1); g.fillRect(80, 340, 50, 22);  // 베개
+  g.fillStyle(0xc89866, 1); g.fillRect(150, 350, 24, 16); // 작은 곰인형
+  g.fillStyle(0x4a3a2a, 1); g.fillRect(154, 354, 4, 4); g.fillRect(166, 354, 4, 4); // 눈
+  // 공습 경보 게시판 (중앙, 빨간 점·지도)
+  g.fillStyle(0x1b232c, 1); g.fillRect(310, 110, 200, 130);
+  g.fillStyle(0xe8b86a, 1);
+  g.fillRect(310, 110, 200, 3); g.fillRect(310, 237, 200, 3);
+  g.fillRect(310, 110, 3, 130); g.fillRect(507, 110, 3, 130);
+  // 지도 + 빨간 점
+  g.fillStyle(0x2a3a4a, 1); g.fillRect(322, 130, 174, 92);
+  g.fillStyle(0xc0392b, 1);
+  [[340, 150], [380, 170], [420, 160], [460, 190], [480, 175], [355, 200], [400, 210]].forEach(([x, y]) =>
+    g.fillRect(x, y, 6, 6));
+  // UN/NGO 구호 박스 (우측 중앙)
+  g.fillStyle(0xc8a05f, 1); g.fillRect(600, 200, 100, 80);
+  g.fillStyle(0xa8804f, 1); g.fillRect(600, 200, 100, 8);
+  g.fillStyle(0x4a9adf, 1); g.fillRect(620, 224, 60, 36);  // 파란 UN 라벨
+  g.fillStyle(0xffffff, 1);
+  // UN 글자
+  g.fillRect(628, 232, 4, 20); g.fillRect(636, 232, 4, 4); g.fillRect(636, 244, 4, 8);
+  g.fillRect(648, 232, 4, 20); g.fillRect(652, 244, 4, 4); g.fillRect(656, 232, 4, 20);
+  g.fillRect(668, 232, 4, 20); g.fillRect(672, 236, 4, 4); g.fillRect(676, 240, 4, 4); g.fillRect(680, 244, 4, 4);
+  // 어린이 그림 (우측 벽, 종이 4장 + 비둘기·태양 패턴)
+  [[770, 90], [840, 90], [770, 160], [840, 160]].forEach(([x, y]) => {
+    g.fillStyle(0xeae6d8, 1); g.fillRect(x, y, 56, 56);
+    g.fillStyle(0xffd24a, 1); g.fillRect(x+8, y+8, 12, 12);  // 태양
+    g.fillStyle(0xffffff, 1); g.fillRect(x+24, y+24, 24, 6); g.fillRect(x+30, y+18, 12, 6); // 비둘기 몸+머리
+    g.fillStyle(0xc89866, 1); g.fillRect(x+42, y+22, 4, 4); // 부리
+  });
+}
+
 // ── 입구 표지판 (40x40) ─────────────────────────────────────────
 const PORTAL_PAL = {
   '.': null, Y: 0xf4c542, y: 0x7a5b10, w: 0xffffff, k: 0x2a1a06,
@@ -816,6 +986,10 @@ class BootScene extends Phaser.Scene {
     drawPort(g);   g.generateTexture('bg_port', BG_W, BG_H);
     drawStrait(g); g.generateTexture('bg_strait', BG_W, BG_H);
     drawMarket(g); g.generateTexture('bg_market', BG_W, BG_H);
+    // 우크라이나 사건 배경 3종 (사건 2 — 깨어진 평화)
+    drawSchool(g);    g.generateTexture('bg_school', BG_W, BG_H);
+    drawGrainPort(g); g.generateTexture('bg_grain_port', BG_W, BG_H);
+    drawShelter(g);   g.generateTexture('bg_shelter', BG_W, BG_H);
     drawMosque(g);   g.generateTexture('mosque', 130, 150);
     drawMinaret(g);  g.generateTexture('minaret', 44, 152);
     drawHouse(g);    g.generateTexture('house', 100, 100);
@@ -860,8 +1034,15 @@ class TitleScene extends Phaser.Scene {
   constructor() { super('TitleScene'); }
 
   create() {
-    // 디버그 — ?scene=SceneName 으로 진입 (헤드리스 캡처용)
-    const m = /[?&]scene=([A-Za-z]+)/.exec(location.search || '');
+    // 디버그 — ?scene=SceneName&case=caseId&loc=locId 로 진입 (헤드리스 캡처용)
+    const m  = /[?&]scene=([A-Za-z]+)/.exec(location.search || '');
+    const cm = /[?&]case=([a-z]+)/.exec(location.search || '');
+    const lm = /[?&]loc=([a-z_]+)/.exec(location.search || '');
+    if (cm) {
+      this.registry.set('caseId', cm[1]);
+      try { setCase(cm[1]); setStory(cm[1]); setCitizens(cm[1]); } catch (e) { /* 데이터 없는 사건이면 default */ }
+    }
+    if (lm) { this.registry.set('invLoc', lm[1]); }
     if (m) { this.scene.start(m[1].endsWith('Scene') ? m[1] : m[1] + 'Scene'); return; }
     setCfgBarVisible(true);   // 타이틀에선 참가 설정 바 표시
     this.cameras.main.fadeIn(320, 0, 0, 0);  // 부드러운 페이드인
@@ -1396,6 +1577,13 @@ class CurriculumScene extends Phaser.Scene {
 //   x = mapLeft + (lng + 180) * mapW / 360
 //   y = mapTop  + (90  - lat) * mapH / 180
 // 미리 계산해 mapX/mapY로 박아 둠. (대략적 좌표로 시각화 OK)
+// 현재 활성 사건의 안내자 이름 (없으면 '안내인'). hardcoded 텍스트 분기용
+function getGuideName(registry) {
+  const id = (registry && registry.get && registry.get('caseId')) || 'aralsea';
+  const c = (typeof CASE_LIST !== 'undefined') ? CASE_LIST.find(x => x.id === id) : null;
+  return (c && c.guide && c.guide.name) || '안내인';
+}
+
 const CASE_LIST = [
   {
     id: 'aralsea',
@@ -1404,6 +1592,7 @@ const CASE_LIST = [
     region: '중앙아시아 · 카라칼팍스탄',
     status: 'available',
     accent: 0xe8b86a,
+    guide: { name: '아이졸리' },
     // lat 45°N, lng 60°E  → 중앙아시아 아랄해
     mapX: 747, mapY: 187,
     // 임무 브리핑 본문 (현장 이동 전 화면)
@@ -1422,16 +1611,18 @@ const CASE_LIST = [
     title: '깨어진 평화',
     subtitle: '러시아·우크라이나 전쟁',
     region: '동유럽 · 우크라이나',
-    status: 'coming-soon',
+    status: 'available',
     accent: 0x6fb7d6,
+    guide: { name: '카테리나' },
     // lat 49°N, lng 32°E  → 키이우 부근
     mapX: 701, mapY: 180,
     mission: [
       '평화는 어떻게 깨지는가.',
-      '전쟁 한가운데 살아가는 시민들의 목소리를 듣고',
-      '국제 사회가 할 수 있는 일을 찾을 것.',
+      '카테리나의 안내로 폭격받은 학교, 흑해 곡물 항구,',
+      '그리고 지하철 대피소를 조사할 것.',
       '',
-      '(후속 업데이트 예정)',
+      '식량·에너지 위기와 평화 교육의 의미를',
+      'UN에 보고서로 정리해 송부하라.',
     ],
     code: 'CASE-002  UKRAINE',
   },
@@ -1705,8 +1896,9 @@ class CaseSelectScene extends Phaser.Scene {
         return;
       }
       this.leaving = true;
-      // 사건 ID를 registry에 저장하고 진행 상태 초기화 후 브리핑 화면으로
+      // 사건 ID를 registry에 저장 + 데이터 파일의 활성 사건 전환
       this.registry.set('caseId', c.id);
+      try { setCase(c.id); setStory(c.id); setCitizens(c.id); } catch (e) { /* 데이터 없는 사건이면 default 유지 */ }
       this.registry.set('stage', 1);
       this.registry.set('enemyDefeated', false);
       this.registry.set('evidence', []);
@@ -2485,7 +2677,7 @@ class WorldScene extends Phaser.Scene {
       if (this.entering || this.cooldown || this.cardOpen) return;
       // 실제 조건으로 검사 — 아이졸리와 친구가 됐는가
       if (!this.registry.get('enemyDefeated')) {
-        this.showLockToast('먼저 아이졸리와 만나 상황을 파악하세요\n(1단계 · 인식)');
+        this.showLockToast('먼저 ' + getGuideName(this.registry) + '와 만나 상황을 파악하세요\n(1단계 · 인식)');
         return;
       }
       this.entering = true;
@@ -2681,7 +2873,7 @@ class WorldScene extends Phaser.Scene {
         if (sv[cz.id]) return;
         // 실제 조건 검사 (4단계 게이팅)
         if (!this.registry.get('enemyDefeated')) {
-          this.showLockToast('먼저 아이졸리와 만나 상황을 파악하세요\n(1단계 · 인식)');
+          this.showLockToast('먼저 ' + getGuideName(this.registry) + '와 만나 상황을 파악하세요\n(1단계 · 인식)');
           return;
         }
         const ev = (this.registry.get('evidence') || []).length;
@@ -2927,7 +3119,7 @@ class WorldScene extends Phaser.Scene {
     // PEACE — 단계 안의 두 활동(E·A)을 evidence/coreClues 진행도로 분기
     let text;
     if (stage === 1) {
-      text = '🎯 인식 (P) — 안내인 아이졸리에게 다가가 상황을 파악하세요';
+      text = '🎯 인식 (P) — 안내인 ' + getGuideName(this.registry) + '에게 다가가 상황을 파악하세요';
     } else if (stage === 2) {
       if (ev < 3) {
         text = '🎯 관찰 (E·탐색) — 노란 표지판으로 옛 항구를 조사해 단서 ' + ev + '/3 이상 모으세요';
