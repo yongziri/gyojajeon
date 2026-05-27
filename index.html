@@ -110,9 +110,10 @@
       position: absolute; left: -9999px; top: -9999px; visibility: hidden;
     }
 
-    /* 참가 설정 바 — 교사 대시보드 연동용 (좌상단, 작게) */
+    /* 참가 설정 바 — 교사 대시보드 연동용 (상단 중앙) */
     #cfgBar {
-      position: fixed; top: 6px; left: 6px;
+      position: fixed; top: 6px;
+      left: 50%; transform: translateX(-50%);
       z-index: 10000;
       display: flex; align-items: center; gap: 4px;
       background: rgba(10,16,24,0.85);
