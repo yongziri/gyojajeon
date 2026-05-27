@@ -873,19 +873,22 @@ class TitleScene extends Phaser.Scene {
     sky.fillStyle(0xf6d79b, 0.25);
     for (let i = 0; i < 26; i++)
       sky.fillRect((i * 71) % W, 380 + (i * 53 % 200), 36, 3);
-    // 도시·미너렛 실루엣
+    // 도시·미너렛 실루엣 — 16:10 캔버스(960)를 가득 채우도록 12개
     sky.fillStyle(0x141d33, 1);
-    for (let i = 0; i < 11; i++)
+    for (let i = 0; i < 13; i++)
       sky.fillRect(i * 76, 300 - (i * 47 % 90), 64, 130);
     sky.fillRect(150, 180, 14, 180);
     sky.fillCircle(157, 178, 12);
     sky.fillRect(640, 200, 70, 160);
     sky.fillCircle(675, 200, 38);
+    // 우측 추가 미너렛 (16:10 균형)
+    sky.fillRect(870, 220, 12, 140);
+    sky.fillCircle(876, 218, 10);
 
-    // 유조선 실루엣
+    // 유조선 실루엣 (가운데 정렬로 살짝 이동)
     sky.fillStyle(0x0e1626, 1);
-    sky.fillRect(470, 430, 200, 34);
-    sky.fillRect(560, 408, 36, 22);
+    sky.fillRect(550, 430, 200, 34);
+    sky.fillRect(640, 408, 36, 22);
 
     // 타이틀 패널
     panel(this, 480, 150, 560, 150, 0x10202e, 0xe8b86a);
@@ -1055,7 +1058,7 @@ class HelpScene extends Phaser.Scene {
 
     // 좌측 패널 — 조작법
     panel(this, 240, 320, 380, 460, 0x101a26, 0x6fb7d6);
-    this.add.text(200, 108, '🎮  조작법', {
+    this.add.text(240, 108, '🎮  조작법', {
       fontFamily: FONT_TITLE, fontSize: '16px', color: '#cfe9ff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -1170,7 +1173,7 @@ class TeacherGuideScene extends Phaser.Scene {
 
     // 좌측 패널: 4단계 + UNESCO 3영역
     panel(this, 240, 340, 380, 470, 0x101a26, 0x6fb7d6);
-    this.add.text(200, 122, '📚  학습 프레임', {
+    this.add.text(240, 122, '📚  학습 프레임', {
       fontFamily: FONT_TITLE, fontSize: '17px', color: '#cfe9ff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -1275,7 +1278,7 @@ class CurriculumScene extends Phaser.Scene {
 
     // 좌측 패널 — 2022 개정 성취기준 매핑
     panel(this, 240, 340, 380, 470, 0x101a26, 0x6fb7d6);
-    this.add.text(200, 122, '🇰🇷  2022 개정 성취기준', {
+    this.add.text(240, 122, '🇰🇷  2022 개정 성취기준', {
       fontFamily: FONT_TITLE, fontSize: '17px', color: '#cfe9ff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
