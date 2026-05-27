@@ -860,6 +860,9 @@ class TitleScene extends Phaser.Scene {
   constructor() { super('TitleScene'); }
 
   create() {
+    // 디버그 — ?scene=SceneName 으로 진입 (헤드리스 캡처용)
+    const m = /[?&]scene=([A-Za-z]+)/.exec(location.search || '');
+    if (m) { this.scene.start(m[1].endsWith('Scene') ? m[1] : m[1] + 'Scene'); return; }
     setCfgBarVisible(true);   // 타이틀에선 참가 설정 바 표시
     this.cameras.main.fadeIn(320, 0, 0, 0);  // 부드러운 페이드인
     const W = GAME_W, H = GAME_H;
@@ -977,8 +980,8 @@ class CreditsScene extends Phaser.Scene {
     // 좌측 단 — 게임·폰트·스프라이트
     const left = [
       '【게임】',
-      '  사라진 바다',
-      '  — 아랄해 세계시민교육 RPG',
+      '  P.E.A.C.E.',
+      '  — 통(通)하는 국제 분쟁 탐구하기',
       '  교육 주제: UNESCO 세계시민교육',
       '  (인지·정서·행동) 3대 영역',
       '',
@@ -1303,6 +1306,14 @@ class CurriculumScene extends Phaser.Scene {
    지구적 차원의 자원 문제와
    국제 협력의 필요성을 이해한다.
 
+■ 역사과 (중학교)
+  [9역사03-09]
+   양차 세계 대전과 평화 정착을 위한
+   국제 사회의 노력을 탐색한다.
+  [9역사03-10]
+   탈냉전 이후 국제 분쟁의 양상을
+   파악하고 평화 과제를 모색한다.
+
 ■ 도덕과 (중학교)
   [9도03-02]
    세계 시민으로서의 도덕적 책임을
@@ -1311,18 +1322,13 @@ class CurriculumScene extends Phaser.Scene {
    문화 다양성을 존중하고
    평화로운 공존을 추구한다.
 
-■ 창의적 체험활동
-  · 다문화·세계시민교육
-  · 환경·지속가능발전교육(ESD)
-  · 진로(국제기구·환경 전문가)
-
-■ 범교과 학습 주제
+■ 범교과 / 창의적 체험활동
   ☑ 환경·지속가능발전 교육
-  ☑ 인권·다문화 교육
-  ☑ 민주시민 교육`;
-    this.add.text(68, 145, leftText, {
+  ☑ 인권·다문화·세계시민 교육
+  ☑ 민주시민  ☑ 진로(국제기구)`;
+    this.add.text(68, 132, leftText, {
       fontFamily: FONT, fontSize: '12px', color: '#f3ece0',
-      lineSpacing: 4
+      lineSpacing: 2
     });
 
     // 우측 패널 — UNESCO GCED 학습 성과 매핑
@@ -1363,10 +1369,10 @@ class CurriculumScene extends Phaser.Scene {
   E  탐색  · 현장 조사
   A  분석  · 시민 인터뷰
   C  성찰  · 인과 사슬 + 자기성찰
-  E  실천  · UN 보고서 송부`;
-    this.add.text(548, 145, rightText, {
+  E  실천  · UN 보고서 + UN 연설문`;
+    this.add.text(548, 132, rightText, {
       fontFamily: FONT, fontSize: '12px', color: '#f3ece0',
-      lineSpacing: 4
+      lineSpacing: 2
     });
 
     // 하단 출처 표기
@@ -1548,7 +1554,7 @@ class CaseSelectScene extends Phaser.Scene {
     this.defaultInfo =
       '좌측 임무 카드 위에 커서를 올리면 사건의 위치와\n' +
       '간략 설명을 볼 수 있습니다.\n\n' +
-      '· 첫 출품작은 「사라진 바다 — 아랄해」 입니다.\n' +
+      '· 첫 사건은 「사라진 바다 — 아랄해」 입니다.\n' +
       '· 「깨어진 평화」, 「오래된 갈등」은 향후 업데이트.\n' +
       '· 출처: Wikimedia Commons (Public Domain) 세계지도';
     this.infoText = this.add.text(infoX + 14, infoY + 38, this.defaultInfo, {
