@@ -1469,8 +1469,8 @@ class CaseSelectScene extends Phaser.Scene {
     });
     // 우측 식별 칩
     const idChip = this.add.graphics();
-    idChip.fillStyle(0x0e2238, 1); idChip.fillRect(620, 22, 160, 38);
-    idChip.lineStyle(2, 0x2a5a82, 1); idChip.strokeRect(620, 22, 160, 38);
+    idChip.fillStyle(0x0e2238, 1); idChip.fillRect(780, 22, 160, 38);
+    idChip.lineStyle(2, 0x2a5a82, 1); idChip.strokeRect(780, 22, 160, 38);
     this.add.text(860, 33, 'UN INSPECTOR', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     }).setOrigin(0.5);
