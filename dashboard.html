@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>사라진 바다 — 교사용 실시간 대시보드</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      background: #0e1626;
+      color: #e8e2d4;
+      font-family: 'Malgun Gothic', sans-serif;
+    }
+    header {
+      background: #14202c;
+      border-bottom: 3px solid #e8b86a;
+      padding: 14px 20px;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 14px;
+    }
+    header h1 {
+      margin: 0; font-size: 20px; color: #ffe9b8;
+    }
+    header .sub { font-size: 13px; color: #9aa6ad; }
+    .ctl { display: flex; align-items: center; gap: 6px; }
+    .ctl label { font-size: 13px; color: #cfe9ff; }
+    .ctl input {
+      background: #1a2430; border: 1px solid #6a4f2a;
+      color: #ffe9b8; padding: 5px 8px; font-size: 14px; width: 130px;
+    }
+    button {
+      background: #2e6b58; color: #fff; border: 2px solid #e8b86a;
+      padding: 6px 14px; font-size: 14px; cursor: pointer;
+    }
+    button:hover { background: #3e8b73; }
+    button.gray { background: #4a3a22; }
+    button.gray:hover { background: #6a5a3a; }
+    #status { font-size: 13px; }
+    .dot { display: inline-block; width: 10px; height: 10px;
+           border-radius: 50%; background: #888; margin-right: 4px; }
+    .dot.on { background: #5fd35f; }
+    .dot.off { background: #d35f5f; }
+
+    /* 요약 통계 */
+    #summary {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      padding: 14px 20px; background: #101a26;
+      border-bottom: 1px solid #28323e;
+    }
+    .stat {
+      background: #1a2a3a; border: 1px solid #2e3e4e;
+      border-radius: 6px; padding: 10px 16px; min-width: 110px;
+    }
+    .stat .n { font-size: 26px; font-weight: bold; color: #ffe9b8; }
+    .stat .l { font-size: 12px; color: #9aa6ad; }
+
+    /* 학생 카드 그리드 */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 14px; padding: 20px;
+    }
+    .card {
+      background: #18283a; border: 2px solid #2e3e4e;
+      border-radius: 8px; padding: 12px 14px;
+      transition: border-color .2s;
+    }
+    .card.s1 { border-color: #5a6b7a; }
+    .card.s2 { border-color: #c98f48; }
+    .card.s3 { border-color: #9b6fd6; }   /* 성찰 — 보라 */
+    .card.s4 { border-color: #6fb7d6; }   /* 실천 — 파랑 */
+    .card.done { border-color: #5fd35f; background: #16321f; }
+    .card.offline { opacity: 0.45; }
+    .card .name {
+      font-size: 16px; font-weight: bold; color: #ffe9b8;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .card .stage {
+      display: inline-block; margin: 8px 0 6px;
+      font-size: 13px; padding: 3px 10px; border-radius: 10px;
+      background: #2e3e4e; color: #cfe9ff;
+    }
+    .card .stage.s1 { background: #44525e; }
+    .card .stage.s2 { background: #7a5a2e; color: #ffe9b8; }
+    .card .stage.s3 { background: #5a3e7d; color: #f0e0ff; }   /* 성찰 */
+    .card .stage.s4 { background: #2e5a6e; color: #cfe9ff; }   /* 실천 */
+    .card .stage.done { background: #2e7d3a; color: #fff; }
+    .bar {
+      height: 14px; background: #0e1620; border-radius: 7px;
+      overflow: hidden; margin: 5px 0;
+    }
+    .bar > div { height: 100%; }
+    .bar .ev { background: #6fb7d6; }
+    .bar .co { background: #e8b86a; }
+    .card .row { font-size: 12px; color: #9aa6ad; margin-top: 4px; }
+    .card .report { margin-top: 8px; font-size: 13px; }
+    .card .report.yes { color: #5fd35f; font-weight: bold; }
+    .card .report.no  { color: #7a8590; }
+    /* 자기주도성 요약 — 학생 카드 안 */
+    .card .srl {
+      margin-top: 8px; padding-top: 8px;
+      border-top: 1px dashed #2e3e4e;
+      font-size: 11px; line-height: 1.5;
+    }
+    .card .srl .lbl { color: #9aa6ad; }
+    .card .srl .val { color: #ffd96a; }
+    .card .srl .chain { color: #cfe9ff; }
+    .card .srl .stmt {
+      color: #a8d4b0; font-style: italic;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card.clickable { cursor: pointer; }
+    .card.clickable:hover { border-color: #ffd96a; }
+
+    /* 학급 감정 분포 막대 */
+    #tagDist {
+      padding: 12px 20px; background: #101a26;
+      border-bottom: 1px solid #28323e; display: none;
+    }
+    #tagDist h3 {
+      margin: 0 0 8px 0; font-size: 14px; color: #cfe9ff;
+    }
+    .tagBar { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+    .tagBar .l { width: 90px; font-size: 12px; color: #cfe9ff; }
+    .tagBar .b {
+      flex: 1; height: 14px; background: #0e1620;
+      border-radius: 6px; overflow: hidden;
+    }
+    .tagBar .b > div { height: 100%; transition: width .4s; }
+    .tagBar .n { width: 32px; text-align: right; font-size: 12px; color: #ffd96a; }
+
+    /* 학생 상세 모달 */
+    #modal {
+      display: none; position: fixed; inset: 0;
+      background: #000d; z-index: 100; padding: 30px;
+      overflow-y: auto;
+    }
+    #modalBox {
+      max-width: 720px; margin: 20px auto;
+      background: #18283a; border: 2px solid #ffd96a;
+      border-radius: 10px; padding: 22px 26px;
+      color: #e6efff;
+    }
+    #modalBox h2 { margin: 0 0 4px 0; color: #ffe9b8; }
+    #modalBox .sub { font-size: 13px; color: #9aa6ad; margin-bottom: 14px; }
+    #modalBox section {
+      background: #0e1828; border-left: 3px solid #ffd96a;
+      padding: 10px 14px; margin: 10px 0;
+    }
+    #modalBox section h4 {
+      margin: 0 0 6px 0; font-size: 13px; color: #ffd96a;
+    }
+    #modalBox section p, #modalBox section li {
+      margin: 4px 0; font-size: 13px; line-height: 1.6;
+    }
+    #modalBox .chain {
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+    }
+    #modalBox .chain span {
+      background: #2e4a36; color: #dfffdf;
+      padding: 5px 10px; border-radius: 5px; font-size: 12px;
+    }
+    #modalBox .chain .arrow { color: #ffd96a; }
+    #modalBox .stars { color: #ffd96a; font-size: 14px; }
+    #modalBox button.close {
+      background: #2b3a52; border: 2px solid #6fb7d6;
+      color: #dff1ff; padding: 6px 14px; font-size: 13px;
+      cursor: pointer; margin-top: 10px;
+    }
+    .tagList { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tagList span {
+      background: #1a2a3a; border: 1px solid #2e3e4e;
+      padding: 3px 8px; border-radius: 4px; font-size: 11px;
+      color: #a8c4dc;
+    }
+
+    #empty {
+      padding: 60px 20px; text-align: center; color: #6a7682;
+      font-size: 15px; line-height: 1.7;
+    }
+
+    /* ─── 인쇄용 학급 리포트 (평소엔 숨김) ─────────────────── */
+    #printPanel {
+      display: none;
+      font-family: 'Malgun Gothic', sans-serif;
+      color: #1a1a1a; background: #fff;
+      padding: 20px;
+    }
+    #printPanel h1 {
+      font-size: 22px; margin: 0 0 4px 0;
+      color: #6a4f2a; border-bottom: 3px double #6a4f2a; padding-bottom: 6px;
+    }
+    #printPanel .meta {
+      font-size: 12px; color: #555; margin-bottom: 14px;
+    }
+    #printPanel h2 {
+      font-size: 14px; color: #6a4f2a; margin: 14px 0 4px 0;
+      border-left: 5px solid #c9a36b; padding: 2px 8px; background: #fdf6e7;
+    }
+    #printPanel table {
+      width: 100%; border-collapse: collapse; margin: 4px 0 12px 0;
+      font-size: 11px;
+    }
+    #printPanel td, #printPanel th {
+      border: 1px solid #c9a36b; padding: 4px 6px; vertical-align: top;
+    }
+    #printPanel th {
+      background: #fdf6e7; color: #6a4f2a;
+    }
+    #printPanel .num { text-align: center; }
+    #printPanel .stars { color: #d49a30; }
+    #printPanel .chain {
+      font-size: 10px; color: #2a5a3a;
+    }
+    #printPanel .stmt {
+      font-size: 10px; color: #2a4a6a; font-style: italic;
+    }
+
+    @media print {
+      header, #summary, #tagDist, #grid, #empty, #modal {
+        display: none !important;
+      }
+      body { background: #fff !important; }
+      #printPanel { display: block !important; }
+      @page { size: A4 portrait; margin: 14mm; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>📋 사라진 바다 — 교사용 실시간 대시보드</h1>
+      <div class="sub">학생들의 게임 진행도를 실시간으로 확인합니다</div>
+    </div>
+    <div class="ctl">
+      <label>교실 코드</label>
+      <input id="room" value="aralsea-1" />
+    </div>
+    <button id="connectBtn">연결</button>
+    <button id="clearBtn" class="gray">보드 초기화</button>
+    <button id="printBtn" class="gray">🖨 학급 리포트</button>
+    <div id="status"><span class="dot off"></span>연결 안 됨</div>
+  </header>
+
+  <div id="summary"></div>
+  <div id="tagDist"></div>
+  <div id="grid"></div>
+  <div id="empty">
+    아직 접속한 학생이 없습니다.<br />
+    학생들이 게임을 실행하고 같은 <b>교실 코드</b>를 입력하면 여기에 나타납니다.
+  </div>
+
+  <!-- 학생 상세 모달 -->
+  <div id="modal" onclick="if(event.target.id==='modal')document.getElementById('modal').style.display='none'">
+    <div id="modalBox"></div>
+  </div>
+
+  <!-- 인쇄용 학급 리포트 (평소엔 숨김) -->
+  <div id="printPanel"></div>
+
+  <script src="node_modules/mqtt/dist/mqtt.min.js"></script>
+  <script>
+  (function () {
+    const BROKER = 'wss://broker.emqx.io:8084/mqtt';
+    const STAGE_NAME = {
+      1: '1·인식', 2: '2·관찰', 3: '3·성찰', 4: '4·실천'
+    };
+    // 감정 태그 표시명·색상 (game.js askThoughtTag 와 일치)
+    const TAG_INFO = {
+      shock: { label: '충격적이다', color: '#e06b6b' },
+      sad:   { label: '안타깝다',   color: '#e79a78' },
+      wow:   { label: '인상적이다', color: '#6fb7d6' },
+      anger: { label: '화가 난다',  color: '#c96b96' },
+    };
+    const stars = (n) => '★'.repeat(n || 0) + '☆'.repeat(5 - (n || 0));
+
+    let client = null;
+    let curRoom = null;
+    const students = {};   // id → 최신 상태
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(on, text) {
+      $('status').innerHTML =
+        '<span class="dot ' + (on ? 'on' : 'off') + '"></span>' + text;
+    }
+
+    function connect() {
+      const room = $('room').value.trim() || 'aralsea-1';
+      if (client) { try { client.end(true); } catch (e) {} client = null; }
+      // 방 바뀌면 보드 비움
+      for (const k in students) delete students[k];
+      render();
+      curRoom = room;
+      setStatus(false, '연결 중...');
+      try {
+        client = mqtt.connect(BROKER, {
+          clientId: 'aral-dash-' + Math.random().toString(16).slice(2, 8),
+          connectTimeout: 6000, reconnectPeriod: 8000, clean: true
+        });
+        client.on('connect', () => {
+          setStatus(true, '연결됨 — 교실: ' + room);
+          client.subscribe('aralsea/' + room + '/student/#');
+        });
+        client.on('message', (topic, payload) => {
+          try {
+            const data = JSON.parse(payload.toString());
+            if (data && data.id) {
+              students[data.id] = data;
+              render();
+            }
+          } catch (e) { /* 무시 */ }
+        });
+        client.on('error', () => setStatus(false, '연결 오류'));
+        client.on('close', () => setStatus(false, '연결 끊김'));
+        client.on('offline', () => setStatus(false, '오프라인'));
+      } catch (e) {
+        setStatus(false, '연결 실패');
+      }
+    }
+
+    function render() {
+      const list = Object.values(students)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const grid = $('grid');
+      const empty = $('empty');
+
+      // 요약 통계 (4단계)
+      let s1 = 0, s2 = 0, s3 = 0, s4 = 0, done = 0, online = 0;
+      list.forEach(d => {
+        if (d.online) online++;
+        if (d.reportSent) done++;
+        else if (d.stage >= 4) s4++;
+        else if (d.stage === 3) s3++;
+        else if (d.stage === 2) s2++;
+        else s1++;
+      });
+      // 자기 평가 평균 (회고 점수 제출한 학생만 평균)
+      let revN = 0, revSum = 0;
+      list.forEach(d => {
+        if (d.review) {
+          revN++;
+          revSum += (d.review.goalMet + d.review.factConf + d.review.actionConf) / 3;
+        }
+      });
+      const avgReview = revN ? (revSum / revN).toFixed(1) : '-';
+
+      $('summary').innerHTML =
+        statBox(list.length, '참여 학생') +
+        statBox(online, '접속 중') +
+        statBox(s1, '1단계 인식') +
+        statBox(s2, '2단계 관찰') +
+        statBox(s3, '3단계 성찰') +
+        statBox(s4, '4단계 실천') +
+        statBox(done, '보고서 완료 ✅') +
+        statBox(avgReview + ' / 5', '자기 평가 평균');
+
+      // 학급 감정 태그 분포 — 학생들이 단서마다 부착한 감정 합계
+      const tagAgg = { shock: 0, sad: 0, wow: 0, anger: 0 };
+      list.forEach(d => {
+        if (d.tagCount) {
+          Object.keys(tagAgg).forEach(k => {
+            if (d.tagCount[k]) tagAgg[k] += d.tagCount[k];
+          });
+        }
+      });
+      const totalTags = tagAgg.shock + tagAgg.sad + tagAgg.wow + tagAgg.anger;
+      const td = $('tagDist');
+      if (totalTags > 0) {
+        td.style.display = 'block';
+        td.innerHTML = '<h3>💭 학급 감정 태그 분포 (단서별 학생 반응)</h3>' +
+          Object.keys(TAG_INFO).map(k => {
+            const n = tagAgg[k];
+            const pct = Math.round(n / totalTags * 100);
+            const ti = TAG_INFO[k];
+            return '<div class="tagBar"><div class="l">' + ti.label +
+              '</div><div class="b"><div style="width:' + pct +
+              '%;background:' + ti.color + '"></div></div>' +
+              '<div class="n">' + n + '</div></div>';
+          }).join('');
+      } else {
+        td.style.display = 'none';
+      }
+
+      if (list.length === 0) {
+        empty.style.display = 'block';
+        grid.innerHTML = '';
+        return;
+      }
+      empty.style.display = 'none';
+      grid.innerHTML = list.map(card).join('');
+
+      // 카드 클릭 → 모달 열기
+      [...grid.querySelectorAll('.card.clickable')].forEach(el => {
+        el.addEventListener('click', () => openModal(el.dataset.id));
+      });
+    }
+
+    function statBox(n, label) {
+      return '<div class="stat"><div class="n">' + n +
+        '</div><div class="l">' + label + '</div></div>';
+    }
+
+    function card(d) {
+      const stage = d.reportSent ? 'done' : ('s' + (d.stage || 1));
+      const stageLabel = d.reportSent ? '완료' : (STAGE_NAME[d.stage] || '1·인식');
+      const ev = Math.max(0, Math.min(10, d.evidence || 0));
+      const co = Math.max(0, Math.min(3, d.cores || 0));
+      const cls = ['card', 's' + (d.stage || 1)];
+      if (d.reportSent) cls.push('done');
+      if (!d.online) cls.push('offline');
+      // 자기주도성 데이터가 하나라도 있으면 클릭 가능 (모달)
+      const hasSRL = !!(d.reflection || d.review ||
+        (d.tagsCount && d.tagsCount > 0));
+      if (hasSRL) cls.push('clickable');
+
+      // 자기주도성 요약 (있을 때만 표시)
+      let srlBlock = '';
+      if (hasSRL) {
+        const parts = [];
+        if (d.reflection && d.reflection.chainNames && d.reflection.chainNames.length === 3) {
+          parts.push('<div><span class="lbl">🔗</span> ' +
+            '<span class="chain">' + esc(d.reflection.chainNames.join(' → ')) +
+            '</span></div>');
+        }
+        if (d.reflection && d.reflection.statement) {
+          parts.push('<div><span class="lbl">💭</span> ' +
+            '<span class="stmt">"' + esc(d.reflection.statement) + '"</span></div>');
+        }
+        if (d.review) {
+          const avg = ((d.review.goalMet + d.review.factConf + d.review.actionConf) / 3).toFixed(1);
+          parts.push('<div><span class="lbl">📊 자기평가</span> ' +
+            '<span class="val">★ ' + avg + ' / 5.0</span></div>');
+        }
+        if (d.tagsCount) {
+          parts.push('<div><span class="lbl">💭 감정 태그</span> ' +
+            '<span class="val">' + d.tagsCount + '개 부착</span></div>');
+        }
+        srlBlock = '<div class="srl">' + parts.join('') +
+          '<div style="margin-top:4px;color:#7a8590;font-size:10px;">' +
+          '클릭하여 상세보기 →</div></div>';
+      }
+
+      return '' +
+        '<div class="' + cls.join(' ') + '" data-id="' + esc(d.id) + '">' +
+          '<div class="name">' +
+            '<span>' + esc(d.name || d.id) + '</span>' +
+            '<span class="dot ' + (d.online ? 'on' : 'off') + '"></span>' +
+          '</div>' +
+          '<span class="stage ' + stage + '">' + stageLabel + ' 단계</span>' +
+          '<div class="row">현장 단서 ' + ev + ' / 10</div>' +
+          '<div class="bar"><div class="ev" style="width:' +
+            (ev / 10 * 100) + '%"></div></div>' +
+          '<div class="row">핵심 단서 ' + co + ' / 3</div>' +
+          '<div class="bar"><div class="co" style="width:' +
+            (co / 3 * 100) + '%"></div></div>' +
+          '<div class="report ' + (d.reportSent ? 'yes' : 'no') + '">' +
+            (d.reportSent ? '✅ UN 보고서 송부 완료' : '· 보고서 미제출') +
+          '</div>' +
+          srlBlock +
+        '</div>';
+    }
+
+    // 학생 상세 모달 — 자기주도성 데이터 전체 표시
+    function openModal(id) {
+      const d = students[id];
+      if (!d) return;
+      const box = $('modalBox');
+      const sections = [];
+
+      // 1. 인과 사슬 + 자기성찰 (성찰의 의자 결과)
+      if (d.reflection) {
+        const r = d.reflection;
+        let chainHtml = '';
+        if (r.chainNames && r.chainNames.length === 3) {
+          chainHtml = '<div class="chain">' +
+            '<span>' + esc(r.chainNames[0]) + '</span>' +
+            '<span class="arrow">→</span>' +
+            '<span>' + esc(r.chainNames[1]) + '</span>' +
+            '<span class="arrow">→</span>' +
+            '<span>' + esc(r.chainNames[2]) + '</span>' +
+            '</div>';
+        }
+        sections.push(
+          '<section><h4>🔗 인과 사슬 (Connecting)</h4>' +
+          (chainHtml || '<p style="color:#7a8590">아직 미작성</p>') +
+          (r.statement ? '<p>💭 자기성찰: <em>"' +
+            esc(r.statement) + '"</em></p>' : '') +
+          '</section>'
+        );
+      }
+
+      // 2. 자기 평가 루브릭
+      if (d.review) {
+        const rv = d.review;
+        const avg = ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1);
+        sections.push(
+          '<section><h4>📊 자기 평가 (Self-Evaluation)</h4>' +
+          '<p><span class="lbl">목표 달성도</span> ' +
+            '<span class="stars">' + stars(rv.goalMet) + '</span> ' + rv.goalMet + '/5</p>' +
+          '<p><span class="lbl">사실 이해 자신감</span> ' +
+            '<span class="stars">' + stars(rv.factConf) + '</span> ' + rv.factConf + '/5</p>' +
+          '<p><span class="lbl">실천 다짐 자신감</span> ' +
+            '<span class="stars">' + stars(rv.actionConf) + '</span> ' + rv.actionConf + '/5</p>' +
+          '<p style="margin-top:8px"><strong>평균 ★ ' + avg + ' / 5.0</strong></p>' +
+          (rv.wantNext
+            ? '<p>🔍 다음에 알고 싶은 것: ' + esc(rv.wantNext) + '</p>'
+            : '') +
+          '</section>'
+        );
+      }
+
+      // 3. 감정 태그 분포 (단서별 학생 반응)
+      if (d.tagCount && Object.keys(d.tagCount).length > 0) {
+        const tagItems = Object.keys(TAG_INFO).map(k => {
+          const n = d.tagCount[k] || 0;
+          if (n === 0) return '';
+          return '<span style="background:' + TAG_INFO[k].color + '33;' +
+            'border-color:' + TAG_INFO[k].color + '">' +
+            TAG_INFO[k].label + ' × ' + n + '</span>';
+        }).filter(x => x).join('');
+        sections.push(
+          '<section><h4>💭 단서별 감정 태그 (Self-monitoring)</h4>' +
+          '<div class="tagList">' + tagItems + '</div>' +
+          '<p style="color:#7a8590;margin-top:6px">' +
+            '총 ' + (d.tagsCount || 0) + '개 단서에 감정 태그 부착' +
+          '</p></section>'
+        );
+      }
+
+      // 4. 진행 요약
+      sections.push(
+        '<section><h4>📊 진행 요약</h4>' +
+        '<p>단계: <strong>' + (STAGE_NAME[d.stage] || '1·인식') + '</strong></p>' +
+        '<p>현장 단서: ' + (d.evidence || 0) + ' / 10  ·  ' +
+          '핵심 단서: ' + (d.cores || 0) + ' / 3</p>' +
+        '<p>성찰 완료: ' + (d.reflectionDone ? '✓' : '·') + '  ·  ' +
+          '보고서 송부: ' + (d.reportSent ? '✅' : '·') + '</p>' +
+        '</section>'
+      );
+
+      box.innerHTML =
+        '<h2>' + esc(d.name || d.id) + '  <span style="font-size:13px;color:#9aa6ad">' +
+          (d.online ? '🟢 접속 중' : '⚪ 오프라인') + '</span></h2>' +
+        '<div class="sub">사건: ' + esc(d.caseId || 'aralsea') + '</div>' +
+        sections.join('') +
+        '<button class="close" onclick="document.getElementById(\'modal\').style.display=\'none\'">닫기</button>';
+      $('modal').style.display = 'block';
+    }
+
+    function esc(s) {
+      return String(s).replace(/[<>&]/g, c =>
+        ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+    }
+
+    $('connectBtn').addEventListener('click', connect);
+    $('clearBtn').addEventListener('click', () => {
+      for (const k in students) delete students[k];
+      render();
+    });
+    $('printBtn').addEventListener('click', () => buildPrintPanel());
+
+    // 학급 리포트 인쇄 — 학생별 자기주도성 표
+    function buildPrintPanel() {
+      const list = Object.values(students)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const room = curRoom || $('room').value || '-';
+      const date = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+      // 통계
+      let s1 = 0, s2 = 0, s3 = 0, s4 = 0, done = 0;
+      let revN = 0, revSum = 0;
+      const tagAgg = { shock: 0, sad: 0, wow: 0, anger: 0 };
+      list.forEach(d => {
+        if (d.reportSent) done++;
+        else if (d.stage >= 4) s4++;
+        else if (d.stage === 3) s3++;
+        else if (d.stage === 2) s2++;
+        else s1++;
+        if (d.review) {
+          revN++;
+          revSum += (d.review.goalMet + d.review.factConf + d.review.actionConf) / 3;
+        }
+        if (d.tagCount) {
+          Object.keys(tagAgg).forEach(k => {
+            if (d.tagCount[k]) tagAgg[k] += d.tagCount[k];
+          });
+        }
+      });
+      const avgReview = revN ? (revSum / revN).toFixed(1) : '-';
+      const totalTags = tagAgg.shock + tagAgg.sad + tagAgg.wow + tagAgg.anger;
+
+      // 학생 행
+      const rows = list.length === 0
+        ? '<tr><td colspan="9" style="text-align:center;color:#999">접속한 학생이 없습니다</td></tr>'
+        : list.map((d, i) => {
+            const stage = d.reportSent ? '✅완료' : (STAGE_NAME[d.stage] || '1·인식');
+            const rv = d.review;
+            const avg = rv ? ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1) : '-';
+            const chainStr = (d.reflection && d.reflection.chainNames && d.reflection.chainNames.length === 3)
+              ? d.reflection.chainNames.join(' → ') : '-';
+            const stmt = (d.reflection && d.reflection.statement) || '-';
+            return '<tr>' +
+              '<td class="num">' + (i + 1) + '</td>' +
+              '<td>' + esc(d.name || d.id) + '</td>' +
+              '<td class="num">' + stage + '</td>' +
+              '<td class="num">' + (d.evidence || 0) + '/10</td>' +
+              '<td class="num">' + (d.cores || 0) + '/3</td>' +
+              '<td class="num">' + (d.tagsCount || 0) + '</td>' +
+              '<td class="num">' + (avg !== '-' ? '★ ' + avg : '-') + '</td>' +
+              '<td><span class="chain">' + esc(chainStr) + '</span></td>' +
+              '<td><span class="stmt">' + esc(stmt) + '</span></td>' +
+            '</tr>';
+          }).join('');
+
+      // 감정 분포 행
+      const tagRow = Object.keys(TAG_INFO).map(k => {
+        const n = tagAgg[k];
+        const pct = totalTags > 0 ? Math.round(n / totalTags * 100) : 0;
+        return '<tr><td>' + TAG_INFO[k].label + '</td>' +
+          '<td class="num">' + n + '</td>' +
+          '<td class="num">' + pct + '%</td></tr>';
+      }).join('');
+
+      $('printPanel').innerHTML =
+        '<h1>📋 사라진 바다 — 학급 진행 리포트</h1>' +
+        '<div class="meta">' +
+          '교실: <strong>' + esc(room) + '</strong>  ·  ' +
+          '출력 시각: ' + esc(date) + '  ·  ' +
+          '참여 ' + list.length + '명' +
+        '</div>' +
+
+        '<h2>📊 학급 진행 요약</h2>' +
+        '<table>' +
+          '<tr><th>1단계 인식</th><th>2단계 관찰</th><th>3단계 성찰</th>' +
+            '<th>4단계 실천</th><th>보고서 완료</th><th>자기평가 평균</th></tr>' +
+          '<tr><td class="num">' + s1 + '</td><td class="num">' + s2 + '</td>' +
+            '<td class="num">' + s3 + '</td><td class="num">' + s4 + '</td>' +
+            '<td class="num">' + done + '</td>' +
+            '<td class="num">★ ' + avgReview + ' / 5.0</td></tr>' +
+        '</table>' +
+
+        '<h2>💭 학급 감정 태그 분포 (단서별 학생 반응)</h2>' +
+        '<table>' +
+          '<tr><th>감정</th><th>합계</th><th>비율</th></tr>' +
+          tagRow +
+        '</table>' +
+
+        '<h2>👥 학생별 학습 흔적</h2>' +
+        '<table>' +
+          '<tr><th>No</th><th>참가번호</th><th>단계</th><th>단서</th><th>핵심</th>' +
+            '<th>태그</th><th>자기평가</th><th>인과 사슬</th><th>자기성찰</th></tr>' +
+          rows +
+        '</table>' +
+
+        '<p style="text-align:right;font-size:11px;color:#666;margin-top:14px">' +
+          '— 공도중학교 「사라진 바다」 교사 대시보드 자동 생성 —' +
+        '</p>';
+
+      // 인쇄 다이얼로그 호출
+      setTimeout(() => window.print(), 80);
+    }
+
+    render();
+    connect();   // 페이지 열리면 기본 교실로 자동 연결
+  })();
+  </script>
+</body>
+</html>

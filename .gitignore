@@ -4,6 +4,10 @@ node_modules/
 # Electron 빌드 결과
 dist/
 out/
+release/
+
+# 실수로 만들어진 임시 파일
+npm
 
 # OS 부산물
 .DS_Store

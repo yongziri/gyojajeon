@@ -1,6 +1,6 @@
 # 개발 이력 (Development Log)
 
-> 2026-05-19 ~ 2026-05-21  
+> 2026-05-19 ~ 2026-05-25  
 > Phaser + Electron 픽셀 RPG · 세계시민교육 컨셉으로 진화
 
 작은 데모에서 시작해 **세계시민교육 RPG**로 발전한 전 과정 정리입니다.
@@ -128,12 +128,133 @@
   - 친구 됨 / 시민 풀이 완료 / 핵심 단서 HUD 갱신
   - 700ms 쿨다운으로 즉시 재발동 방지
 
-## 챕터 16 · 배포 준비 (현재)
+## 챕터 16 · 배포 준비
 
 - `package.json` 메타데이터 정비
 - `.gitignore` 추가 (node_modules·dist 제외)
 - **`README.md`** — 다른 PC에서 실행하는 안내
 - **`DEVELOPMENT_LOG.md`** — 본 문서
+
+## 챕터 17 · 4단계 학습 시스템 + 교사 실시간 대시보드
+
+- 사용자 요청: "인식·관찰·탐구·실천 4단계로 세분화"
+- **`stage` 레지스트리 변수** + `checkStageAdvance()` 4단계 로직
+  - 1→2: 라일라와 첫 대화 종료(enemyDefeated)
+  - 2→3: 조사 단서 ≥3 수집
+  - 3→4: 핵심 단서 3개(TOTAL_CITIZENS) 획득
+  - 4: UN 보고서 송부
+- **HUD 4단계 칩** + 단계별 목표 문구 4종 (refreshObjective)
+- **`showStageTransition`** — 단계 전환 시 페이드인 카드 (5초/클릭 자동 닫힘)
+- 게이트 통합 — `stage` 변수 대신 **실제 조건**(enemyDefeated·evidence·coreClues 개수) 검사
+
+### MQTT 교사 대시보드
+- `mqtt.js` (브라우저 빌드) + 무료 공용 브로커 `broker.emqx.io`
+- **`src/telemetry.js`** — 진행도 발행 모듈 (fail-silent: 네트워크 차단 시 무시)
+- `index.html` 상단 **참가번호·교실 코드 cfgBar** (Title/Credits에서만 표시)
+- 게임 4단계 분기·단서 변동·송부 시점에 자동 `Telemetry.update()` 훅
+- **`dashboard.html`** — 별도 브라우저 페이지
+  - 학생별 카드(참가번호·단계 칩·단서/핵심 진행 막대)
+  - retain 메시지로 새 교사가 들어와도 즉시 복원
+
+## 챕터 19 · P.E.A.C.E. 학습 모델 통합
+
+박미정(2022) 「다문화사회의 세계시민교육 방안 연구」의 PEACE 모델
+(Perceiving·Exploring·Analyzing·Connecting·Enacting)을 게임 4단계에 매핑.
+
+- HUD 단계 칩 "탐구" → "성찰"로 변경 (PEACE의 C 활동)
+- `checkStageAdvance` 게이팅: 2→3은 단서 ≥3 + 핵심 단서 = 3 (E·A 모두 완료),
+  3→4는 `reflectionDone === true` (성찰 마침)
+- 단계 전환 카드에 PEACE 약자 + 메타인지 발문
+- 새 씬 **ReflectionScene** — 🪞 성찰의 의자
+  - 인과 사슬 3슬롯 (원인 → 중간 → 결과)
+  - 자기성찰 5개 카드 중 1개 선택
+  - registry에 `reflection: { chain, statement }` 저장
+- WorldScene에 "성찰의 의자" 트리거 추가 (! 마커 + 게이팅)
+- LetterScene 보고서 본문에 인과 사슬·자기성찰 자동 인용
+- **PEACE_학습모델_매핑.txt** 신규 — 7개 섹션 종합 정리
+
+## 챕터 20 · 자기조절학습(SRL) 사이클 완성
+
+자기주도성을 게임 메커닉으로 시각화. Zimmerman SRL 4단계 적용.
+
+- **B 단서별 감정 태그** (자기 모니터링)
+  InvestigationScene `askThoughtTag` — 단서 발견 직후 5택
+  (충격적/안타깝다/인상적/화가 난다/나중에)
+- **C 임무 회고 루브릭** (자기 평가)
+  LetterScene `buildReview` — ★ 3슬라이더 + "더 알고 싶은 것" 선택
+  보고서 본문에 점수 자동 인용
+- **D 학습 트리** (포트폴리오)
+  **LearningTreeScene** 신규 — 완료 사건별 인과 사슬·자기성찰·평가 누적
+- **H 뱃지 시스템 6종**
+  ★단서 마스터 / 🎯인터뷰 통달 / 💭공감 기록자 /
+  🔗인과 분석가 / 📊자기 성찰 / 🌐균형 시민
+  `computeBadges()`로 보고서 송부 시점에 자동 산정,
+  학습 트리 카드 우상단에 뱃지 칩 + 호버 라벨
+
+## 챕터 21 · 결과물 인쇄 & 사운드 & 패키징
+
+### 인쇄 가능 보고서 두 종
+- 학생용 — index.html `#printReport` + LetterScene `printReport()` + @media print CSS
+  A4 1쪽 학생 보고서 + 자기 평가 + 뱃지 자동 인용 → PDF 저장 가능
+- 교사용 — dashboard.html `#printPanel` + `buildPrintPanel()`
+  학급 전체 진행 요약 + 감정 분포 + 학생별 학습 흔적 표
+
+### 8비트 칩튠 SFX
+- **src/audio.js 신규** — Web Audio API로 SFX 8종 코드 생성 (외부 파일 0)
+  click·hover·evidence(★ 아르페지오)·success·fail·stage(팡파레)·send·talk
+- ADSR envelope + square/triangle/sawtooth 파형 + 노이즈 burst
+- cfgBar 우측 🔊 토글 (localStorage 저장)
+- fancyButton·단서 입수·단계 전환·퀴즈 정·오답·송부·대화 시작에 자동 연결
+
+### 사건 선택 시스템 (확장 대비)
+- **CaseSelectScene** 신규 — 오버워치2 임무 선택 스타일
+  Wikimedia Commons 세계지도 (Public Domain, color invert로 다크 UI에 합성)
+  심플 마커 + 호버 라벨 + 카드 ★ 완료 배지
+- **BriefingScene** 신규 — 임무 브리핑 + 페이드 + 로딩 진행바
+- 사건 데이터를 CASE_LIST 배열로 분리 — 향후 사건 추가 시 한 줄로 확장
+
+### 도움말 & 교사 안내
+- **HelpScene** 신규 — 타이틀의 ❓ 버튼 또는 ESC로 호출
+  좌(조작법) + 우(게임 흐름·아이콘 의미)
+- **TeacherGuideScene** — 학습 프레임 텍스트를 PEACE로 갱신
+- **CurriculumScene** — PEACE ↔ 게임 매핑표 추가
+
+### 데스크톱 패키징
+- **electron-builder 25.1.8** 도입
+- `package.json` build 설정 + `npm run dist` 스크립트
+- `VanishedSea.exe` (188MB) + 의존 파일 폴더
+- 배포 ZIP 약 130MB → 받는 사람은 압축 풀고 .exe 더블클릭
+
+## 챕터 18 · 교육자료전 출품 마무리
+
+연구대회·교육자료전 심사 기준 5개(자료 적절성·창의성·완성도·교육 기여도·일반화 가능성)에 맞춰 점검·보강.
+
+### UNESCO GCED 영역 태깅
+- 모든 단서(10개) + 핵심 단서(3개)에 `area: 'cognitive' | 'emotional' | 'behavioral'` 필드
+- **AREA_INFO** 헬퍼: { 인지 ■ 파랑 / 정서 ■ 주황 / 행동 ■ 초록 }
+- 단서 기록 화면 + 보고서 작성 화면에 **색상 배지·스트라이프** 표시 → 학생이 학습 목표를 시각적으로 인식
+
+### 교사용 가이드·교육과정 연계 화면
+- **TeacherGuideScene** — 좌(학습 프레임 4단계·UNESCO 3영역) / 우(권장 학년·교과·수업 절차·평가)
+- **CurriculumScene** — 2022 개정 성취기준 매핑 + UNESCO GCED 학습 성과 + SDG 연계 + 출처 표기
+- TitleScene 3버튼 레이아웃: `▶ 시작하기` (중앙 상단 강조) / `🎓 교사용 가이드` / `에셋·라이선스`
+
+### 메타인지 발문 (Reflection prompt)
+- 단계 전환 카드에 **푸른 인용 박스**로 학생 스스로의 사고를 점검하는 한 문장
+  - 1→2: "라일라의 이야기에서 가장 마음에 남은 한 마디는?"
+  - 2→3: "왜 이렇게 됐을까?를 가장 잘 설명하는 단서는?"
+  - 3→4: "멀리 한국에 사는 내가 할 수 있는 일은?"
+- 카드 자동 닫힘 시간 5초 → 7초 (발문 읽을 시간 확보)
+
+### 디자인·UX 일관성
+- FONT_TITLE 일관성 — 패널·전환 카드·헤더 모두 PFStardust로 통일
+- HUD `🌐 UN 조사관` 라벨 단축 + 위치 조정 → 단계 칩과 겹침 해소
+- 게임 진행 중 상단 cfgBar 자동 숨김 → 화면 영역 100% 확보
+
+### 배포 산출물
+- `C:\Users\USER\Desktop\교육자료전2\사라진바다\` 폴더에 게임 사본 배치 (`node_modules/` 제외, 7.6MB)
+- `실행방법.txt` — 심사위원용 1쪽 안내
+- **README.md** 보강 — 4단계 흐름·교사 활용 50분 수업안·평가 루브릭·교육과정 연계표·대시보드 사용법
 
 ---
 
@@ -145,11 +266,14 @@
 BootScene (preload·텍스처 생성·폰트 대기)
     ↓
 TitleScene  ←─→  CreditsScene
+    ↓        ←─→  TeacherGuideScene  ←─→  CurriculumScene
     ↓
 WorldScene  ←──┬─→ DialogueScene  (overlay, pause+launch)
                ├─→ QuizScene       (overlay, pause+launch)
                ├─→ InvestigationScene  (전체 화면 scene.start)
                └─→ LetterScene          (전체 화면 scene.start)
+
+별도 브라우저 페이지: dashboard.html  (MQTT 구독 → 학급 진행도 시각화)
 
 (BattleScene 은 dialogue.js에서 battle: true 시 호출되도록 등록되어 있으나 현재 콘텐츠에선 미사용)
 ```
@@ -175,13 +299,14 @@ WorldScene  ←──┬─→ DialogueScene  (overlay, pause+launch)
 
 ## 📊 통계
 
-- **총 작업 단계**: 38개 (TaskCreate 기준)
-- **씬 수**: 9 (Boot, Title, Credits, World, Dialogue, Investigation, Quiz, Letter, Battle[유휴])
-- **데이터 파일**: 3 (dialogue.js, cases.js, quizzes.js)
+- **총 작업 단계**: 84개 (TaskCreate 기준)
+- **씬 수**: 11 (Boot, Title, Credits, **TeacherGuide**, **Curriculum**, World, Dialogue, Investigation, Quiz, Letter, Battle[유휴])
+- **데이터 파일**: 3 (dialogue.js, cases.js, quizzes.js) — 단서/보상에 UNESCO `area` 태깅
 - **에셋 팩**: 4 (Kenney Tiny Town/Dungeon/1-Bit/Pixel Platformer — 모두 CC0)
 - **폰트**: 2 종 (NeoDunggeunmoPro, PFStardust × 3 굵기)
 - **사진**: 1 (무이낙 픽셀아트)
-- **`game.js` 크기**: 약 2,100 lines
+- **외부 모듈**: mqtt.js (브라우저 빌드, 교사 대시보드 통신용)
+- **`game.js` 크기**: 약 2,700 lines
 
 ---
 
@@ -189,8 +314,9 @@ WorldScene  ←──┬─→ DialogueScene  (overlay, pause+launch)
 
 1. 한국 측 발단 장면 (텃밭 흰 가루로 게임 시작)
 2. 인과 사슬 정리 화면 (단서 모두 모이면 다이어그램)
-3. 편지 결과물 PNG 저장 기능
+3. 편지 결과물 PNG 저장 기능 (캡처 자동화)
 4. 해협·시장 사진 교체 (시각 일관성)
 5. **포터블 Windows .exe 빌드** (electron-builder)
 6. 8비트 BGM·SFX 추가
 7. 한국어 + 영어 다국어 지원
+8. 학생 보고서 자동 수합 (대시보드 측 CSV 내보내기)

@@ -4,15 +4,75 @@
   "description": "사라진 바다 — 아랄해, 그리고 우리들의 이야기 (세계시민교육 교육용 RPG)",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win portable",
+    "dist:dir": "electron-builder --win portable --dir"
   },
-  "keywords": ["education", "global-citizenship", "aral-sea", "phaser", "electron", "rpg"],
+  "keywords": [
+    "education",
+    "global-citizenship",
+    "aral-sea",
+    "phaser",
+    "electron",
+    "rpg"
+  ],
   "author": "공도중학교 이용빈",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
   },
   "dependencies": {
+    "mqtt": "^5.15.1",
     "phaser": "^3.86.0"
+  },
+  "build": {
+    "appId": "kr.gd.dgsh.vanishedsea",
+    "productName": "VanishedSea",
+    "copyright": "© 2026 Gongdo Middle School · Lee Yongbin",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "src/**/*",
+      "assets/**/*",
+      "package.json",
+      "node_modules/phaser/dist/phaser.min.js",
+      "node_modules/mqtt/dist/mqtt.min.js",
+      "!node_modules/phaser/{src,types,scripts,plugins,*.md,*.ts}",
+      "!node_modules/phaser/dist/!(phaser.min.js|phaser.d.ts)",
+      "!node_modules/mqtt/{src,lib,test,types,examples,bin,build,docs,*.md,*.ts}",
+      "!node_modules/mqtt/dist/!(mqtt.min.js)",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,LICENSE}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples,docs,doc}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj,map}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml,.eslintrc*,.prettierrc*}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "asar": true,
+    "asarUnpack": [],
+    "compression": "maximum",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "VanishedSea-Portable-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "VanishedSea-Portable-${version}.exe"
+    }
   }
 }
