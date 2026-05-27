@@ -36,23 +36,30 @@
 
     html, body {
       margin: 0; padding: 0;
-      background: #000;
+      width: 100%; height: 100%;
+      background: #1a0e08;
       overflow: hidden;
       font-family: 'NeoDunggeunmo', 'Malgun Gothic', sans-serif;
       /* 8비트 픽셀 렌더링 보장 */
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       -ms-interpolation-mode: nearest-neighbor;
+      /* iOS Safari/Chrome 노치·홈바 안전영역 */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      box-sizing: border-box;
     }
 
     /* 게임 컨테이너 — 8비트 CRT 느낌의 무대 */
     #game {
-      position: relative;
+      position: fixed;
+      inset: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      width: 100vw;
+      /* 모바일 주소창 변동에 강한 동적 viewport */
+      width: 100dvw;
+      height: 100dvh;
       /* 살짝 어두운 비네트 + 노란 톤(CRT 인광관 잔향) */
       background:
         radial-gradient(ellipse at center,
@@ -126,6 +133,12 @@
     }
     #cfgMute:hover { background: #2a3a4a; }
     #cfgMute.muted { color: #888; }
+
+    /* PWA 풀스크린·standalone 모드에서는 상단 cfgBar 숨김 — 학생 사용 화면 깔끔 */
+    @media all and (display-mode: fullscreen),
+           all and (display-mode: standalone) {
+      #cfgBar { display: none !important; }
+    }
 
     /* ─── 인쇄용 보고서 (평소엔 숨김, 인쇄 시에만 보임) ─────── */
     #printReport {
