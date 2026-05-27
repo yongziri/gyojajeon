@@ -933,13 +933,14 @@ class TitleScene extends Phaser.Scene {
       this.registry.set('helpFrom', 'TitleScene');
       this.scene.start('HelpScene');
     };
-    fancyButton(this, 160, 578, 160, 36, '❓ 도움말',
+    // 보조 3버튼 균등 분포 — 240 / 480 / 720 (가운데 480 기준 ±240 대칭)
+    fancyButton(this, 240, 578, 160, 36, '❓ 도움말',
       openHelp,
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0xffd96a, text: '#ffe9b8' });
     fancyButton(this, 480, 578, 200, 36, '🎓 교사용 가이드',
       () => this.scene.start('TeacherGuideScene'),
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
-    fancyButton(this, 640, 578, 160, 36, '에셋·라이선스',
+    fancyButton(this, 720, 578, 160, 36, '에셋·라이선스',
       () => this.scene.start('CreditsScene'),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
 
