@@ -4828,37 +4828,41 @@ class BattleScene extends Phaser.Scene {
 // 모바일/터치 환경 감지 (가상 D-Pad 표시 여부 등에 사용)
 // — pointer가 'coarse'면 손가락 입력 환경 (폰·태블릿)
 // — 너비가 800 미만이거나 세로형이면 모바일로 간주
+// — URL에 ?mobile=1 가 있으면 PC에서도 강제 모바일 모드 (디버그·시연용)
 window.IS_MOBILE = (function () {
   try {
     const ua  = (navigator.userAgent || '').toLowerCase();
     const uaMobile = /android|iphone|ipad|ipod|mobile|opera mini|iemobile/.test(ua);
     const coarse  = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     const small   = window.innerWidth < 800 || window.innerHeight < 600;
-    return uaMobile || coarse || small;
+    const forced  = /[?&]mobile=1\b/.test(location.search || '');
+    return forced || uaMobile || coarse || small;
   } catch (e) { return false; }
 })();
 
-new Phaser.Game({
+// Phaser 설정 — 모바일에서만 FIT 스케일 활성화
+// PC(Electron)에서는 기존처럼 800x600 고정 — pixelArt + FIT 조합이
+// 일부 환경에서 텍스처 렌더링을 깨뜨릴 수 있어 안전하게 분기.
+const phaserConfig = {
   type: Phaser.AUTO,
   width: 800,
   height: 600,
   parent: 'game',
   backgroundColor: '#3a2f1f',
   pixelArt: true,
-  // 반응형 스케일 — 폰·태블릿·PC 어디서나 화면에 자동 맞춤
-  //   FIT: 비율 유지하며 가능한 한 크게 (위·아래 또는 좌·우에 검은 띠)
-  //   CENTER_BOTH: 항상 화면 중앙
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 800,
-    height: 600,
-  },
-  // 터치 입력 강제 활성화 (모바일 WebView에서 안정)
   input: { activePointers: 3 },
   physics: {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false }
   },
   scene: [BootScene, TitleScene, HelpScene, CreditsScene, TeacherGuideScene, CurriculumScene, CaseSelectScene, LearningTreeScene, BriefingScene, WorldScene, DialogueScene, InvestigationScene, QuizScene, ReflectionScene, LetterScene, BattleScene]
-});
+};
+if (window.IS_MOBILE) {
+  phaserConfig.scale = {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 800,
+    height: 600,
+  };
+}
+new Phaser.Game(phaserConfig);
