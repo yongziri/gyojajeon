@@ -772,11 +772,45 @@ class BootScene extends Phaser.Scene {
       g.generateTexture(`kid_${f}`, 32, 32);
     }
 
+    // ground 텍스처는 16:10 캔버스(GAME_W=960) 전체 폭으로 생성
+    // — 우측 160px 영역도 같은 흙 텍스처로 자연스럽게 이어짐
     const MW = MAP[0].length * TILE, MH = MAP.length * TILE;
-    drawGround(g, MW, MH);
-    g.generateTexture('ground', MW, MH);
+    drawGround(g, GAME_W, MH);
+    g.generateTexture('ground', GAME_W, MH);
     drawWall(g);
     g.generateTexture('wall', TILE, TILE);
+
+    // 우측 16:10 영역용 도트 데코 — 사라진 바다 주제
+    // (1) 녹슨 작은 보트 — 사막에 박힌 옛 어선
+    g.clear();
+    g.fillStyle(0x6a4a32, 1); g.fillRect(2, 14, 28, 4);    // 선체 바닥
+    g.fillStyle(0x8a6634, 1); g.fillRect(0, 10, 32, 4);    // 선체 위
+    g.fillStyle(0x4a2e16, 1); g.fillRect(4, 18, 24, 4);    // 그림자
+    g.fillStyle(0x8b5a2e, 1); g.fillRect(14, 2, 2, 12);    // 돛대
+    g.fillStyle(0xb88a4e, 1); g.fillRect(8, 4, 8, 6);      // 찢어진 돛
+    g.fillStyle(0xffffff, 0.3); g.fillRect(2, 12, 4, 2);   // 하이라이트
+    g.generateTexture('rusty_boat', 32, 24);
+
+    // (2) 말라붙은 우물 — 둥근 돌담, 안은 비어 어두움
+    g.clear();
+    g.fillStyle(0x5a4a3a, 1); g.fillRect(4, 8, 24, 18);    // 우물 본체
+    g.fillStyle(0x4a3a2a, 1); g.fillRect(4, 8, 24, 4);     // 윗 테두리
+    g.fillStyle(0x0a0a0a, 1); g.fillRect(8, 12, 16, 12);   // 내부 어둠
+    g.fillStyle(0x7a6a5a, 1);                              // 돌 무늬
+    g.fillRect(6, 14, 2, 2); g.fillRect(10, 18, 2, 2);
+    g.fillRect(20, 16, 2, 2); g.fillRect(24, 20, 2, 2);
+    g.fillStyle(0x4a3a2a, 1); g.fillRect(2, 24, 28, 4);    // 그림자
+    g.generateTexture('dry_well', 32, 28);
+
+    // (3) 모래 더미 — 작은 둔덕
+    g.clear();
+    g.fillStyle(0xd9a866, 1);
+    g.fillRect(4, 10, 24, 8); g.fillRect(8, 6, 16, 4); g.fillRect(12, 4, 8, 2);
+    g.fillStyle(0xc89866, 1);
+    g.fillRect(6, 14, 20, 4); g.fillRect(10, 10, 12, 2);
+    g.fillStyle(0xffffff, 0.25);
+    g.fillRect(10, 6, 4, 1); g.fillRect(16, 4, 2, 1);      // 햇빛 반사
+    g.generateTexture('sand_pile', 32, 20);
 
     drawPort(g);   g.generateTexture('bg_port', BG_W, BG_H);
     drawStrait(g); g.generateTexture('bg_strait', BG_W, BG_H);
@@ -1351,7 +1385,7 @@ const CASE_LIST = [
     status: 'available',
     accent: 0xe8b86a,
     // lat 45°N, lng 60°E  → 중앙아시아 아랄해
-    mapX: 640, mapY: 187,
+    mapX: 747, mapY: 187,
     // 임무 브리핑 본문 (현장 이동 전 화면)
     mission: [
       '한때 세계 4번째로 컸던 호수가',
@@ -1371,7 +1405,7 @@ const CASE_LIST = [
     status: 'coming-soon',
     accent: 0x6fb7d6,
     // lat 49°N, lng 32°E  → 키이우 부근
-    mapX: 607, mapY: 180,
+    mapX: 701, mapY: 180,
     mission: [
       '평화는 어떻게 깨지는가.',
       '전쟁 한가운데 살아가는 시민들의 목소리를 듣고',
@@ -1389,7 +1423,7 @@ const CASE_LIST = [
     status: 'coming-soon',
     accent: 0xe79a78,
     // lat 32°N, lng 35°E  → 예루살렘/가자 부근
-    mapX: 610, mapY: 206,
+    mapX: 705, mapY: 206,
     mission: [
       '오래된 갈등의 한복판에서',
       '서로 다른 사람들이 어떻게 공존할 수 있는지,',
@@ -1473,7 +1507,7 @@ class CaseSelectScene extends Phaser.Scene {
     });
 
     // ── 우측: 세계 지도 패널 (실제 세계지도 이미지) ────────────
-    const mapPanelX = 360, mapPanelY = 90, mapPanelW = 420, mapPanelH = 302;
+    const mapPanelX = 360, mapPanelY = 90, mapPanelW = 580, mapPanelH = 302;
     this.drawWorldMap(mapPanelX, mapPanelY, mapPanelW, mapPanelH);
 
     // 지도 위에 사건 마커 (3개)
@@ -1484,7 +1518,7 @@ class CaseSelectScene extends Phaser.Scene {
     });
 
     // ── 하단: 설명/조작 안내 ───────────────────────────────────
-    const infoX = 360, infoY = 404, infoW = 420, infoH = 146;
+    const infoX = 360, infoY = 404, infoW = 580, infoH = 146;
     const ig = this.add.graphics();
     ig.fillStyle(0x0a1828, 0.92); ig.fillRect(infoX, infoY, infoW, infoH);
     ig.lineStyle(2, 0x2a5a82, 1); ig.strokeRect(infoX, infoY, infoW, infoH);
@@ -2363,11 +2397,7 @@ class WorldScene extends Phaser.Scene {
     this.cooldown = true;
     this.time.delayedCall(450, () => { this.cooldown = false; });
 
-    // 16:10 캔버스(960×600)에서 ground(800×600) 우측 160px 모래색 여백을
-    // 자연스럽게 채움 (이전엔 검은 띠로 보였음)
-    this.cameras.main.setBackgroundColor('#c89868');
-
-    // 바닥(이음새 없는 한 장) + 벽만 타일
+    // 바닥(16:10 폭 GAME_W=960으로 통째로 채움) + 벽만 타일
     this.add.image(0, 0, 'ground').setOrigin(0, 0);
     this.walls = this.physics.add.staticGroup();
     for (let r = 0; r < MAP.length; r++) {
@@ -2567,6 +2597,26 @@ class WorldScene extends Phaser.Scene {
     tinyProp(17, 220, 440, false);
     tinyProp(17, 160, 380, false);
     tinyProp(5,  660, 460, false);
+
+    // ── 16:10 우측 영역(800~960) 데코 — 사라진 바다 주제 ─────
+    //  사막에 박힌 옛 보트·말라붙은 우물·모래 더미·Kenney 트리·덤불
+    //  플레이어가 우측 끝까지 가도 시각적으로 풍성하게.
+    // (1) 녹슨 보트 — 환경 재앙의 상징, 사막에 박힌 옛 어선
+    this.add.image(870, 200, 'rusty_boat')
+      .setOrigin(0.5, 1).setDepth(200).setScale(2);
+    // (2) 말라붙은 우물 — 사라진 물
+    this.add.image(890, 360, 'dry_well')
+      .setOrigin(0.5, 1).setDepth(360).setScale(2);
+    // (3) 모래 더미 — 사막 형성
+    this.add.image(840, 450, 'sand_pile')
+      .setOrigin(0.5, 1).setDepth(450).setScale(2);
+    this.add.image(910, 530, 'sand_pile')
+      .setOrigin(0.5, 1).setDepth(530).setScale(2);
+    // (4) Kenney Tiny Town 트리·덤불 (우측 영역)
+    tinyProp(16, 850, 130, true, 16, 10);    // 침엽수
+    tinyProp(4,  920, 280, true, 16, 10);    // 침엽수
+    tinyProp(17, 870, 565, false);            // 덤불 (통과 가능)
+    tinyProp(5,  920, 175, false);            // 덤불
 
     // 시민 NPC (Kenney Tiny Dungeon CC0) — 상호작용 + 퀴즈
     const solved = this.registry.get('quizSolved') || {};
