@@ -2095,10 +2095,10 @@ class BriefingScene extends Phaser.Scene {
     this.add.text(56, 80, '임무 브리핑  ·  MISSION  BRIEFING', {
       fontFamily: FONT, fontSize: '13px', color: '#7aa6c8'
     });
-    // 우상단 사건 코드
+    // 우상단 사건 코드 — 박스와 텍스트 가운데를 맞춤(x=820 ↔ 박스 720~920)
     const codeBox = this.add.graphics();
-    codeBox.fillStyle(0x0e2238, 1); codeBox.fillRect(560, 56, 200, 36);
-    codeBox.lineStyle(2, 0x2a5a82, 1); codeBox.strokeRect(560, 56, 200, 36);
+    codeBox.fillStyle(0x0e2238, 1); codeBox.fillRect(720, 56, 200, 36);
+    codeBox.lineStyle(2, 0x2a5a82, 1); codeBox.strokeRect(720, 56, 200, 36);
     this.add.text(820, 74, c.code, {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     }).setOrigin(0.5);
@@ -2154,15 +2154,21 @@ class BriefingScene extends Phaser.Scene {
         { label: '정서', color: 0xe79a78 },
         { label: '행동', color: 0x7fd07f },
       ];
-      this.add.text(panelX + 32, tagY,
+      // 학습 영역 라벨 + 배지 3개를 패널 가운데로 정렬
+      const badgeW = 54, badgeGap = 8;
+      const totalW = 78 /* "학습 영역" 라벨 폭 */
+                   + 12 /* 라벨↔첫 배지 간격 */
+                   + badgeW * 3 + badgeGap * 2;
+      const groupStartX = panelX + (panelW - totalW) / 2;
+      this.add.text(groupStartX, tagY,
         '학습 영역', {
         fontFamily: FONT, fontSize: '11px', color: '#7aa6c8'
       });
       tags.forEach((t, i) => {
-        const tx = panelX + 110 + i * 62;
+        const tx = groupStartX + 90 + i * (badgeW + badgeGap);
         const tg = this.add.graphics();
-        tg.fillStyle(t.color, 0.9); tg.fillRect(tx, tagY - 4, 54, 22);
-        const txt = this.add.text(tx + 27, tagY + 7, t.label, {
+        tg.fillStyle(t.color, 0.9); tg.fillRect(tx, tagY - 4, badgeW, 22);
+        const txt = this.add.text(tx + badgeW / 2, tagY + 7, t.label, {
           fontFamily: FONT, fontSize: '11px', color: '#0a1828'
         }).setOrigin(0.5);
         tg.setAlpha(0); txt.setAlpha(0);
@@ -2170,8 +2176,10 @@ class BriefingScene extends Phaser.Scene {
       });
     }
 
-    // ── 하단: 진행 바 + 안내 ───────────────────────────────────
-    const barX = 80, barY = 510, barW = 640, barH = 12;
+    // ── 하단: 진행 바 + 안내 (16:10 가운데 정렬) ───────────────
+    const barW = 800, barH = 12;
+    const barX = (GAME_W - barW) / 2;   // = 80, 자연스럽게 양 끝 80px 마진
+    const barY = 510;
     const barBg = this.add.graphics();
     barBg.fillStyle(0x10202e, 1); barBg.fillRect(barX, barY, barW, barH);
     barBg.lineStyle(1, 0x2a5a82, 1); barBg.strokeRect(barX, barY, barW, barH);
