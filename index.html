@@ -12,26 +12,29 @@
   <link rel="apple-touch-icon" sizes="192x192" href="assets/icons/icon-192.png" />
   <title>P.E.A.C.E. — 통(通)하는 국제 분쟁 탐구하기</title>
   <style>
-    /* 픽셀 한글 폰트 (대회 출품용, 로컬 번들) */
+    /* MonaS 픽셀 한글 폰트 (Monad ABXY, SIL OFL 라이선스 — 자유 사용)
+       · MonaS12TextKR : 한국어 본문 최적화 12px
+       · MonaS12-Bold  : 제목·강조 (영문+일부 한글, 한글은 TextKR로 fallback) */
     @font-face {
-      font-family: 'NeoDunggeunmo';
-      src: url('assets/fonts/NeoDunggeunmoPro-Regular.ttf') format('truetype');
+      font-family: 'MonaS';
+      src: url('assets/fonts/MonaS12TextKR.woff2') format('woff2');
       font-weight: normal; font-style: normal; font-display: block;
     }
     @font-face {
-      font-family: 'PFStardust';
-      src: url('assets/fonts/PFStardust-Regular.ttf') format('truetype');
-      font-weight: normal; font-style: normal; font-display: block;
-    }
-    @font-face {
-      font-family: 'PFStardust';
-      src: url('assets/fonts/PFStardust-Bold.ttf') format('truetype');
+      font-family: 'MonaS';
+      src: url('assets/fonts/MonaS12-Bold.woff2') format('woff2');
       font-weight: bold; font-style: normal; font-display: block;
     }
+    /* 영문 강조용 (한글이 없는 부분은 MonaS12 사용) */
     @font-face {
-      font-family: 'PFStardust';
-      src: url('assets/fonts/PFStardust-ExtraBold.ttf') format('truetype');
-      font-weight: 900; font-style: normal; font-display: block;
+      font-family: 'MonaS12';
+      src: url('assets/fonts/MonaS12.woff2') format('woff2');
+      font-weight: normal; font-style: normal; font-display: block;
+    }
+    @font-face {
+      font-family: 'MonaS12';
+      src: url('assets/fonts/MonaS12-Bold.woff2') format('woff2');
+      font-weight: bold; font-style: normal; font-display: block;
     }
 
     html, body {
@@ -39,7 +42,7 @@
       width: 100%; height: 100%;
       background: #3a2f1f;
       overflow: hidden;
-      font-family: 'NeoDunggeunmo', 'Malgun Gothic', sans-serif;
+      font-family: 'MonaS', 'Malgun Gothic', sans-serif;
       /* 8비트 픽셀 렌더링 보장 */
       image-rendering: pixelated;
       image-rendering: crisp-edges;
@@ -119,7 +122,7 @@
       background: rgba(10,16,24,0.85);
       border: 2px solid #6a4f2a;
       padding: 4px 8px;
-      font-family: 'NeoDunggeunmo', sans-serif;
+      font-family: 'MonaS', sans-serif;
       font-size: 12px; color: #cfe9ff;
     }
     /* ⚙ 토글 — 모바일에서 평소엔 아이콘만, 누르면 펼침 */
@@ -132,7 +135,7 @@
     #cfgBar.collapsed > *:not(#cfgToggle) { display: none !important; }
     #cfgBar input {
       background: #1a2430; border: 1px solid #6a4f2a;
-      color: #ffe9b8; font-family: 'NeoDunggeunmo', sans-serif;
+      color: #ffe9b8; font-family: 'MonaS', sans-serif;
       font-size: 12px; padding: 2px 4px;
     }
     #cfgBar input#cfgName { width: 110px; }
@@ -141,7 +144,7 @@
     /* 🔊 음소거 토글 — cfgBar 우측 작은 버튼 */
     #cfgMute {
       background: #1a2430; border: 1px solid #6a4f2a;
-      color: #ffe9b8; font-family: 'NeoDunggeunmo', sans-serif;
+      color: #ffe9b8; font-family: 'MonaS', sans-serif;
       font-size: 12px; padding: 2px 8px; cursor: pointer;
       margin-left: 4px;
     }
@@ -151,7 +154,7 @@
     /* ─── 인쇄용 보고서 (평소엔 숨김, 인쇄 시에만 보임) ─────── */
     #printReport {
       display: none;
-      font-family: 'Malgun Gothic', 'NeoDunggeunmo', sans-serif;
+      font-family: 'Malgun Gothic', 'MonaS', sans-serif;
       color: #1a1a1a;
       background: #fff;
     }
@@ -230,9 +233,10 @@
   <div id="printReport"></div>
 
   <!-- 글리프 미리 로드 -->
-  <div class="preload-font" style="font-family: 'NeoDunggeunmo';">한글 로드 ABC 123</div>
-  <div class="preload-font" style="font-family: 'PFStardust'; font-weight: bold;">한글 로드 ABC 123</div>
-  <div class="preload-font" style="font-family: 'PFStardust'; font-weight: 900;">한글 로드 ABC 123</div>
+  <div class="preload-font" style="font-family: 'MonaS';">한글 로드 ABC 123</div>
+  <div class="preload-font" style="font-family: 'MonaS'; font-weight: bold;">한글 로드 ABC 123</div>
+  <div class="preload-font" style="font-family: 'MonaS12';">한글 로드 ABC 123</div>
+  <div class="preload-font" style="font-family: 'MonaS12'; font-weight: bold;">한글 로드 ABC 123</div>
 
   <!-- 참가 설정값 localStorage 저장/복원 -->
   <script>

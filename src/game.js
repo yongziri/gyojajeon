@@ -15,9 +15,10 @@ const GAME_W = 960;
 const GAME_H = 600;
 
 // ── 폰트 (대회 출품용 픽셀 한글) ───────────────────────────────
-//  본문은 NeoDunggeunmo, 타이틀·강조는 PFStardust
-const FONT = 'NeoDunggeunmo, "Malgun Gothic", sans-serif';
-const FONT_TITLE = 'PFStardust, "Malgun Gothic", sans-serif';
+//  · MonaS (Monad ABXY, SIL OFL): 12px 픽셀 한글·영문 모두 지원
+//  · 본문 = Regular weight, 제목·강조 = Bold weight
+const FONT = 'MonaS, "Malgun Gothic", sans-serif';
+const FONT_TITLE = 'MonaS, "Malgun Gothic", sans-serif';
 
 // 0 = 바닥, 1 = 벽
 const MAP = [
@@ -982,8 +983,10 @@ class CreditsScene extends Phaser.Scene {
       '  (인지·정서·행동) 3대 영역',
       '',
       '【폰트】',
-      '  Neo Dunggeunmo Pro — 본문',
-      '  PF Stardust — 제목·강조',
+      '  MonaS (Monad ABXY)',
+      '   · MonaS12TextKR — 본문',
+      '   · MonaS12-Bold — 제목·강조',
+      '   · 라이선스: SIL OFL',
       '',
       '【스프라이트 — Kenney.nl, CC0】',
       '  Tiny Town — 환경 데코',

@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v17';
+const CACHE = 'vanished-sea-v18';
 const PRECACHE = [
   './',
   './index.html',
@@ -13,10 +13,9 @@ const PRECACHE = [
   './manifest.webmanifest',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
-  './assets/fonts/NeoDunggeunmoPro-Regular.ttf',
-  './assets/fonts/PFStardust-Regular.ttf',
-  './assets/fonts/PFStardust-Bold.ttf',
-  './assets/fonts/PFStardust-ExtraBold.ttf'
+  './assets/fonts/MonaS12TextKR.woff2',
+  './assets/fonts/MonaS12-Bold.woff2',
+  './assets/fonts/MonaS12.woff2'
 ];
 
 self.addEventListener('install', (e) => {
