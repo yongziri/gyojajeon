@@ -896,7 +896,7 @@ class TitleScene extends Phaser.Scene {
       fontFamily: FONT_TITLE, fontSize: '54px', color: '#ffe9b8', fontStyle: 'bold',
       stroke: '#3a2410', strokeThickness: 8
     }).setOrigin(0.5);
-    this.add.text(480, 178, '— UN 환경계획 · 아랄해 현지 조사관의 기록 —', {
+    this.add.text(480, 178, '— P.E.A.C.E. 에이전시 · 국제 분쟁 조사관의 기록 —', {
       fontFamily: FONT, fontSize: '20px', color: '#f0c98a'
     }).setOrigin(0.5);
 
@@ -1016,8 +1016,14 @@ class CreditsScene extends Phaser.Scene {
       '  세계시민교육 방안 연구',
       '',
       '【제작】',
-      '  공도중학교 이용빈 교사',
-      '  디교연 · 교육자료전 출품작',
+      '  공도중학교 — 안성교육지원청',
+      '  대표  염태철 교사',
+      '  공동  이문호 교사',
+      '  공동  이용빈 교사',
+      '',
+      '【출품】',
+      '  제73회 경기도교육자료전',
+      '  사회(역사) 분야',
     ].join('\n');
 
     this.add.text(110, 134, left, {
@@ -1384,7 +1390,7 @@ const CASE_LIST = [
   {
     id: 'aralsea',
     title: '사라진 바다',
-    subtitle: '아랄해 — 환경 재앙과 세계시민',
+    subtitle: '아랄해 — 환경 분쟁과 세계시민',
     region: '중앙아시아 · 카라칼팍스탄',
     status: 'available',
     accent: 0xe8b86a,
@@ -4295,9 +4301,10 @@ ${pledges.join('\n')}
     fancyButton(this, 130, 578, 180, 40, '🖨  보고서 인쇄',
       () => this.printReport(),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xffd96a, text: '#ffe9b8' });
-    fancyButton(this, 320, 578, 180, 40, '🌍  다른 사건',
-      () => leaveTo('CaseSelectScene'),
-      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    // PEACE 마지막 단계 E(Enacting) — UN 연설문 작성으로 진입
+    fancyButton(this, 320, 578, 180, 40, '🕊  UN 연설하기',
+      () => leaveTo('SpeechScene'),
+      { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
     fancyButton(this, 510, 578, 160, 40, '에셋·라이선스',
       () => leaveTo('CreditsScene'),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
@@ -4819,6 +4826,241 @@ class ReflectionScene extends Phaser.Scene {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  UN 연설문 작성 (SpeechScene) — PEACE 마지막 E(Enacting) 확장
+//  · 보고서 송부 후 진입. 세계 평화를 호소하는 짧은 연설문 조립.
+//  · 학생이 카드 6장 중 3장 선택 → 자기 언어로 짧게 마무리 한 문장.
+//  · 연설문은 인쇄 보고서·학습 트리에도 인용됨.
+// ══════════════════════════════════════════════════════════════
+const SPEECH_PHRASES = [
+  { id: 'attention',  text: '저는 멀리서 이 분쟁을 지켜본 한 명의 학생입니다.' },
+  { id: 'witness',    text: '제 두 눈으로 사라진 바다와 마을 사람들의 삶을 보았습니다.' },
+  { id: 'connect',    text: '이 일은 멀리 있는 사람의 이야기가 아니라 우리 모두의 일입니다.' },
+  { id: 'demand',     text: '국제 사회의 협력으로 강물을 되돌리고 사람들의 건강을 지켜야 합니다.' },
+  { id: 'youth',      text: '학생인 저도 일상의 소비와 관심으로 함께 노력하겠습니다.' },
+  { id: 'hope',       text: '평화는 멀리 있지 않습니다. 작은 관심에서 시작됩니다.' },
+];
+const SPEECH_CLOSINGS = [
+  { id: 'thank',  text: '경청해 주셔서 감사합니다.' },
+  { id: 'unite',  text: '함께 행동해 주십시오.' },
+  { id: 'peace',  text: '평화를 위하여.' },
+];
+
+class SpeechScene extends Phaser.Scene {
+  constructor() { super('SpeechScene'); }
+
+  create() {
+    setCfgBarVisible(false);
+    this.cameras.main.fadeIn(280, 0, 0, 0);
+    this.leaving = false;
+    this.picked = new Set();        // 본문 문장 3개
+    this.closing = null;             // 마무리 문장 1개
+
+    // 배경 — UN 연단 톤
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(0x10202e, 0x10202e, 0x1a3a52, 0x152e44, 1);
+    bg.fillRect(0, 0, GAME_W, GAME_H);
+
+    // 상단 헤더
+    panel(this, 480, 40, 880, 60, 0x1a2a3a, 0xc9a36b);
+    this.add.text(480, 30, '🕊  UN 연설문 작성  ·  Enacting (E)', {
+      fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.add.text(480, 54, 'PEACE 마지막 단계 — 세계 평화를 호소하는 짧은 연설문', {
+      fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
+    }).setOrigin(0.5);
+
+    // ── 본문 문장 6장 (3개 선택) ───────────────────────────────
+    this.add.text(40, 84, '①  연설문에 담을 문장 3개를 선택하세요', {
+      fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
+      fontStyle: 'bold'
+    });
+
+    this.phraseObjs = [];
+    const cardW = 440, cardH = 56, gap = 8;
+    SPEECH_PHRASES.forEach((p, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const x = 40 + col * (cardW + 20);
+      const y = 108 + row * (cardH + gap);
+      const g = this.add.graphics();
+      const draw = (sel) => {
+        g.clear();
+        g.fillStyle(sel ? 0x2e4a36 : 0x0e2238, 1);
+        g.fillRect(x, y, cardW, cardH);
+        g.lineStyle(2, sel ? 0x7fd07f : 0x2a5a82, 1);
+        g.strokeRect(x, y, cardW, cardH);
+        g.fillStyle(sel ? 0x7fd07f : 0x2a5a82, 1);
+        g.fillRect(x, y, 4, cardH);
+      };
+      draw(false);
+      const t = this.add.text(x + 16, y + cardH / 2, p.text, {
+        fontFamily: FONT, fontSize: '12px', color: '#e6efff',
+        wordWrap: { width: cardW - 30 }, lineSpacing: 2
+      }).setOrigin(0, 0.5);
+      const zone = this.add.zone(x + cardW / 2, y + cardH / 2, cardW, cardH)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => {
+        if (this.picked.has(p.id)) {
+          this.picked.delete(p.id);
+        } else if (this.picked.size < 3) {
+          this.picked.add(p.id);
+        }
+        this.phraseObjs.forEach(po => po.draw(this.picked.has(po.id)));
+        this.refreshStatus();
+        if (window.SFX) window.SFX.play('click');
+      });
+      this.phraseObjs.push({ id: p.id, draw });
+    });
+
+    // ── 마무리 문장 3장 (1개 선택) ─────────────────────────────
+    this.add.text(40, 320, '②  연설문 마무리 한 문장', {
+      fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
+      fontStyle: 'bold'
+    });
+
+    this.closingObjs = [];
+    const cW = 280, cH = 50, cGap = 14;
+    const totalCW = cW * 3 + cGap * 2;
+    const startCX = (GAME_W - totalCW) / 2;
+    SPEECH_CLOSINGS.forEach((c, i) => {
+      const x = startCX + i * (cW + cGap);
+      const y = 348;
+      const g = this.add.graphics();
+      const draw = (sel) => {
+        g.clear();
+        g.fillStyle(sel ? 0x4a3a22 : 0x0e2238, 1);
+        g.fillRect(x, y, cW, cH);
+        g.lineStyle(2, sel ? 0xffd96a : 0x2a5a82, 1);
+        g.strokeRect(x, y, cW, cH);
+      };
+      draw(false);
+      this.add.text(x + cW / 2, y + cH / 2, c.text, {
+        fontFamily: FONT_TITLE, fontSize: '14px', color: '#ffe9b8',
+        fontStyle: 'bold'
+      }).setOrigin(0.5);
+      const zone = this.add.zone(x + cW / 2, y + cH / 2, cW, cH)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => {
+        this.closing = (this.closing === c.id) ? null : c.id;
+        this.closingObjs.forEach(co => co.draw(this.closing === co.id));
+        this.refreshStatus();
+        if (window.SFX) window.SFX.play('click');
+      });
+      this.closingObjs.push({ id: c.id, draw });
+    });
+
+    // ── 미리보기 영역 ─────────────────────────────────────────
+    const pvY = 412;
+    const pvg = this.add.graphics();
+    pvg.fillStyle(0x0a1828, 0.9); pvg.fillRect(40, pvY, 880, 100);
+    pvg.lineStyle(2, 0xc9a36b, 0.8); pvg.strokeRect(40, pvY, 880, 100);
+    pvg.fillStyle(0xc9a36b, 1); pvg.fillRect(40, pvY, 4, 100);
+
+    this.add.text(54, pvY + 8, '📜 연설문 미리보기', {
+      fontFamily: FONT, fontSize: '11px', color: '#c9a36b'
+    });
+    this.previewText = this.add.text(54, pvY + 28,
+      '(아직 비어 있음 — 위 카드를 선택하면 채워집니다)', {
+      fontFamily: FONT, fontSize: '13px', color: '#a8c4dc', fontStyle: 'italic',
+      wordWrap: { width: 850 }, lineSpacing: 4
+    });
+
+    // ── 하단 상태 + 버튼 ──────────────────────────────────────
+    this.statusText = this.add.text(480, 532, '', {
+      fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
+    }).setOrigin(0.5);
+    this.refreshStatus();
+
+    fancyButton(this, 280, 568, 220, 42, '🕊  연설 마치기',
+      () => this.tryFinish(),
+      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+    fancyButton(this, 680, 568, 220, 42, '← 나중에',
+      () => this.leaveBack(),
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+  }
+
+  refreshStatus() {
+    const filled = this.picked.size;
+    const closingOk = !!this.closing;
+    if (this.statusText) {
+      this.statusText.setText(
+        '본문 문장 ' + filled + '/3   ·   마무리 ' +
+        (closingOk ? '선택됨' : '미선택'));
+      this.statusText.setColor(
+        (filled === 3 && closingOk) ? '#7fd07f' : '#cfe9ff');
+    }
+    // 미리보기 갱신
+    if (this.previewText) {
+      const pickedTexts = SPEECH_PHRASES
+        .filter(p => this.picked.has(p.id))
+        .map(p => p.text);
+      const closingText = this.closing
+        ? (SPEECH_CLOSINGS.find(c => c.id === this.closing) || {}).text
+        : '';
+      if (pickedTexts.length === 0 && !closingText) {
+        this.previewText.setText('(아직 비어 있음 — 위 카드를 선택하면 채워집니다)');
+        this.previewText.setColor('#a8c4dc');
+        this.previewText.setStyle({ fontStyle: 'italic' });
+      } else {
+        this.previewText.setText(
+          pickedTexts.join('  ') + (closingText ? '  ' + closingText : '')
+        );
+        this.previewText.setColor('#ffe9b8');
+        this.previewText.setStyle({ fontStyle: 'normal' });
+      }
+    }
+  }
+
+  tryFinish() {
+    if (this.leaving) return;
+    if (this.picked.size < 3 || !this.closing) {
+      this.flashToast('본문 3문장 + 마무리 1문장을 모두 선택해주세요.');
+      return;
+    }
+    this.leaving = true;
+    // registry에 저장 — 인쇄 보고서·학습 트리에 인용됨
+    const pickedTexts = SPEECH_PHRASES
+      .filter(p => this.picked.has(p.id))
+      .map(p => p.text);
+    const closingText = (SPEECH_CLOSINGS.find(c => c.id === this.closing) || {}).text;
+    this.registry.set('speech', {
+      phrases: pickedTexts,
+      closing: closingText,
+      fullText: pickedTexts.join(' ') + ' ' + closingText,
+    });
+    if (window.SFX) window.SFX.play('send');
+    reportProgress(this, { speechDone: true });
+
+    this.cameras.main.fadeOut(280, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('CaseSelectScene');
+    });
+  }
+
+  leaveBack() {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.cameras.main.fadeOut(220, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('CaseSelectScene');
+    });
+  }
+
+  flashToast(msg) {
+    if (this.toast && this.toast.active) this.toast.destroy();
+    this.toast = this.add.text(480, 510, msg, {
+      fontFamily: FONT, fontSize: '13px', color: '#ffdcdc',
+      backgroundColor: '#000000cc', padding: { x: 10, y: 6 },
+      align: 'center'
+    }).setOrigin(0.5).setDepth(5000);
+    this.time.delayedCall(2000, () => {
+      if (this.toast) { this.toast.destroy(); this.toast = null; }
+    });
+  }
+}
+
 class BattleScene extends Phaser.Scene {
   constructor() { super('BattleScene'); }
 
@@ -4943,7 +5185,7 @@ const phaserConfig = {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false }
   },
-  scene: [BootScene, TitleScene, HelpScene, CreditsScene, TeacherGuideScene, CurriculumScene, CaseSelectScene, LearningTreeScene, BriefingScene, WorldScene, DialogueScene, InvestigationScene, QuizScene, ReflectionScene, LetterScene, BattleScene]
+  scene: [BootScene, TitleScene, HelpScene, CreditsScene, TeacherGuideScene, CurriculumScene, CaseSelectScene, LearningTreeScene, BriefingScene, WorldScene, DialogueScene, InvestigationScene, QuizScene, ReflectionScene, LetterScene, SpeechScene, BattleScene]
 };
 if (window.IS_MOBILE) {
   phaserConfig.scale = {
