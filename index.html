@@ -72,6 +72,11 @@
       image-rendering: crisp-edges !important;
       /* 약한 채도/대비 보정으로 NES 톤 흉내 */
       filter: contrast(1.08) saturate(1.10);
+      /* Phaser autoCenter 백업 — 부모 안에서 강제 중앙 정렬 */
+      position: absolute !important;
+      inset: 0 !important;
+      margin: auto !important;
+      display: block !important;
     }
 
     /* 스캔라인 — 게임 캔버스 위에 가는 가로줄 */

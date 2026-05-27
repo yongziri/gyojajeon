@@ -4874,8 +4874,16 @@ if (window.IS_MOBILE) {
   phaserConfig.scale = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    parent: 'game',
     width: 800,
     height: 600,
   };
 }
-new Phaser.Game(phaserConfig);
+const game = new Phaser.Game(phaserConfig);
+
+// 모바일 — 가로/세로 회전·주소창 변동 시 캔버스 재계산
+if (window.IS_MOBILE) {
+  const refresh = () => { try { game.scale.refresh(); } catch (e) {} };
+  window.addEventListener('resize', refresh);
+  window.addEventListener('orientationchange', () => setTimeout(refresh, 200));
+}
