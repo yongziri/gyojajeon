@@ -3247,7 +3247,7 @@ class DialogueScene extends Phaser.Scene {
     this.bodyText.setText('');
     choices.forEach((ch, idx) => {
       const y = 478 + idx * 36;
-      const b = fancyButton(this, 460, y, 560, 30, ch.label,
+      const b = fancyButton(this, 480, y, 700, 30, ch.label,
         () => this.pick(ch), theme);
       this.choiceBtns.push(b.g, b.zone, b.t);
     });
@@ -3786,7 +3786,7 @@ class QuizScene extends Phaser.Scene {
     this.typeText('【문제】 ' + q.question + '\n\n💡 힌트: ' + q.hint, () => {
       q.choices.forEach((ch, i) => {
         const y = 130 + i * 60;
-        const b = fancyButton(this, 540, y, 460, 48,
+        const b = fancyButton(this, 580, y, 600, 48,
           String.fromCharCode(65 + i) + ') ' + ch.text,
           () => this.pickAnswer(i),
           { base: 0x1c3344, hover: 0x2c5066, edge: 0x6fb7d6, text: '#dff1ff' });
@@ -3922,7 +3922,7 @@ class LetterScene extends Phaser.Scene {
     // 1) 받는 곳
     this.sectionLabel(40, 96, '1. 누구에게 보낼까요?');
     this.RECIPIENTS.forEach((r, i) => {
-      const x = 50 + i * 240, y = 124;
+      const x = 80 + i * 320, y = 124;
       const btn = fancyButton(this, x + 110, y + 18, 220, 38, r.short,
         () => { this.recipient = i; this.buildCompose(); },
         i === this.recipient
@@ -3941,7 +3941,7 @@ class LetterScene extends Phaser.Scene {
       this.collected.forEach((ev, i) => {
         const col = Math.floor(i / perCol);
         const row = i % perCol;
-        const x = 50 + col * 365;
+        const x = 80 + col * 420;
         const y = 206 + row * 30;
         // UNESCO 영역 색상 스트라이프 (체크박스 왼쪽)
         const ai = getArea(ev);
@@ -3962,7 +3962,7 @@ class LetterScene extends Phaser.Scene {
     this.sectionLabel(40, 392, '3. 나의 다짐 (최대 3개 선택)');
     this.PLEDGES.forEach((p, i) => {
       const y = 418 + i * 25;
-      this.checkRow(50, y, 700, p, this.pledgePicks.has(i), () => {
+      this.checkRow(80, y, 820, p, this.pledgePicks.has(i), () => {
         if (this.pledgePicks.has(i)) this.pledgePicks.delete(i);
         else if (this.pledgePicks.size < 3) this.pledgePicks.add(i);
         this.buildCompose();
@@ -3971,14 +3971,14 @@ class LetterScene extends Phaser.Scene {
 
     // 하단 버튼
     const ready = this.factPicks.size > 0 && this.pledgePicks.size > 0;
-    fancyButton(this, 250, 564, 200, 42,
+    fancyButton(this, 280, 564, 200, 42,
       ready ? '미리보기 →' : '단서·다짐 선택', () => {
         if (ready) this.buildPreview();
       },
       ready
         ? { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' }
         : { base: 0x555555, hover: 0x555555, edge: 0x999999, text: '#cccccc' });
-    fancyButton(this, 550, 564, 200, 42, '← 마을로 돌아가기',
+    fancyButton(this, 680, 564, 200, 42, "← 마을로 돌아가기",
       () => this.scene.start('WorldScene'),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
   }
@@ -4527,7 +4527,7 @@ class ReflectionScene extends Phaser.Scene {
     this.slotObjs = [];
     const slotY = 158;
     [0, 1, 2].forEach((i) => {
-      const x = 130 + i * 240;
+      const x = 240 + i * 240;
       const g = this.add.graphics();
       const t1 = this.add.text(x, slotY - 38, this.slotLabels[i], {
         fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffd96a',
