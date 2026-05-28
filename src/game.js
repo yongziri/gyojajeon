@@ -2443,7 +2443,8 @@ class LearningTreeScene extends Phaser.Scene {
     const reflection = this.registry.get('reflection') || null;
 
     // 사건별 카드 (3개 사건 모두 표시 — 미완료는 회색)
-    const cardH = 138, cardW = 880, gap = 12;
+    // cardH 162 (P.E.A.C.E. 종합 평가 한 줄 추가 공간 확보)
+    const cardH = 162, cardW = 880, gap = 8;
     const startY = 90;
     CASE_LIST.forEach((c, i) => {
       const y = startY + i * (cardH + gap);
@@ -2530,6 +2531,32 @@ class LearningTreeScene extends Phaser.Scene {
               fontFamily: FONT, fontSize: '11px', color: '#cfe9ff'
             });
           }
+        }
+        // 🆕 P.E.A.C.E. 종합 평가 — 계획서 5차원 자동 산출
+        // (현재는 caseId 기준 1건만 실시간 반영. 사건별 누적은 향후 확장)
+        if (c.id === (this.registry.get('caseId') || '')) {
+          const sc = computePeaceScores(this.registry);
+          const gradeColor = sc.grade === 'S' ? '#ffd96a'
+                           : sc.grade === 'A' ? '#7fd07f'
+                           : sc.grade === 'B' ? '#cfe9ff' : '#a8c4dc';
+          this.add.text(sx, sy + 94, '📌 P.E.A.C.E. 종합', {
+            fontFamily: FONT, fontSize: '11px', color: '#a8d4b0', fontStyle: 'bold'
+          });
+          this.add.text(sx + 100, sy + 94,
+            '[ ' + sc.grade + ' ]   ' + sc.total + ' / ' + sc.max, {
+            fontFamily: FONT_TITLE, fontSize: '12px',
+            color: gradeColor, fontStyle: 'bold'
+          });
+          // 5차원 — 한 줄 압축
+          let dx = sx;
+          PEACE_DIMS.forEach(d => {
+            const v = sc.dims[d.key];
+            const txt = this.add.text(dx, sy + 116,
+              d.icon + ' ' + d.label + '  ' + '★'.repeat(v) + '☆'.repeat(3 - v), {
+              fontFamily: FONT, fontSize: '11px', color: d.color
+            });
+            dx += txt.width + 14;
+          });
         }
         // 뱃지 칩 — 사건 완료 시 자동 산정된 6종
         const allBadges = this.registry.get('caseBadges') || {};
@@ -2900,6 +2927,75 @@ const AREA_INFO = {
 };
 function getArea(ev) {
   return ev && ev.area && AREA_INFO[ev.area] ? AREA_INFO[ev.area] : null;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  P.E.A.C.E. 종합 평가 — 계획서 평가 루브릭(5항목 x 3점 = 15점)
+//  · 각 차원은 registry에 누적된 학습 데이터로부터 자동 산출
+//  · 학습 트리 카드 · 인쇄 보고서 · 교사 대시보드에서 공통 사용
+// ══════════════════════════════════════════════════════════════
+const PEACE_DIMS = [
+  { key: 'empathy',     label: '공감',       en: 'Empathy',     color: '#e79a78', icon: '🤝' },
+  { key: 'cognition',   label: '사실 이해',  en: 'Cognition',   color: '#6fb7d6', icon: '🧠' },
+  { key: 'connection',  label: '연결 의식',  en: 'Connection',  color: '#7fd07f', icon: '🔗' },
+  { key: 'action',      label: '실천 다짐',  en: 'Action',      color: '#ffd96a', icon: '✊' },
+  { key: 'cooperation', label: '국제 협력',  en: 'Cooperation', color: '#c9a3ff', icon: '🌍' },
+];
+
+function computePeaceScores(registry) {
+  const love = registry.get('slimeLove') || 0;
+  const evidence = registry.get('evidence') || [];
+  const cores = registry.get('coreClues') || [];
+  const refl = registry.get('reflection') || null;
+  const speech = registry.get('speech') || null;
+  const completedCases = registry.get('completedCases') || [];
+  const caseId = registry.get('caseId') || 'aralsea';
+  const letterSent = completedCases.includes(caseId);
+  const review = registry.get('learningReview') || null;
+
+  // 공감 (Empathy) — 안내인과의 대화 깊이(이해도 누적)
+  let empathy = 0;
+  if (love >= 8) empathy = 3;
+  else if (love >= 5) empathy = 2;
+  else if (love >= 2) empathy = 1;
+
+  // 사실 이해 (Cognition) — 현장 단서 + 핵심 단서 수집량
+  const evTotal = evidence.length + cores.length;
+  let cognition = 0;
+  if (evTotal >= 12) cognition = 3;
+  else if (evTotal >= 9) cognition = 2;
+  else if (evTotal >= 5) cognition = 1;
+
+  // 연결 의식 (Connection) — 인과 사슬 + 자기성찰
+  let connection = 0;
+  if (refl && refl.chainNames && refl.chainNames.length === 3) {
+    connection = 2;
+    if (refl.statementText) connection = 3;
+  }
+
+  // 실천 다짐 (Action) — UN 보고서 + UN 연설문
+  let action = 0;
+  if (letterSent) action = 2;
+  if (letterSent && speech && speech.fullText) action = 3;
+
+  // 국제 협력 (Cooperation) — 코카랄 댐·UN 단서 + 보고서 송부
+  const hasRestore = evidence.some(e => e.id === 'restore');
+  const hasAction  = evidence.some(e => e.id === 'action');
+  let cooperation = 0;
+  if (hasRestore && hasAction) {
+    cooperation = 2;
+    if (letterSent) cooperation = 3;
+  } else if (hasRestore || hasAction) cooperation = 1;
+
+  const dims = { empathy, cognition, connection, action, cooperation };
+  const total = empathy + cognition + connection + action + cooperation;
+  const max = 15;
+  // 등급: 13+ S(우수), 10+ A(좋음), 7+ B(보통), 그 외 C(시작)
+  let grade = 'C';
+  if (total >= 13) grade = 'S';
+  else if (total >= 10) grade = 'A';
+  else if (total >= 7) grade = 'B';
+  return { dims, total, max, grade };
 }
 
 // 상단 참가설정 바 — Title/Credits 에서만 보이고 게임 중엔 숨김
@@ -4001,7 +4097,10 @@ class DialogueScene extends Phaser.Scene {
   }
 
   updateLove() {
-    this.loveText.setText('📘 이해도: ' + this.love);
+    // 공감 점수 시각화 — 누적 love(0~12+)를 5단 별로 표시
+    const filled = Math.max(0, Math.min(5, Math.floor(this.love / 2)));
+    const stars = '★'.repeat(filled) + '☆'.repeat(5 - filled);
+    this.loveText.setText('🤝 공감  ' + stars);
   }
 
   show(nodeId) {
@@ -5378,6 +5477,29 @@ ${pledges.join('\n')}
         '</ul>' +
 
         reviewHtml +
+
+        // 🆕 P.E.A.C.E. 종합 평가 — 계획서 5항목 자동 산출
+        (() => {
+          const sc = computePeaceScores(this.registry);
+          const starsHtml = (n) => '<span class="stars">' + '★'.repeat(n) + '☆'.repeat(3 - n) + '</span>';
+          const dimRows = PEACE_DIMS.map(d => {
+            const v = sc.dims[d.key];
+            return '<tr><td>' + d.icon + ' ' + d.label +
+                   ' <span style="color:#888">(' + d.en + ')</span></td>' +
+                   '<td>' + starsHtml(v) + '</td>' +
+                   '<td>' + v + '</td></tr>';
+          }).join('');
+          return '<h2>🏛 P.E.A.C.E. 종합 평가</h2>' +
+            '<p style="margin:4px 0 8px">계획서 평가 루브릭(5항목 × 3점 = 15점)에 따라 ' +
+            '게임 데이터로부터 자동 산출된 점수입니다.</p>' +
+            '<table>' +
+              '<tr><th style="width:55%">평가 차원</th><th>점수</th><th style="width:12%">/ 3</th></tr>' +
+              dimRows +
+              '<tr><td><strong>합계</strong></td>' +
+                '<td colspan="2"><strong>등급 [' + sc.grade + ']  ·  ' +
+                sc.total + ' / ' + sc.max + '</strong></td></tr>' +
+            '</table>';
+        })() +
 
         (tagsCount > 0
           ? '<h2>💭 단서별 감정 태그</h2>' +
