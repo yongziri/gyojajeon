@@ -3759,29 +3759,42 @@ class WorldScene extends Phaser.Scene {
   //  각 버튼은 setInteractive + pointerdown/up + setScrollFactor(0)으로
   //  화면 고정. update()에서 this.touchDir 플래그를 cursors와 함께 검사.
   buildDPad() {
-    const cx = 105, cy = 470;          // D-pad 중심 (화면 좌하단, 마진 충분히)
-    const r  = 60;                      // 중심에서 각 버튼까지 거리 (버튼 사이 여백)
-    const btnR = 28;                    // 각 버튼 반지름
+    // 좌하단 모서리에 작게 밀착 — 게임 화면 가림 최소화
+    const cx = 85, cy = 520;            // D-pad 중심 (좌하단 모서리)
+    const r  = 48;                       // 중심에서 각 버튼까지 거리
+    const btnR = 22;                     // 각 버튼 반지름
+    // 터치 hit-area는 보이는 도형보다 약간 크게 (작은 버튼 잘 안 눌리는 문제 완화)
+    const hitR = btnR + 8;
     const mk = (dx, dy, label, key) => {
       const x = cx + dx, y = cy + dy;
-      // 버튼 도형
-      const circle = this.add.circle(x, y, btnR, 0x1a2a3a, 0.65)
-        .setStrokeStyle(3, 0xffd96a, 0.9)
-        .setScrollFactor(0).setDepth(4000)
-        .setInteractive({ useHandCursor: true });
+      // 버튼 도형 (반투명, 게임 화면 살짝 보이게)
+      const circle = this.add.circle(x, y, btnR, 0x1a2a3a, 0.5)
+        .setStrokeStyle(2, 0xffd96a, 0.75)
+        .setScrollFactor(0).setDepth(4000);
       const txt = this.add.text(x, y, label, {
-        fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8',
+        fontFamily: FONT_TITLE, fontSize: '18px', color: '#ffe9b8',
         fontStyle: 'bold'
       }).setOrigin(0.5).setScrollFactor(0).setDepth(4001);
 
-      const press   = () => { this.touchDir[key] = true; circle.fillColor = 0x3a5a82; };
-      const release = () => { this.touchDir[key] = false; circle.fillColor = 0x1a2a3a; };
+      // 별도 hit zone — 보이는 버튼보다 큰 영역으로 터치 정확도 확보
+      const zone = this.add.zone(x, y, hitR * 2, hitR * 2)
+        .setScrollFactor(0).setDepth(4002)
+        .setInteractive({ useHandCursor: true });
 
-      circle.on('pointerdown', press);
-      circle.on('pointerup',   release);
-      circle.on('pointerout',  release);   // 손가락이 버튼 밖으로 나가면 해제
-      circle.on('pointerupoutside', release);
-      return { circle, txt };
+      const press   = () => {
+        this.touchDir[key] = true;
+        circle.setFillStyle(0x3a5a82, 0.7);
+      };
+      const release = () => {
+        this.touchDir[key] = false;
+        circle.setFillStyle(0x1a2a3a, 0.5);
+      };
+
+      zone.on('pointerdown', press);
+      zone.on('pointerup',   release);
+      zone.on('pointerout',  release);
+      zone.on('pointerupoutside', release);
+      return { circle, txt, zone };
     };
 
     this.dpad = [
@@ -3791,8 +3804,8 @@ class WorldScene extends Phaser.Scene {
       mk( r,  0, '▶', 'right'),
     ];
 
-    // 가운데 살짝 어둡게 (디자인 통일감)
-    const center = this.add.circle(cx, cy, 10, 0x000000, 0.45)
+    // 가운데 작은 점
+    const center = this.add.circle(cx, cy, 6, 0x000000, 0.35)
       .setScrollFactor(0).setDepth(3999);
     this.dpad.push({ circle: center });
   }
