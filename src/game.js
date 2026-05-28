@@ -1215,6 +1215,13 @@ class BootScene extends Phaser.Scene {
     this.load.image('portrait_doctor',   'assets/portraits/doctor.png');
     this.load.image('portrait_aijoli',   'assets/portraits/aijoli.png');
     this.load.image('portrait_kateryna', 'assets/portraits/kateryna.png');
+    // 주인공 일러스트 (있으면 도트 generateTexture 대신 사용)
+    this.load.image('hero_down_0', 'assets/character/hero_down_0.png');
+    this.load.image('hero_down_1', 'assets/character/hero_down_1.png');
+    this.load.image('hero_up_0',   'assets/character/hero_up_0.png');
+    this.load.image('hero_up_1',   'assets/character/hero_up_1.png');
+    this.load.image('hero_side_0', 'assets/character/hero_side_0.png');
+    this.load.image('hero_side_1', 'assets/character/hero_side_1.png');
     // 사건 선택 화면용 세계 지도 (Wikimedia Commons, Public Domain)
     // — invert 처리해 "흰 대륙 + 투명 바다" 형태. 다크 UI에 그대로 합성.
     this.load.image('world_map', 'assets/maps/world.png');
@@ -1224,10 +1231,14 @@ class BootScene extends Phaser.Scene {
   create() {
     const g = this.make.graphics({ x: 0, y: 0, add: false });
 
+    // hero_* 텍스처: PNG 일러스트가 로드됐으면 그대로 사용, 없으면 도트 fallback
     ['down', 'up', 'side'].forEach(dir => {
       for (let f = 0; f < 2; f++) {
-        drawHero(g, dir, f);
-        g.generateTexture(`hero_${dir}_${f}`, 32, 40);
+        const key = `hero_${dir}_${f}`;
+        if (!this.textures.exists(key)) {
+          drawHero(g, dir, f);
+          g.generateTexture(key, 32, 40);
+        }
       }
     });
 
@@ -2967,7 +2978,19 @@ class WorldScene extends Phaser.Scene {
 
     // 플레이어
     this.player = this.physics.add.sprite(3 * TILE, 2 * TILE, 'hero_down_0');
-    this.player.body.setSize(16, 14).setOffset(8, 22);
+    // 일러스트 PNG라면(키>60px) 키 ~64px로 표시 + 발 부근 body 재계산
+    const heroSrc = this.textures.get('hero_down_0').getSourceImage();
+    if (heroSrc && heroSrc.height > 60) {
+      const sc = 64 / heroSrc.height;
+      this.player.setScale(sc);
+      const bw = Math.round(14 / sc), bh = Math.round(10 / sc);
+      this.player.body.setSize(bw, bh).setOffset(
+        Math.round((heroSrc.width - bw) / 2),
+        Math.round(heroSrc.height - bh - 4)
+      );
+    } else {
+      this.player.body.setSize(16, 14).setOffset(8, 22);
+    }
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.walls);
     this.facing = 'down';
@@ -5704,10 +5727,12 @@ class BattleScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '20px', color: '#ce93d8'
     }).setOrigin(0.5);
 
-    // 아군
-    const hero = this.add.sprite(480, 330, 'hero_up_0').setScale(3);
+    // 아군 — PNG 일러스트면 키 ~140px, 도트면 setScale(3)
+    const heroBSrc = this.textures.get('hero_up_0').getSourceImage();
+    const heroBSc = (heroBSrc && heroBSrc.height > 60) ? (140 / heroBSrc.height) : 3;
+    const hero = this.add.sprite(480, 330, 'hero_up_0').setScale(heroBSc);
     this.tweens.add({
-      targets: hero, scaleY: 3.1, duration: 500,
+      targets: hero, scaleY: heroBSc * 1.03, duration: 500,
       yoyo: true, repeat: -1, ease: 'Sine.inOut'
     });
     this.playerHpText = this.add.text(480, 385, '', {
