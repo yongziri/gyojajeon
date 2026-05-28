@@ -4299,10 +4299,9 @@ class InvestigationScene extends Phaser.Scene {
     };
     const photoKey = photoMap[loc.bg];
     if (photoKey && this.textures.exists(photoKey)) {
-      const photo = this.add.image(480, BG_H / 2, photoKey).setDisplaySize(BG_W, BG_H);
-      // 사진도 도트 풍으로 픽셀화
-      // 8비트 청크감 — 픽셀 블록 크기 ↑
-      if (photo.postFX && photo.postFX.addPixelate) photo.postFX.addPixelate(8);
+      // Flow로 생성된 사진은 이미 픽셀 아트로 그려져 있으므로
+      // 추가 픽셀화 필터를 적용하지 않고 원본 해상도 그대로 표시
+      this.add.image(480, BG_H / 2, photoKey).setDisplaySize(BG_W, BG_H);
     } else {
       this.add.image(480, BG_H / 2, loc.bg);
     }
