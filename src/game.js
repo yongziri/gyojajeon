@@ -4116,8 +4116,8 @@ class InvestigationScene extends Phaser.Scene {
     bar.lineStyle(2, 0xe8b86a, 1); bar.strokeRect(6, 446, 948, 148);
     bar.lineStyle(1, 0xe8b86a, 0.25); bar.strokeRect(11, 451, 938, 138);
     this.msg = this.add.text(36, 462, '명령을 선택하세요.', {
-      fontFamily: FONT, fontSize: '19px', color: '#f3ece0',
-      wordWrap: { width: 888 }, lineSpacing: 6
+      fontFamily: FONT, fontSize: '14px', color: '#f3ece0',
+      wordWrap: { width: 888 }, lineSpacing: 4
     }).setDepth(5);
 
     // 버튼 4개 균등 분포 (x 가운데 기준): 120, 360, 600, 840
