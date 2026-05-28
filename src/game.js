@@ -1262,14 +1262,13 @@ class BootScene extends Phaser.Scene {
       g.generateTexture(`kid_${f}`, 32, 32);
     }
 
-    // ground 텍스처는 16:10 캔버스(GAME_W=960) 전체 폭으로 생성
-    // — 우측 160px 영역도 같은 흙 텍스처로 자연스럽게 이어짐
-    const MW = MAP[0].length * TILE, MH = MAP.length * TILE;
-    drawGround(g, GAME_W, MH);
-    g.generateTexture('ground', GAME_W, MH);
+    // ground 텍스처는 16:10 캔버스(960x600) 전체로 생성
+    // — 옛 MH(=520)는 4:3 잔재로 하단 80px이 빈 캔버스로 노출되던 문제 해결
+    drawGround(g, GAME_W, GAME_H);
+    g.generateTexture('ground', GAME_W, GAME_H);
     // 우크라이나 사건용 회색 콘크리트 바닥
-    drawConcrete(g, GAME_W, MH);
-    g.generateTexture('ground_concrete', GAME_W, MH);
+    drawConcrete(g, GAME_W, GAME_H);
+    g.generateTexture('ground_concrete', GAME_W, GAME_H);
     drawWall(g);
     g.generateTexture('wall', TILE, TILE);
     // 우크라이나 사건용 외벽 (회색 콘크리트 + 균열)
