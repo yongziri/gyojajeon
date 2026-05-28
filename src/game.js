@@ -37,6 +37,19 @@ const MAP = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 ];
 
+// NPC 머리 위 ! / ✓ 마커 — 안내인·시민·향후 추가 NPC 전부 통일 적용
+// 새 NPC를 만들 때는 반드시 이 두 상수를 그대로 add.text 의 style 인자로 전달.
+const MARKER_STYLE_ACTIVE = {
+  fontFamily: 'MonaS, "Malgun Gothic", sans-serif',
+  fontSize: '24px', color: '#ffe082',
+  stroke: '#000000', strokeThickness: 4
+};
+const MARKER_STYLE_SOLVED = {
+  fontFamily: 'MonaS, "Malgun Gothic", sans-serif',
+  fontSize: '20px', color: '#7fd07f',
+  stroke: '#000000', strokeThickness: 4
+};
+
 // 색상 팔레트
 const C = {
   skin:  0xf2c79b,
@@ -3279,14 +3292,12 @@ class WorldScene extends Phaser.Scene {
 
       // 머리 위 상태 표시: ! (미완료) 또는 ✓ (완료)
       // 일러스트(~70px)는 도트(~32px)보다 키가 크므로 마커 y를 더 위로
+      // 스타일은 안내인·향후 NPC와 모두 동일하게 MARKER_STYLE_* 상수 사용
       const markerY0 = hasArt ? (cz.y - 80) : (cz.y - 50);
       const marker = this.add.text(cz.x, markerY0,
-        solved[cz.id] ? '✓' : '!', {
-          fontFamily: FONT_TITLE,
-          fontSize: solved[cz.id] ? '20px' : '24px',
-          color: solved[cz.id] ? '#7fd07f' : '#ffe082',
-          stroke: '#000000', strokeThickness: 4
-        }).setOrigin(0.5).setDepth(cz.y + 1);
+        solved[cz.id] ? '✓' : '!',
+        solved[cz.id] ? MARKER_STYLE_SOLVED : MARKER_STYLE_ACTIVE
+      ).setOrigin(0.5).setDepth(cz.y + 1);
       if (!solved[cz.id]) {
         this.tweens.add({
           targets: marker, y: markerY0 - 6, duration: 500,
