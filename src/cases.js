@@ -304,7 +304,7 @@ const CASES = {
       // ── 천 년의 올리브 농장 (가족 4대의 기억) ────────────────
       olive: {
         name: '천 년의 올리브 농장',
-        bg: 'bg_strait',
+        bg: 'bg_olive',
         spots: [
           {
             x: 60, y: 180, w: 240, h: 200,
@@ -349,7 +349,7 @@ const CASES = {
       // ── 옛 예루살렘 (3대 종교가 한 골목에) ───────────────────
       oldcity: {
         name: '옛 예루살렘 골목',
-        bg: 'bg_market',
+        bg: 'bg_oldcity',
         spots: [
           {
             x: 40, y: 100, w: 230, h: 260,
@@ -397,7 +397,7 @@ const CASES = {
       // ── UN 구호 캠프 (인도주의의 마지막 손길) ────────────────
       unrwa: {
         name: 'UN 구호 캠프 (UNRWA)',
-        bg: 'bg_school',
+        bg: 'bg_unrwa',
         spots: [
           {
             x: 40, y: 140, w: 220, h: 220,

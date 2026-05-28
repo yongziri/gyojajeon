@@ -1245,6 +1245,10 @@ class BootScene extends Phaser.Scene {
     this.load.image('photo_school',     'assets/photos/photo_school.png');
     this.load.image('photo_grain_port', 'assets/photos/photo_grain_port.png');
     this.load.image('photo_shelter',    'assets/photos/photo_shelter.png');
+    // 팔레스타인 조사 장소 배경 사진
+    this.load.image('photo_olive',   'assets/photos/photo_olive.png');
+    this.load.image('photo_oldcity', 'assets/photos/photo_oldcity.png');
+    this.load.image('photo_unrwa',   'assets/photos/photo_unrwa.png');
     // 사건 선택 화면용 세계 지도 (Wikimedia Commons, Public Domain)
     // — invert 처리해 "흰 대륙 + 투명 바다" 형태. 다크 UI에 그대로 합성.
     this.load.image('world_map', 'assets/maps/world.png');
@@ -4288,6 +4292,10 @@ class InvestigationScene extends Phaser.Scene {
       bg_school:     'photo_school',
       bg_grain_port: 'photo_grain_port',
       bg_shelter:    'photo_shelter',
+      // 팔레스타인
+      bg_olive:      'photo_olive',
+      bg_oldcity:    'photo_oldcity',
+      bg_unrwa:      'photo_unrwa',
     };
     const photoKey = photoMap[loc.bg];
     if (photoKey && this.textures.exists(photoKey)) {
