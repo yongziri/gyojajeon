@@ -3248,12 +3248,8 @@ class WorldScene extends Phaser.Scene {
       });
     }
 
-    // 옛 항구 조사 입구 (노란 표지판)
+    // 옛 항구 조사 입구 (노란 표지판) — scale 고정 (꿈틀 제거)
     this.portal = this.physics.add.staticImage(4 * TILE, 11 * TILE, 'portal');
-    this.tweens.add({
-      targets: this.portal, scale: 1.15, duration: 600,
-      yoyo: true, repeat: -1, ease: 'Sine.inOut'
-    });
     this.portal.setDepth(this.portal.y);
     this.add.text(4 * TILE, 11 * TILE - 30, isUkraine ? '키이우 조사' : '아랄해 조사', {
       fontFamily: FONT, fontSize: '12px', color: '#ffe082',
@@ -3270,12 +3266,8 @@ class WorldScene extends Phaser.Scene {
       this.scene.start('InvestigationScene');
     });
 
-    // UN 우편함 (편지 쓰기 입구)
+    // UN 우편함 (편지 쓰기 입구) — scale 고정 (꿈틀 제거)
     this.mailbox = this.physics.add.staticImage(12 * TILE, 11 * TILE, 'mailbox');
-    this.tweens.add({
-      targets: this.mailbox, scale: 1.08, duration: 700,
-      yoyo: true, repeat: -1, ease: 'Sine.inOut'
-    });
     this.mailbox.setDepth(this.mailbox.y);
     this.add.text(12 * TILE, 11 * TILE - 36, '보고서 송부', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
@@ -3311,9 +3303,9 @@ class WorldScene extends Phaser.Scene {
     });
 
     // ── 🪞 성찰의 의자 (PEACE의 C단계) ───────────────────────────
-    // 위치: 우편함 왼쪽 아래쪽 빈 자리. 시각적으로는 작은 갈색 원(의자) +
-    //       반짝이는 거울 아이콘 + 텍스트 라벨.
-    const chairX = 9 * TILE + 16, chairY = 11 * TILE + 8;
+    // 위치: 우하단 빈 자리 (포털·우편함·의자 3등분 배치, NPC와 거리 확보)
+    //       시각적으로는 작은 갈색 원(의자) + 반짝이는 거울 아이콘 + 텍스트 라벨.
+    const chairX = 16 * TILE + 16, chairY = 11 * TILE + 8;
     const chairG = this.add.graphics().setDepth(chairY);
     // 의자 등판
     chairG.fillStyle(0x6a4a26, 1);
