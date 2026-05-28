@@ -3748,9 +3748,9 @@ class DialogueScene extends Phaser.Scene {
       });
     }
 
-    // 우상단 이해도 칩
+    // 우상단 이해도 칩 — 텍스트는 패널 가운데와 일치 (cx=712)
     panel(this, 712, 30, 160, 40, 0x12283a, 0x6fb7d6);
-    this.loveText = this.add.text(872, 30, '', {
+    this.loveText = this.add.text(712, 30, '', {
       fontFamily: FONT, fontSize: '16px', color: '#bfe6ff'
     }).setOrigin(0.5);
 
