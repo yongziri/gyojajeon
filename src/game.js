@@ -4076,7 +4076,8 @@ class InvestigationScene extends Phaser.Scene {
       .setDepth(3500).setInteractive();
     layer.push(dim);
 
-    const px = 100, py = 200, pw = 600, ph = 200;
+    // 16:10(960폭) 가운데 정렬: px = (960 - 600) / 2 = 180
+    const px = 180, py = 200, pw = 600, ph = 200;
     const pg = this.add.graphics().setDepth(3501);
     pg.fillStyle(0x10202e, 1); pg.fillRect(px, py, pw, ph);
     pg.lineStyle(3, 0xc9a36b, 1); pg.strokeRect(px, py, pw, ph);
@@ -4090,10 +4091,10 @@ class InvestigationScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '13px', color: '#cfe9ff'
     }).setOrigin(0.5).setDepth(3502));
 
-    // 5개 버튼 가로 배치
+    // 5개 버튼 가로 배치 — 16:10 캔버스 가운데(480) 기준
     const btnW = 100, btnH = 60, gap = 12;
     const totalW = btnW * 5 + gap * 4;
-    const startX = 400 - totalW / 2;
+    const startX = 480 - totalW / 2;
     TAGS.forEach((t, i) => {
       const bx = startX + i * (btnW + gap);
       const by = py + 100;
@@ -5178,9 +5179,10 @@ class ReflectionScene extends Phaser.Scene {
     });
 
     // 5개 카드 — 한 줄에 가로 배치 (5장이라 좀 작게)
+    // 16:10(960폭) 가운데 정렬: 카드 폭 144 + gap 10 → 시작 x = 100
     this.stmtObjs = [];
     REFLECTION_STATEMENTS.forEach((s, i) => {
-      const x = 24 + i * 154;
+      const x = 100 + i * 154;
       const y = 296;
       const w = 144, h = 200;
       const g = this.add.graphics();
@@ -5206,8 +5208,8 @@ class ReflectionScene extends Phaser.Scene {
       () => this.tryFinish(),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
 
-    // 우상단 — 월드로 돌아가기 (취소)
-    fancyButton(this, 720, 38, 130, 32, '↩ 닫기',
+    // 우상단 — 월드로 돌아가기 (취소). 16:10 우측 끝(960)에 맞춰 870.
+    fancyButton(this, 870, 38, 130, 32, '↩ 닫기',
       () => this.leaveBack(),
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
   }
@@ -5276,7 +5278,7 @@ class ReflectionScene extends Phaser.Scene {
     overlay.push(dim);
 
     const panelW = 860, panelH = 460;
-    const px = 400 - panelW / 2, py = 300 - panelH / 2;
+    const px = 480 - panelW / 2, py = 300 - panelH / 2;   // 16:10 캔버스 가운데
     const pg = this.add.graphics().setDepth(3001);
     pg.fillStyle(0x10202e, 1); pg.fillRect(px, py, panelW, panelH);
     pg.lineStyle(3, 0xc9a36b, 1); pg.strokeRect(px, py, panelW, panelH);
