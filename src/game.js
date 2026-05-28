@@ -3159,6 +3159,7 @@ class WorldScene extends Phaser.Scene {
 
     if (isUkraine) {
       // ─────────── 사건 2 — 키이우 거리 ───────────
+      // 안전 영역: x 40~880, baseY 40~470 (외벽 c=23 우측, r=12 하단 안쪽)
       // 평화 비둘기 동상 (광장의 중심·상징물)
       prop('peace_dove', 600, 200, 2);
       // UN 텐트 (구호 거점)
@@ -3171,29 +3172,29 @@ class WorldScene extends Phaser.Scene {
       prop('ua_flag', 700, 180, 1.5);
       prop('ua_flag', 380, 240, 1.5);
       // 모래주머니 바리케이드 (입구 방어 라인 — 3개 일렬)
-      prop('sandbag', 80,  500, 1.5);
-      prop('sandbag', 130, 500, 1.5);
-      prop('sandbag', 180, 500, 1.5);
-      prop('sandbag', 700, 540, 1.5);
-      prop('sandbag', 750, 540, 1.5);
+      prop('sandbag', 80,  470, 1.5);
+      prop('sandbag', 130, 470, 1.5);
+      prop('sandbag', 180, 470, 1.5);
+      prop('sandbag', 700, 460, 1.5);
+      prop('sandbag', 750, 460, 1.5);
       // 부서진 벤치 (광장 산책로 흔적)
       prop('broken_bench', 540, 380, 1.5);
-      prop('broken_bench', 350, 510, 1.5);
+      prop('broken_bench', 350, 460, 1.5);
       // 부서진 차량 (도로 옆)
       prop('broken_car', 820, 250, 1.5);
       // 폭격 자국 (크레이터 — 바닥에 가까운 depth)
       this.add.image(220, 350, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.5);
-      this.add.image(620, 530, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.5);
-      this.add.image(880, 400, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.2);
+      this.add.image(620, 450, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.5);
+      this.add.image(820, 400, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.2);
       // 도시 가로수 (Kenney tiny_town tree — 잎이 풍성한 활엽수)
       tinyProp(4,  50,  240, true, 16, 10);
       tinyProp(4,  430, 130, true, 16, 10);
-      tinyProp(4,  900, 130, true, 16, 10);
-      tinyProp(4,  920, 460, true, 16, 10);
+      tinyProp(4,  840, 130, true, 16, 10);
+      tinyProp(4,  860, 440, true, 16, 10);
       tinyProp(16, 230, 200, true, 16, 10);
       // 덤불 (도시 화단)
       tinyProp(5,  100, 280, false);
-      tinyProp(17, 880, 560, false);
+      tinyProp(17, 820, 460, false);
       tinyProp(5,  450, 160, false);
     } else {
       // ─────────── 사건 1 — 카라칼팍 사막 마을 ───────────
