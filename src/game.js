@@ -2679,12 +2679,95 @@ class BriefingScene extends Phaser.Scene {
       color: '#ffd96a', fontStyle: 'bold'
     }).setAlpha(0);
 
-    // 임무 본문
+    // 임무 본문 — 좌측 절반에만 차도록 wordWrap (지도 영역 침범 방지)
     const briefBody = this.add.text(panelX + 32, panelY + 200,
       c.mission.join('\n'), {
       fontFamily: FONT, fontSize: '14px', color: '#e6efff',
-      lineSpacing: 6
+      lineSpacing: 6, wordWrap: { width: 420 }
     }).setAlpha(0);
+
+    // ── 우측 — 사건별 현장 미니 지도 ──────────────────────────
+    const mapX = panelX + 470, mapY = panelY + 172;
+    const mapW = 360, mapH = 200;
+    const mapG = this.add.graphics().setAlpha(0);
+    // 박스
+    mapG.fillStyle(0x040e1a, 0.95); mapG.fillRect(mapX, mapY, mapW, mapH);
+    mapG.lineStyle(2, 0x2a5a82, 1); mapG.strokeRect(mapX, mapY, mapW, mapH);
+    // 격자
+    mapG.lineStyle(1, 0x1a3a5c, 0.45);
+    for (let i = 1; i < 9; i++) mapG.lineBetween(mapX + i*mapW/9, mapY, mapX + i*mapW/9, mapY + mapH);
+    for (let i = 1; i < 5; i++) mapG.lineBetween(mapX, mapY + i*mapH/5, mapX + mapW, mapY + i*mapH/5);
+
+    const mapHdr = this.add.text(mapX + 10, mapY + 6,
+      '📡  현장 지도  ·  SECTOR MAP', {
+      fontFamily: FONT, fontSize: '11px', color: '#7aa6c8'
+    }).setAlpha(0);
+
+    const mapLabels = [];
+    const addLbl = (x, y, txt, color) => {
+      const t = this.add.text(x, y, txt, {
+        fontFamily: FONT, fontSize: '10px', color
+      }).setAlpha(0);
+      mapLabels.push(t);
+    };
+
+    if (c.id === 'aralsea') {
+      // 옛 호수 (1960년 — 사라진 영역, 옅게)
+      mapG.fillStyle(0x214b63, 0.32);
+      mapG.fillEllipse(mapX + 180, mapY + 120, 200, 110);
+      // 현재 호수 (북쪽 일부만 남음)
+      mapG.fillStyle(0x356f8a, 0.9);
+      mapG.fillEllipse(mapX + 200, mapY + 88, 70, 30);
+      // 강 — 아무다리야 (남쪽에서 호수로)
+      mapG.lineStyle(2, 0x4a7e95, 0.7);
+      mapG.beginPath();
+      mapG.moveTo(mapX + 300, mapY + 180); mapG.lineTo(mapX + 220, mapY + 140);
+      mapG.lineTo(mapX + 180, mapY + 130); mapG.strokePath();
+      // 강 — 시르다리야 (동쪽에서)
+      mapG.beginPath();
+      mapG.moveTo(mapX + 340, mapY + 110); mapG.lineTo(mapX + 250, mapY + 95);
+      mapG.lineTo(mapX + 220, mapY + 90); mapG.strokePath();
+      // 빨간 핑 (무이낙 — 옛 호수 남쪽)
+      const pingX = mapX + 160, pingY = mapY + 145;
+      mapG.fillStyle(0xff5050, 1); mapG.fillCircle(pingX, pingY, 5);
+      mapG.lineStyle(2, 0xffffff, 1); mapG.strokeCircle(pingX, pingY, 5);
+      mapG.lineStyle(1, 0xff5050, 0.6); mapG.strokeCircle(pingX, pingY, 11);
+      // 라벨
+      addLbl(mapX + 168, mapY + 80, 'Aral Sea', '#9ec8e0');
+      addLbl(mapX + 168, mapY + 138, '▼  Moynaq', '#ff8a8a');
+      addLbl(mapX + 40, mapY + 40, 'Kazakhstan', '#7aa6c8');
+      addLbl(mapX + 40, mapY + 175, 'Uzbekistan', '#7aa6c8');
+      addLbl(mapX + 270, mapY + 175, 'Amu Darya', '#5e8aa0');
+      addLbl(mapX + 285, mapY + 95, 'Syr Darya', '#5e8aa0');
+    } else if (c.id === 'ukraine') {
+      // 우크라이나 윤곽 (단순화)
+      mapG.fillStyle(0x1a3a3a, 0.6);
+      mapG.fillEllipse(mapX + 180, mapY + 100, 220, 110);
+      // 흑해 (남쪽)
+      mapG.fillStyle(0x214b63, 0.7);
+      mapG.fillRect(mapX + 60, mapY + 155, 260, 45);
+      // 키이우 핑
+      const pingX = mapX + 170, pingY = mapY + 85;
+      mapG.fillStyle(0xff5050, 1); mapG.fillCircle(pingX, pingY, 5);
+      mapG.lineStyle(2, 0xffffff, 1); mapG.strokeCircle(pingX, pingY, 5);
+      mapG.lineStyle(1, 0xff5050, 0.6); mapG.strokeCircle(pingX, pingY, 11);
+      addLbl(mapX + 180, pingY - 4, '▼  Kyiv', '#ff8a8a');
+      addLbl(mapX + 130, mapY + 170, 'Black Sea', '#9ec8e0');
+      addLbl(mapX + 100, mapY + 50, 'Ukraine', '#cfe9ff');
+    } else if (c.id === 'palestine') {
+      // 지중해 (서쪽)
+      mapG.fillStyle(0x214b63, 0.7);
+      mapG.fillRect(mapX + 20, mapY + 30, 90, 160);
+      // 육지
+      mapG.fillStyle(0x3e2e1a, 0.5);
+      mapG.fillRect(mapX + 110, mapY + 30, 230, 160);
+      const pingX = mapX + 150, pingY = mapY + 100;
+      mapG.fillStyle(0xff5050, 1); mapG.fillCircle(pingX, pingY, 5);
+      mapG.lineStyle(2, 0xffffff, 1); mapG.strokeCircle(pingX, pingY, 5);
+      mapG.lineStyle(1, 0xff5050, 0.6); mapG.strokeCircle(pingX, pingY, 11);
+      addLbl(mapX + 160, pingY - 4, '▼  Gaza / West Bank', '#ff8a8a');
+      addLbl(mapX + 30, mapY + 100, 'Mediterranean', '#9ec8e0');
+    }
 
     // 학습 영역 배지 (아랄해만 표시)
     const tagY = panelY + 318;
@@ -2760,6 +2843,9 @@ class BriefingScene extends Phaser.Scene {
     fadeIn(divider, 700);
     fadeIn(briefHdr, 800);
     fadeIn(briefBody, 950);
+    fadeIn(mapG, 850);
+    fadeIn(mapHdr, 900);
+    mapLabels.forEach((lbl, i) => fadeIn(lbl, 1050 + i * 80));
     tagObjs.forEach((o, i) => fadeIn(o, 1100 + i * 60));
 
     // 로딩 점 애니메이션 (현장으로 이동 중...)
