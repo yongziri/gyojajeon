@@ -68,6 +68,8 @@ const CITIZENS_BY_CASE = {
     name: '옷가게 상인',
     sprite: 'tiny_dungeon',
     frame: 84,
+    // 대화창에서 보여줄 큰 일러스트 (있으면 우선 사용)
+    portrait: 'portrait_merchant',
     x: 380, y: 440,
     intro: [
       '어서 오세요. 이 옷, 면화 100%예요.',
