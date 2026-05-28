@@ -347,8 +347,8 @@ function drawConcrete(g, w, h) {
   g.fillStyle(0x2a3038, 1);
   for (let i = 0; i < 140; i++)
     g.fillRect(Math.floor(rnd() * (w / 2)) * 2, Math.floor(rnd() * (h / 2)) * 2, 2, 2);
-  // 폭격 그을음 (어두운 큰 패치 3개)
-  g.fillStyle(0x2a2a30, 0.55);
+  // 폭격 그을음 — 옅게 깔아 분위기만, 거대한 색차로 보이지 않도록 톤다운
+  g.fillStyle(0x2a2a30, 0.18);
   g.fillEllipse(220, 280, 130, 70);
   g.fillEllipse(620, 380, 160, 80);
   g.fillEllipse(820, 180, 100, 60);
@@ -1214,6 +1214,7 @@ class BootScene extends Phaser.Scene {
     this.load.image('portrait_merchant', 'assets/portraits/merchant.png');
     this.load.image('portrait_doctor',   'assets/portraits/doctor.png');
     this.load.image('portrait_aijoli',   'assets/portraits/aijoli.png');
+    this.load.image('portrait_kateryna', 'assets/portraits/kateryna.png');
     // 사건 선택 화면용 세계 지도 (Wikimedia Commons, Public Domain)
     // — invert 처리해 "흰 대륙 + 투명 바다" 형태. 다크 UI에 그대로 합성.
     this.load.image('world_map', 'assets/maps/world.png');
@@ -2933,9 +2934,14 @@ class WorldScene extends Phaser.Scene {
     this.add.image(0, 0, isUkraine ? 'ground_concrete' : 'ground').setOrigin(0, 0);
     this.walls = this.physics.add.staticGroup();
     const wallKey = isUkraine ? 'wall_kyiv' : 'wall';
+    const lastCol = MAP[0].length - 1;            // 옛 4:3 우측 끝(c=19)
     for (let r = 0; r < MAP.length; r++) {
       for (let c = 0; c < MAP[r].length; c++) {
         if (MAP[r][c] === 1) {
+          // 16:10 확장 시 옛 우측 외벽(c=19, 중간 행)이 새 우측 외벽(c=23)과
+          // 이중 벽처럼 보여 사이가 빈 통로로 노출되는 문제를 해결.
+          // 상·하단 외벽은 그대로 두고, 중간 행의 옛 우측 외벽만 스킵.
+          if (c === lastCol && r > 0 && r < MAP.length - 1) continue;
           const wall = this.add.image(
             c * TILE + TILE / 2, r * TILE + TILE / 2, wallKey);
           this.walls.add(wall);
@@ -2966,20 +2972,38 @@ class WorldScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.walls);
     this.facing = 'down';
 
-    // 아이졸리 (안내인 — 1단계의 핵심 NPC)
+    // 아이졸리/카테리나 (안내인 — 1단계의 핵심 NPC)
     if (!this.registry.get('enemyDefeated')) {
+      // physics body는 기존 도트 sprite로 유지 (충돌·overlap 감지용)
       this.enemy = this.physics.add.sprite(15 * TILE, 9 * TILE, 'kid_0');
       this.enemy.body.setSize(20, 16).setOffset(6, 14);
-      this.enemy.play('kid_idle');
       this.enemy.setDepth(this.enemy.y);
+      // 사건별 안내인 일러스트가 있으면 도트를 숨기고 일러스트로 시각화
+      const guidePortraitKey = isUkraine ? 'portrait_kateryna' : 'portrait_aijoli';
+      if (this.textures.exists(guidePortraitKey)) {
+        this.enemy.setVisible(false);
+        this.enemyArt = this.add.image(15 * TILE, 9 * TILE + 14, guidePortraitKey)
+          .setOrigin(0.5, 1).setDepth(this.enemy.y);
+        const tex = this.textures.get(guidePortraitKey).getSourceImage();
+        this.enemyArt.setScale(70 / tex.height);   // 화면 키 ~70px (시민 NPC와 균형)
+        // 가만히 떠 있는 듯한 미세 부유 애니메이션
+        this.tweens.add({
+          targets: this.enemyArt, y: this.enemyArt.y - 4,
+          duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut'
+        });
+      } else {
+        this.enemy.play('kid_idle');
+      }
 
       // 머리 위 ! 표시 (시민들과 동일한 시각 일관성)
-      this.enemyMarker = this.add.text(15 * TILE, 9 * TILE - 50, '!', {
+      // 일러스트 적용 시 키 ~70px에 맞춰 마커 위치 조정
+      const markerY0 = this.enemyArt ? (9 * TILE - 70) : (9 * TILE - 50);
+      this.enemyMarker = this.add.text(15 * TILE, markerY0, '!', {
         fontFamily: FONT_TITLE, fontSize: '26px', color: '#ffe082',
         stroke: '#000000', strokeThickness: 4, fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(9 * TILE + 1);
       this.tweens.add({
-        targets: this.enemyMarker, y: 9 * TILE - 56, duration: 500,
+        targets: this.enemyMarker, y: markerY0 - 6, duration: 500,
         yoyo: true, repeat: -1, ease: 'Sine.inOut'
       });
 
@@ -3696,11 +3720,15 @@ class DialogueScene extends Phaser.Scene {
     // 배경 없음 — 월드 위에 오버레이. 살짝 어둡게 깔아 가독성↑
     this.add.rectangle(480, 300, 960, 600, 0x000000, 0.45);
 
-    // 좌측 큰 캐릭터 — portrait_aijoli 일러스트가 있으면 상반신 컷, 없으면 도트
-    if (this.textures.exists('portrait_aijoli')) {
-      this.portrait = this.add.image(140, 20, 'portrait_aijoli')
+    // 좌측 큰 캐릭터 — 사건별 안내인 일러스트 (있으면 상반신 컷, 없으면 도트)
+    //  aralsea  → portrait_aijoli (zola)
+    //  ukraine  → portrait_kateryna (cate)
+    const caseId = this.registry.get('caseId') || 'aralsea';
+    const guidePortraitKey = (caseId === 'ukraine') ? 'portrait_kateryna' : 'portrait_aijoli';
+    if (this.textures.exists(guidePortraitKey)) {
+      this.portrait = this.add.image(140, 20, guidePortraitKey)
         .setOrigin(0.5, 0).setDepth(5);
-      const tex = this.textures.get('portrait_aijoli').getSourceImage();
+      const tex = this.textures.get(guidePortraitKey).getSourceImage();
       this.portrait.setScale(720 / tex.height);
       const maskShape = this.make.graphics({ add: false });
       maskShape.fillStyle(0xffffff);
