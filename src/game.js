@@ -3537,7 +3537,8 @@ class WorldScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.solids);
 
     // 분위기: 따뜻한 빛 + 비네트
-    const W = MAP[0].length * TILE, H = MAP.length * TILE;
+    // 16:10 캔버스 전체에 비네트 적용 (옛 4:3=800x520 잔재 제거)
+    const W = GAME_W, H = GAME_H;
     const mood = this.add.graphics().setDepth(1500);
     mood.fillStyle(0xffd9a0, 0.10); mood.fillRect(0, 0, W, H);
     mood.fillStyle(0x1a1430, 0.30);
