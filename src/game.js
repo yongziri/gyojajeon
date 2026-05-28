@@ -1237,6 +1237,10 @@ class BootScene extends Phaser.Scene {
     this.load.image('hero_side_1', 'assets/character/hero_side_1.png');
     // 타이틀 화면 배경 (UN 본부 픽셀 아트)
     this.load.image('title_bg', 'assets/maps/title_bg.png');
+    // 아랄해 조사 장소 배경 사진 (Flow 픽셀 아트)
+    this.load.image('photo_port',   'assets/photos/photo_port.png');
+    this.load.image('photo_strait', 'assets/photos/photo_strait.png');
+    this.load.image('photo_market', 'assets/photos/photo_market.png');
     // 사건 선택 화면용 세계 지도 (Wikimedia Commons, Public Domain)
     // — invert 처리해 "흰 대륙 + 투명 바다" 형태. 다크 UI에 그대로 합성.
     this.load.image('world_map', 'assets/maps/world.png');
