@@ -102,6 +102,8 @@ const CITIZENS_BY_CASE = {
     name: '마을 의사',
     sprite: 'tiny_dungeon',
     frame: 85,
+    // 대화창에서 보여줄 큰 일러스트 (있으면 우선 사용)
+    portrait: 'portrait_doctor',
     x: 700, y: 460,
     intro: [
       '안녕하세요, 조사관님. 진료소를 잠깐 비웠어요.',
