@@ -1421,13 +1421,7 @@ class TitleScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '20px', color: '#f0c98a'
     }).setOrigin(0.5);
 
-    // 라일라 등장
-    const kid = this.add.sprite(480, 470, 'kid_0').setScale(7);
-    kid.play('kid_idle');
-    this.tweens.add({
-      targets: kid, y: 458, duration: 900,
-      yoyo: true, repeat: -1, ease: 'Sine.inOut'
-    });
+    // (옛 라일라 도트 캐릭터는 새 UN 본부 배경과 톤이 달라 제거)
 
     const start = this.add.text(480, 560, '▶  클릭하여 시작', {
       fontFamily: FONT, fontSize: '24px', color: '#ffffff',
