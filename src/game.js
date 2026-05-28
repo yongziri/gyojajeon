@@ -3230,19 +3230,34 @@ class WorldScene extends Phaser.Scene {
       tinyProp(5,  920, 175, false);
     }
 
-    // 시민 NPC (Kenney Tiny Dungeon CC0) — 상호작용 + 퀴즈
+    // 시민 NPC (Kenney Tiny Dungeon CC0 도트 + 일러스트 portrait overlay) — 상호작용 + 퀴즈
     const solved = this.registry.get('quizSolved') || {};
     this.citizenObjs = [];
     CITIZENS.forEach(cz => {
       const npc = this.add.image(cz.x, cz.y, cz.sprite, cz.frame)
         .setOrigin(0.5, 1).setDepth(cz.y).setScale(2);
+
+      // 일러스트 portrait이 있으면 도트를 숨기고 일러스트로 시각화 (안내인과 동일 방식)
+      let citizenArt = null;
+      const hasArt = cz.portrait && this.textures.exists(cz.portrait);
+      if (hasArt) {
+        npc.setVisible(false);
+        citizenArt = this.add.image(cz.x, cz.y, cz.portrait)
+          .setOrigin(0.5, 1).setDepth(cz.y);
+        const tex = this.textures.get(cz.portrait).getSourceImage();
+        citizenArt.setScale(70 / tex.height);   // 안내인과 동일 키 ~70px
+      }
+      // 부유 애니메이션 — 도트면 도트, 일러스트면 일러스트 대상
+      const floatTarget = citizenArt || npc;
       this.tweens.add({
-        targets: npc, y: cz.y - 2, duration: 800 + Math.random() * 400,
+        targets: floatTarget, y: cz.y - 2, duration: 800 + Math.random() * 400,
         yoyo: true, repeat: -1, ease: 'Sine.inOut'
       });
 
       // 머리 위 상태 표시: ! (미완료) 또는 ✓ (완료)
-      const marker = this.add.text(cz.x, cz.y - 50,
+      // 일러스트(~70px)는 도트(~32px)보다 키가 크므로 마커 y를 더 위로
+      const markerY0 = hasArt ? (cz.y - 80) : (cz.y - 50);
+      const marker = this.add.text(cz.x, markerY0,
         solved[cz.id] ? '✓' : '!', {
           fontFamily: FONT_TITLE,
           fontSize: solved[cz.id] ? '20px' : '24px',
@@ -3251,7 +3266,7 @@ class WorldScene extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(cz.y + 1);
       if (!solved[cz.id]) {
         this.tweens.add({
-          targets: marker, y: cz.y - 56, duration: 500,
+          targets: marker, y: markerY0 - 6, duration: 500,
           yoyo: true, repeat: -1, ease: 'Sine.inOut'
         });
       }
@@ -3278,7 +3293,7 @@ class WorldScene extends Phaser.Scene {
         this.scene.pause();
         this.scene.launch('QuizScene');
       });
-      this.citizenObjs.push({ npc, marker, trigger, cz });
+      this.citizenObjs.push({ npc, art: citizenArt, marker, trigger, cz });
     });
 
     this.physics.add.collider(this.player, this.solids);
