@@ -3970,23 +3970,24 @@ class InvestigationScene extends Phaser.Scene {
       this.zones.push(z);
     });
 
-    // 하단 명령 바
+    // 하단 명령 바 — 16:10(960폭) 기준
     const bar = this.add.graphics().setDepth(4);
     bar.fillStyle(0x000000, 0.4); bar.fillRect(0, 480, 960, 120);
     bar.fillGradientStyle(0x14202c, 0x14202c, 0x0c141c, 0x0c141c, 1);
     bar.fillRect(6, 446, 948, 148);
-    bar.lineStyle(2, 0xe8b86a, 1); bar.strokeRect(6, 446, 788, 148);
-    bar.lineStyle(1, 0xe8b86a, 0.25); bar.strokeRect(11, 451, 778, 138);
+    bar.lineStyle(2, 0xe8b86a, 1); bar.strokeRect(6, 446, 948, 148);
+    bar.lineStyle(1, 0xe8b86a, 0.25); bar.strokeRect(11, 451, 938, 138);
     this.msg = this.add.text(36, 462, '명령을 선택하세요.', {
       fontFamily: FONT, fontSize: '19px', color: '#f3ece0',
       wordWrap: { width: 888 }, lineSpacing: 6
     }).setDepth(5);
 
+    // 버튼 4개 균등 분포 (x 가운데 기준): 120, 360, 600, 840
     this.btnExamine = this.makeBtn(120, 565, 150, '조사한다',
       () => this.toggleExamine());
-    this.makeBtn(290, 565, 150, '이동한다', () => this.showMoves(loc));
-    this.makeBtn(470, 565, 150, '단서 기록', () => this.showRecord());
-    this.makeBtn(650, 565, 130, '나가기', () => this.leave());
+    this.makeBtn(360, 565, 150, '이동한다', () => this.showMoves(loc));
+    this.makeBtn(600, 565, 150, '단서 기록', () => this.showRecord());
+    this.makeBtn(840, 565, 150, '나가기', () => this.leave());
 
     // 돋보기 커서
     this.glass = this.add.image(0, 0, 'magnifier')
