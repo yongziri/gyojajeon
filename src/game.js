@@ -4174,25 +4174,139 @@ class InvestigationScene extends Phaser.Scene {
   }
 
   inspect(spot) {
-    let text = '【' + spot.name + '】\n' + spot.text;
+    // 새 단서 입수 처리
     let newlyFound = null;
     if (spot.evidence && !this.collected.find(e => e.id === spot.evidence.id)) {
       this.collected.push(spot.evidence);
       this.registry.set('evidence', this.collected);
-      text += '\n\n★ 단서 입수: ' + spot.evidence.name;
       this.flash('단서 입수!');
       if (window.SFX) window.SFX.play('evidence');
       if (this.refreshEvHud) this.refreshEvHud();
-      if (this.collected.length >= this.totalEvidence()) {
-        text += '\n\n(모든 단서를 모았습니다! 총 '
-          + this.collected.length + '개)';
-      }
       newlyFound = spot.evidence;
     }
-    this.msg.setText(text);
-    // 새로 발견한 단서일 때만 — 자기 모니터링용 "내 생각" 태그 묻기
-    if (newlyFound) {
-      this.time.delayedCall(420, () => this.askThoughtTag(newlyFound));
+    // 결과는 팝업 모달에 — 하단 명령 박스는 안내문 유지
+    this.showInspectPopup(spot, newlyFound);
+  }
+
+  // 돋보기로 spot 클릭 시 — 가운데 팝업에 장소·단서 정보 즉시 표시
+  showInspectPopup(spot, newlyFound) {
+    if (this.inspectOpen) return;
+    this.inspectOpen = true;
+    this.inspectLayer = [];
+    this.inspectNewlyFound = newlyFound;
+
+    const px = 130, py = 100, pw = 700, ph = 360;
+
+    // 어두운 배경
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.7)
+      .setDepth(3400).setInteractive();
+    this.inspectLayer.push(dim);
+
+    // 본 패널
+    const pg = this.add.graphics().setDepth(3401);
+    pg.fillStyle(0x10202e, 1); pg.fillRect(px, py, pw, ph);
+    pg.lineStyle(3, 0xc9a36b, 1); pg.strokeRect(px, py, pw, ph);
+    pg.fillStyle(0xc9a36b, 1); pg.fillRect(px, py, 6, ph);   // 좌측 강조
+    this.inspectLayer.push(pg);
+
+    // 헤더 — 장소명
+    this.inspectLayer.push(this.add.text(px + 24, py + 22,
+      '🔍  ' + spot.name, {
+      fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8',
+      fontStyle: 'bold'
+    }).setDepth(3402));
+
+    // 본문
+    this.inspectLayer.push(this.add.text(px + 24, py + 60, spot.text, {
+      fontFamily: FONT, fontSize: '14px', color: '#e6efff',
+      wordWrap: { width: pw - 48 }, lineSpacing: 5
+    }).setDepth(3402));
+
+    // 단서 영역
+    let y = py + 60 + 84;
+    if (spot.evidence) {
+      const ev = spot.evidence;
+      // 구분선
+      const div = this.add.graphics().setDepth(3402);
+      div.lineStyle(1, 0x2a5a82, 0.6);
+      div.lineBetween(px + 24, y, px + pw - 24, y);
+      this.inspectLayer.push(div);
+      y += 14;
+
+      // 단서명 + 상태
+      const evHeader = newlyFound
+        ? ('★ 단서 입수 — ' + ev.name)
+        : ('✓ 이미 수집한 단서 — ' + ev.name);
+      this.inspectLayer.push(this.add.text(px + 24, y, evHeader, {
+        fontFamily: FONT_TITLE, fontSize: '15px',
+        color: newlyFound ? '#ffd96a' : '#7fd07f', fontStyle: 'bold'
+      }).setDepth(3402));
+      y += 26;
+
+      // 영역 배지 (인지/정서/행동)
+      const area = (typeof getArea === 'function') ? getArea(ev) : null;
+      if (area) {
+        const aG = this.add.graphics().setDepth(3402);
+        aG.fillStyle(area.color, 0.9); aG.fillRect(px + 24, y, 54, 20);
+        this.inspectLayer.push(aG);
+        this.inspectLayer.push(this.add.text(px + 51, y + 10, area.label, {
+          fontFamily: FONT, fontSize: '11px', color: '#0a1828'
+        }).setOrigin(0.5).setDepth(3403));
+        y += 26;
+      }
+
+      // 단서 설명
+      this.inspectLayer.push(this.add.text(px + 24, y, ev.desc, {
+        fontFamily: FONT, fontSize: '13px', color: '#cfe9ff',
+        wordWrap: { width: pw - 48 }, lineSpacing: 5, fontStyle: 'italic'
+      }).setDepth(3402));
+    }
+
+    // 확인 버튼
+    const bnX = px + pw / 2, bnY = py + ph - 32;
+    const bnW = 140, bnH = 38;
+    const bg = this.add.graphics().setDepth(3402);
+    const drawBn = (h) => {
+      bg.clear();
+      bg.fillStyle(h ? 0x5c4718 : 0x352910, 1);
+      bg.fillRoundedRect(bnX - bnW/2, bnY - bnH/2, bnW, bnH, 8);
+      bg.lineStyle(2, 0xe8b86a, 1);
+      bg.strokeRoundedRect(bnX - bnW/2, bnY - bnH/2, bnW, bnH, 8);
+    };
+    drawBn(false);
+    const bnTxt = this.add.text(bnX, bnY, '확인', {
+      fontFamily: FONT, fontSize: '15px', color: '#ffe9b8'
+    }).setOrigin(0.5).setDepth(3403);
+    const bnZone = this.add.zone(bnX, bnY, bnW, bnH)
+      .setInteractive({ useHandCursor: true }).setDepth(3404);
+    bnZone.on('pointerover', () => drawBn(true));
+    bnZone.on('pointerout',  () => drawBn(false));
+    bnZone.on('pointerdown', () => this.closeInspectPopup());
+    this.inspectLayer.push(bg, bnTxt, bnZone);
+
+    // dim 클릭으로도 닫기
+    dim.on('pointerdown', () => this.closeInspectPopup());
+    // ESC 단축키
+    this.inspectEscHandler = () => {
+      if (this.inspectOpen) this.closeInspectPopup();
+    };
+    this.input.keyboard.once('keydown-ESC', this.inspectEscHandler);
+  }
+
+  closeInspectPopup() {
+    if (!this.inspectOpen) return;
+    this.inspectLayer.forEach(o => { if (o && o.destroy) o.destroy(); });
+    this.inspectLayer = null;
+    this.inspectOpen = false;
+    const nf = this.inspectNewlyFound;
+    this.inspectNewlyFound = null;
+    // 새 단서 입수 시 — 닫힌 직후 감정 태그 모달 자동 호출
+    if (nf) {
+      this.time.delayedCall(220, () => this.askThoughtTag(nf));
+    }
+    // 모든 단서 수집 완료 시 하단 안내 갱신
+    if (this.collected.length >= this.totalEvidence()) {
+      this.msg.setText('★ 모든 단서를 모았습니다! (총 ' + this.collected.length + '개)');
     }
   }
 
