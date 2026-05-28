@@ -3259,12 +3259,12 @@ class WorldScene extends Phaser.Scene {
         yoyo: true, repeat: -1, ease: 'Sine.inOut'
       });
 
-      // 발 아래 이름 라벨 — 누구인지 한눈에
+      // 발 아래 이름 라벨 — 누구인지 한눈에 (depth 2000: 데코·외벽보다 항상 위)
       const guideName = getGuideName(this.registry);
       this.add.text(15 * TILE, 9 * TILE + 18, guideName, {
         fontFamily: FONT, fontSize: '11px', color: '#ffd96a',
         backgroundColor: '#000000aa', padding: { x: 5, y: 2 }
-      }).setOrigin(0.5, 0).setDepth(9 * TILE + 5);
+      }).setOrigin(0.5, 0).setDepth(2100);
 
       // 가까이 가면 '💬 대화' 버튼이 떠야 시작 (자동 trigger 안 함)
       this.physics.add.overlap(this.player, this.enemy, () => {
@@ -3563,12 +3563,12 @@ class WorldScene extends Phaser.Scene {
         });
       }
 
-      // 발 아래 이름 라벨 — 누구인지 한눈에
+      // 발 아래 이름 라벨 — 누구인지 한눈에 (depth 2100: 데코·외벽보다 항상 위)
       const nameColor = solved[cz.id] ? '#7fd07f' : '#ffe9b8';
       this.add.text(cz.x, cz.y + 6, cz.name, {
         fontFamily: FONT, fontSize: '11px', color: nameColor,
         backgroundColor: '#000000aa', padding: { x: 5, y: 2 }
-      }).setOrigin(0.5, 0).setDepth(cz.y + 5);
+      }).setOrigin(0.5, 0).setDepth(2100);
 
       // overlap — 자동 진입 대신 '💬 인터뷰' 버튼 표시 (학생이 직접 누름)
       const trigger = this.add.rectangle(cz.x, cz.y - 16, 36, 36, 0, 0);
