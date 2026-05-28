@@ -1235,6 +1235,8 @@ class BootScene extends Phaser.Scene {
     this.load.image('hero_up_1',   'assets/character/hero_up_1.png');
     this.load.image('hero_side_0', 'assets/character/hero_side_0.png');
     this.load.image('hero_side_1', 'assets/character/hero_side_1.png');
+    // 타이틀 화면 배경 (UN 본부 픽셀 아트)
+    this.load.image('title_bg', 'assets/maps/title_bg.png');
     // 사건 선택 화면용 세계 지도 (Wikimedia Commons, Public Domain)
     // — invert 처리해 "흰 대륙 + 투명 바다" 형태. 다크 UI에 그대로 합성.
     this.load.image('world_map', 'assets/maps/world.png');
@@ -1379,33 +1381,34 @@ class TitleScene extends Phaser.Scene {
     setCfgBarVisible(true);   // 타이틀에선 참가 설정 바 표시
     this.cameras.main.fadeIn(320, 0, 0, 0);  // 부드러운 페이드인
     const W = GAME_W, H = GAME_H;
-    // 노을 그라데이션 하늘
-    const sky = this.add.graphics();
-    sky.fillGradientStyle(0x1b2a4a, 0x1b2a4a, 0xe8915a, 0xf2b56b, 1);
-    sky.fillRect(0, 0, W, 360);
-    sky.fillStyle(0xf6d79b, 1); sky.fillCircle(400, 320, 70);
-    sky.fillStyle(0xf2b56b, 0.5); sky.fillCircle(400, 320, 110);
-    // 바다 + 반짝임
-    sky.fillStyle(0x214b63, 1); sky.fillRect(0, 360, W, 240);
-    sky.fillStyle(0xf6d79b, 0.25);
-    for (let i = 0; i < 26; i++)
-      sky.fillRect((i * 71) % W, 380 + (i * 53 % 200), 36, 3);
-    // 도시·미너렛 실루엣 — 16:10 캔버스(960)를 가득 채우도록 12개
-    sky.fillStyle(0x141d33, 1);
-    for (let i = 0; i < 13; i++)
-      sky.fillRect(i * 76, 300 - (i * 47 % 90), 64, 130);
-    sky.fillRect(150, 180, 14, 180);
-    sky.fillCircle(157, 178, 12);
-    sky.fillRect(640, 200, 70, 160);
-    sky.fillCircle(675, 200, 38);
-    // 우측 추가 미너렛 (16:10 균형)
-    sky.fillRect(870, 220, 12, 140);
-    sky.fillCircle(876, 218, 10);
 
-    // 유조선 실루엣 (가운데 정렬로 살짝 이동)
-    sky.fillStyle(0x0e1626, 1);
-    sky.fillRect(550, 430, 200, 34);
-    sky.fillRect(640, 408, 36, 22);
+    // 배경 — UN 본부 픽셀 아트 (PNG가 있으면 사용, 없으면 그라데이션 fallback)
+    if (this.textures.exists('title_bg')) {
+      this.add.image(W / 2, H / 2, 'title_bg').setDisplaySize(W, H).setDepth(0);
+    } else {
+      // Fallback — 옛 노을 그라데이션 + 도시 실루엣
+      const sky = this.add.graphics();
+      sky.fillGradientStyle(0x1b2a4a, 0x1b2a4a, 0xe8915a, 0xf2b56b, 1);
+      sky.fillRect(0, 0, W, 360);
+      sky.fillStyle(0xf6d79b, 1); sky.fillCircle(400, 320, 70);
+      sky.fillStyle(0xf2b56b, 0.5); sky.fillCircle(400, 320, 110);
+      sky.fillStyle(0x214b63, 1); sky.fillRect(0, 360, W, 240);
+      sky.fillStyle(0xf6d79b, 0.25);
+      for (let i = 0; i < 26; i++)
+        sky.fillRect((i * 71) % W, 380 + (i * 53 % 200), 36, 3);
+      sky.fillStyle(0x141d33, 1);
+      for (let i = 0; i < 13; i++)
+        sky.fillRect(i * 76, 300 - (i * 47 % 90), 64, 130);
+      sky.fillRect(150, 180, 14, 180);
+      sky.fillCircle(157, 178, 12);
+      sky.fillRect(640, 200, 70, 160);
+      sky.fillCircle(675, 200, 38);
+      sky.fillRect(870, 220, 12, 140);
+      sky.fillCircle(876, 218, 10);
+      sky.fillStyle(0x0e1626, 1);
+      sky.fillRect(550, 430, 200, 34);
+      sky.fillRect(640, 408, 36, 22);
+    }
 
     // 타이틀 패널
     panel(this, 480, 150, 560, 150, 0x10202e, 0xe8b86a);
