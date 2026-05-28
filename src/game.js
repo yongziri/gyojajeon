@@ -2726,8 +2726,9 @@ class BriefingScene extends Phaser.Scene {
     }).setAlpha(0);
 
     // ── 우측 — 사건별 현장 미니 지도 (실제 world_map 줌인) ────
-    const mapX = panelX + 470, mapY = panelY + 172;
-    const mapW = 360, mapH = 200;
+    // 패널 우측 상단으로 끌어올림 — 사건 제목 같은 라인 시작
+    const mapX = panelX + 470, mapY = panelY + 20;
+    const mapW = 360, mapH = 220;
     const mapG = this.add.graphics().setAlpha(0);
     // 박스 외곽
     mapG.fillStyle(0x081628, 0.95); mapG.fillRect(mapX, mapY, mapW, mapH);
@@ -2759,8 +2760,9 @@ class BriefingScene extends Phaser.Scene {
 
     // world_map 원본 사이즈 (BootScene preload에 있는 PD 세계지도 1280x836)
     const WORLD_ORIG_W = 1280, WORLD_ORIG_H = 836;
-    // 줌 — 미니맵 폭 mapW가 약 35도(경도) 폭이 되도록
-    const ZOOM_LNG_SPAN = 35;
+    // 줌 — 미니맵 폭 mapW가 약 22도(경도) 폭이 되도록 더 확대
+    // (마커가 위경도 변환의 미세 오차에도 사건 영토 안에 들어가도록)
+    const ZOOM_LNG_SPAN = 22;
     const PX_PER_DEG = mapW / ZOOM_LNG_SPAN;
     const worldScale = PX_PER_DEG * 360 / WORLD_ORIG_W;
     const dispW = WORLD_ORIG_W * worldScale;
