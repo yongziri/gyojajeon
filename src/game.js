@@ -3031,13 +3031,11 @@ class WorldScene extends Phaser.Scene {
         this.enemy.play('kid_idle');
       }
 
-      // 머리 위 ! 표시 (시민들과 동일한 시각 일관성)
+      // 머리 위 ! 표시 (시민·모든 NPC와 통일 스타일 — MARKER_STYLE_ACTIVE)
       // 일러스트 적용 시 키 ~70px에 맞춰 마커 위치 조정
       const markerY0 = this.enemyArt ? (9 * TILE - 70) : (9 * TILE - 50);
-      this.enemyMarker = this.add.text(15 * TILE, markerY0, '!', {
-        fontFamily: FONT_TITLE, fontSize: '26px', color: '#ffe082',
-        stroke: '#000000', strokeThickness: 4, fontStyle: 'bold'
-      }).setOrigin(0.5).setDepth(9 * TILE + 1);
+      this.enemyMarker = this.add.text(15 * TILE, markerY0, '!', MARKER_STYLE_ACTIVE)
+        .setOrigin(0.5).setDepth(9 * TILE + 1);
       this.tweens.add({
         targets: this.enemyMarker, y: markerY0 - 6, duration: 500,
         yoyo: true, repeat: -1, ease: 'Sine.inOut'
