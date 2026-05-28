@@ -3131,11 +3131,24 @@ class WorldScene extends Phaser.Scene {
         yoyo: true, repeat: -1, ease: 'Sine.inOut'
       });
 
+      // 발 아래 이름 라벨 — 누구인지 한눈에
+      const guideName = getGuideName(this.registry);
+      this.add.text(15 * TILE, 9 * TILE + 18, guideName, {
+        fontFamily: FONT, fontSize: '11px', color: '#ffd96a',
+        backgroundColor: '#000000aa', padding: { x: 5, y: 2 }
+      }).setOrigin(0.5, 0).setDepth(9 * TILE + 5);
+
+      // 가까이 가면 '💬 대화' 버튼이 떠야 시작 (자동 trigger 안 함)
       this.physics.add.overlap(this.player, this.enemy, () => {
         if (this.talking || this.cooldown || this.cardOpen) return;
-        this.talking = true;
-        this.scene.pause();
-        this.scene.launch('DialogueScene');
+        this.requestTalkPrompt('guide',
+          15 * TILE, 9 * TILE - 100,
+          guideName + '와 대화',
+          () => {
+            this.talking = true;
+            this.scene.pause();
+            this.scene.launch('DialogueScene');
+          });
       });
     }
 
@@ -3393,14 +3406,21 @@ class WorldScene extends Phaser.Scene {
         });
       }
 
-      // overlap 트리거 — QuizScene 으로
+      // 발 아래 이름 라벨 — 누구인지 한눈에
+      const nameColor = solved[cz.id] ? '#7fd07f' : '#ffe9b8';
+      this.add.text(cz.x, cz.y + 6, cz.name, {
+        fontFamily: FONT, fontSize: '11px', color: nameColor,
+        backgroundColor: '#000000aa', padding: { x: 5, y: 2 }
+      }).setOrigin(0.5, 0).setDepth(cz.y + 5);
+
+      // overlap — 자동 진입 대신 '💬 인터뷰' 버튼 표시 (학생이 직접 누름)
       const trigger = this.add.rectangle(cz.x, cz.y - 16, 36, 36, 0, 0);
       this.physics.add.existing(trigger, true);
       this.physics.add.overlap(this.player, trigger, () => {
         if (this.entering || this.cooldown || this.cardOpen) return;
         const sv = this.registry.get('quizSolved') || {};
         if (sv[cz.id]) return;
-        // 실제 조건 검사 (4단계 게이팅)
+        // 게이팅 검사는 즉시 (잠금 토스트는 그대로 자동)
         if (!this.registry.get('enemyDefeated')) {
           this.showLockToast('먼저 ' + getGuideName(this.registry) + '와 만나 상황을 파악하세요\n(1단계 · 인식)');
           return;
@@ -3410,10 +3430,16 @@ class WorldScene extends Phaser.Scene {
           this.showLockToast('먼저 옛 항구를 조사해 단서를 모으세요\n(2단계 · 관찰 / 단서 ' + ev + '/3)');
           return;
         }
-        this.entering = true;
-        this.registry.set('quizCitizenId', cz.id);
-        this.scene.pause();
-        this.scene.launch('QuizScene');
+        // 게이팅 통과 시에만 버튼 표시
+        this.requestTalkPrompt('cz:' + cz.id,
+          cz.x, cz.y - 100,
+          cz.name + ' 인터뷰',
+          () => {
+            this.entering = true;
+            this.registry.set('quizCitizenId', cz.id);
+            this.scene.pause();
+            this.scene.launch('QuizScene');
+          });
       });
       this.citizenObjs.push({ npc, art: citizenArt, marker, trigger, cz });
     });
@@ -3521,6 +3547,53 @@ class WorldScene extends Phaser.Scene {
       p.setTexture('hero_' + this.facing + '_0');
     }
     p.setDepth(p.y); // 건물 앞/뒤 정렬
+
+    // 대화 버튼 자동 숨김 — overlap이 끝나면(매 프레임 호출 안 되면) 사라짐
+    if (this._talkPrompt && this.time.now - this._talkPromptLastTime > 220) {
+      this.hideTalkPrompt();
+    }
+  }
+
+  // ── NPC 대화 버튼 (overlap 시 머리 위에 떠서 클릭해야 시작) ───
+  //  자동 대화 시작이 아닌 '학생이 명시적으로 누르는' UX.
+  //  overlap 콜백에서 매 프레임 호출되므로 _talkPromptLastTime을 갱신,
+  //  update()에서 일정 시간 이상 호출 안 되면 자동 숨김.
+  requestTalkPrompt(key, x, y, label, onTalk) {
+    this._talkPromptLastTime = this.time.now;
+    if (this._talkPromptKey === key) return;   // 같은 NPC면 중복 생성 안 함
+    this.hideTalkPrompt();
+    this._talkPromptKey = key;
+
+    const bgW = Math.max(140, label.length * 12 + 70), bgH = 36;
+    const bx = x, by = y;
+    const bg = this.add.graphics().setDepth(2500);
+    bg.fillStyle(0x000000, 0.85);
+    bg.fillRoundedRect(bx - bgW/2, by - bgH/2, bgW, bgH, 8);
+    bg.lineStyle(2, 0xffe082, 1);
+    bg.strokeRoundedRect(bx - bgW/2, by - bgH/2, bgW, bgH, 8);
+    const tx = this.add.text(bx, by, '💬  ' + label, {
+      fontFamily: FONT, fontSize: '13px', color: '#ffe082',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(2501);
+    const zone = this.add.zone(bx, by, bgW, bgH)
+      .setInteractive({ useHandCursor: true }).setDepth(2502);
+    zone.on('pointerdown', () => {
+      this.hideTalkPrompt();
+      if (typeof onTalk === 'function') onTalk();
+    });
+    // 부유 애니메이션
+    const tw = this.tweens.add({
+      targets: [bg, tx, zone], y: '-=4',
+      duration: 700, yoyo: true, repeat: -1, ease: 'Sine.inOut'
+    });
+    this._talkPrompt = [bg, tx, zone, tw];
+  }
+
+  hideTalkPrompt() {
+    if (!this._talkPrompt) return;
+    this._talkPrompt.forEach(o => { if (o && o.destroy) o.destroy(); });
+    this._talkPrompt = null;
+    this._talkPromptKey = null;
   }
 
   // ── 모바일 가상 D-Pad ─────────────────────────────────────
