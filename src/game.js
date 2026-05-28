@@ -1933,9 +1933,8 @@ const CASE_LIST = [
     status: 'available',
     accent: 0xe8b86a,
     guide: { name: '아이졸리' },
-    // 무이낙 (43.8°N, 59.5°E) — world_map 이미지가 등각 투영 아니라
-    // 변환식 부정확. 시각 보정 좌표로 직접 박음 (이하 동일).
-    mapX: 735, mapY: 200,
+    // 무이낙 (43.8°N, 59.5°E) — 시각 보정 좌표 (등각 투영 아님)
+    mapX: 745, mapY: 215,
     // 임무 브리핑 본문 (현장 이동 전 화면)
     mission: [
       '한때 세계 4번째로 컸던 호수가',
@@ -1956,7 +1955,7 @@ const CASE_LIST = [
     accent: 0x6fb7d6,
     guide: { name: '카테리나' },
     // 키이우 (50.4°N, 30.5°E) — 시각 보정 좌표
-    mapX: 680, mapY: 185,
+    mapX: 670, mapY: 195,
     mission: [
       '평화는 어떻게 깨지는가.',
       '카테리나의 안내로 폭격받은 학교, 흑해 곡물 항구,',
@@ -1974,8 +1973,8 @@ const CASE_LIST = [
     region: '서아시아 · 가자/요르단강 서안',
     status: 'available',
     accent: 0xc9a3ff,
-    // 예루살렘/가자 (31.8°N, 35.2°E) — 시각 보정 좌표 (특히 위도)
-    mapX: 685, mapY: 232,
+    // 예루살렘/가자 (31.8°N, 35.2°E) — 시각 보정 좌표
+    mapX: 695, mapY: 248,
     mission: [
       '천 년 넘게 세 종교가 함께 살아온 땅,',
       '지금은 가장 오래된 갈등의 한복판.',
@@ -2909,20 +2908,31 @@ class BriefingScene extends Phaser.Scene {
       }
     });
 
-    // 진행 바: 3.2초에 걸쳐 채워짐
+    // 진행 바: 3.2초에 걸쳐 채워짐. 다 차도 자동 진입 안 함 — 사용자 입력 대기.
     const totalMs = 3200;
     this.briefDone = false;
+    this.barReady = false;
     this.tweens.add({
       targets: { v: 0 }, v: 1, duration: totalMs, ease: 'Sine.inOut',
       onUpdate: (tw, tgt) => fillBar(tgt.v),
-      onComplete: () => this.proceed(),
+      onComplete: () => {
+        // 자동 진행 대신 사용자 입력 대기 — 안내문·점 애니메이션 멈춤
+        this.barReady = true;
+        if (this.dotTimer) { this.dotTimer.remove(); this.dotTimer = null; }
+        loadingText.setText('▶  클릭하여 현장 진입');
+        loadingText.setColor('#ffe9b8');
+        this.tweens.add({
+          targets: loadingText, alpha: 0.6, duration: 700,
+          yoyo: true, repeat: -1, ease: 'Sine.inOut'
+        });
+      },
     });
 
-    // 클릭/Space/Enter 로 즉시 건너뛰기
+    // 클릭/Space/Enter — 진행 바 차기 전엔 즉시 진입(건너뛰기), 다 찬 후엔 진입
     const skip = () => this.proceed();
-    this.input.once('pointerdown', skip);
-    this.input.keyboard.once('keydown-SPACE', skip);
-    this.input.keyboard.once('keydown-ENTER', skip);
+    this.input.on('pointerdown', skip);
+    this.input.keyboard.on('keydown-SPACE', skip);
+    this.input.keyboard.on('keydown-ENTER', skip);
   }
 
   proceed() {
@@ -4736,38 +4746,51 @@ class InvestigationScene extends Phaser.Scene {
           fontFamily: FONT, fontSize: '20px', color: '#ffffff'
         }).setOrigin(0.5).setDepth(31));
     } else {
-      // 2단 컬럼 — 단서가 많아도 한 화면에 모두 표시 (UNESCO 영역 배지 포함)
+      // 2단 컬럼 — 캔버스 960폭 가운데 정렬 + 단서별 박스로 가독성 향상
       const tags = this.registry.get('evidenceTags') || {};
       const perCol = Math.ceil(this.collected.length / 2);
+      const colW = 440, gap = 20, rowH = 88;
+      const startX = (960 - (colW * 2 + gap)) / 2;   // = 30
       this.collected.forEach((e, i) => {
         const col = Math.floor(i / perCol);
         const row = i % perCol;
-        const x = 40 + col * 385;
-        const y = 100 + row * 84;
+        const bx = startX + col * (colW + gap);
+        const by = 100 + row * rowH;
         const ai = getArea(e);
-        // 영역 색상 배지 (좌측)
+        // 단서 박스 (배경 + 외곽선)
+        const box = this.add.graphics().setDepth(31);
+        box.fillStyle(0x10202e, 0.85); box.fillRect(bx, by, colW, rowH - 8);
+        box.lineStyle(2, ai ? ai.color : 0x2a5a82, 0.7);
+        box.strokeRect(bx, by, colW, rowH - 8);
+        this.overlay.push(box);
+        // 영역 색상 배지 (좌측 작은 사각형)
         if (ai) {
-          const bg = this.add.graphics().setDepth(31);
-          bg.fillStyle(ai.color, 1); bg.fillRect(x, y + 2, 4, 16);
-          this.overlay.push(bg);
-          this.overlay.push(this.add.text(x + 10, y + 2, ai.label, {
-            fontFamily: FONT, fontSize: '11px', color: ai.hex,
-            fontStyle: 'bold'
-          }).setDepth(31));
+          const tag = this.add.graphics().setDepth(32);
+          tag.fillStyle(ai.color, 1); tag.fillRect(bx + 10, by + 8, 38, 18);
+          this.overlay.push(tag);
+          this.overlay.push(this.add.text(bx + 29, by + 17, ai.label, {
+            fontFamily: FONT, fontSize: '11px', color: '#0a1828', fontStyle: 'bold'
+          }).setOrigin(0.5).setDepth(33));
         }
-        // 학생이 부착한 "내 생각" 태그 (있을 때만, 우측)
+        // 학생이 부착한 "내 생각" 태그 (있을 때만, 우상단)
         const myTag = tags[e.id];
         if (myTag) {
-          this.overlay.push(this.add.text(x + 360, y + 2,
+          this.overlay.push(this.add.text(bx + colW - 10, by + 8,
             '💭 ' + myTag.label, {
               fontFamily: FONT, fontSize: '11px', color: '#ffd96a'
-            }).setOrigin(1, 0).setDepth(31));
+            }).setOrigin(1, 0).setDepth(32));
         }
-        this.overlay.push(this.add.text(x + (ai ? 40 : 0), y,
-          '● ' + e.name + '\n' + e.desc, {
-            fontFamily: FONT, fontSize: '13px', color: '#ffffff',
-            wordWrap: { width: ai ? 320 : 360 }, lineSpacing: 3
-          }).setDepth(31));
+        // 단서명 + 설명 (배지 옆부터)
+        const textX = bx + (ai ? 58 : 14);
+        const textW = colW - (ai ? 72 : 28);
+        this.overlay.push(this.add.text(textX, by + 8, '● ' + e.name, {
+          fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffe9b8',
+          fontStyle: 'bold'
+        }).setDepth(32));
+        this.overlay.push(this.add.text(bx + 14, by + 30, e.desc, {
+          fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
+          wordWrap: { width: colW - 28 }, lineSpacing: 3
+        }).setDepth(32));
       });
     }
     const close = this.add.text(480, 545, '[ 닫기 ]', {
