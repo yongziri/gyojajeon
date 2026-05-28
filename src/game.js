@@ -4086,14 +4086,30 @@ class InvestigationScene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0, 0.5).setDepth(6);
 
-    // 우상단 단서 카운터 (이 화면에서 실시간 갱신)
+    // 우상단 단서 카운터 — 이 장소 + 전체 동시 표시
     const tot = this.totalEvidence();
+    const locEvIds = loc.spots.filter(s => s.evidence).map(s => s.evidence.id);
+    const locTot = locEvIds.length;
+    this._locDoneShown = false;
     this.evHud = this.add.text(940, 20, '', {
       fontFamily: FONT, fontSize: '14px', color: '#ffe082',
-      backgroundColor: '#00000088', padding: { x: 8, y: 4 }
+      backgroundColor: '#00000088', padding: { x: 8, y: 4 },
+      align: 'right'
     }).setOrigin(1, 0).setDepth(6);
     this.refreshEvHud = () => {
-      this.evHud.setText('📋 단서 ' + this.collected.length + ' / ' + tot);
+      const locDone = locEvIds.filter(id =>
+        this.collected.find(c => c.id === id)).length;
+      const locDoneAll = (locTot > 0 && locDone >= locTot);
+      const locTxt = (locTot > 0)
+        ? '📍 이 장소  ' + locDone + ' / ' + locTot + (locDoneAll ? '  ✓' : '')
+        : '';
+      const allTxt = '📋 전체  ' + this.collected.length + ' / ' + tot;
+      this.evHud.setText(locTxt + (locTxt ? '\n' : '') + allTxt);
+      // 이 장소 완료 시 한 번만 배너 알림
+      if (locDoneAll && !this._locDoneShown) {
+        this._locDoneShown = true;
+        this.showLocCompleteBanner();
+      }
     };
     this.refreshEvHud();
 
@@ -4123,7 +4139,8 @@ class InvestigationScene extends Phaser.Scene {
     // 버튼 4개 균등 분포 (x 가운데 기준): 120, 360, 600, 840
     this.btnExamine = this.makeBtn(120, 565, 150, '조사한다',
       () => this.toggleExamine());
-    this.makeBtn(360, 565, 150, '이동한다', () => this.showMoves(loc));
+    this.btnMove = this.makeBtn(360, 565, 150, '이동한다',
+      () => this.showMoves(loc));
     this.makeBtn(600, 565, 150, '단서 기록', () => this.showRecord());
     this.makeBtn(840, 565, 150, '나가기', () => this.leave());
 
@@ -4291,6 +4308,38 @@ class InvestigationScene extends Phaser.Scene {
       if (this.inspectOpen) this.closeInspectPopup();
     };
     this.input.keyboard.once('keydown-ESC', this.inspectEscHandler);
+  }
+
+  // 이 장소의 단서를 모두 찾았을 때 화면 가운데 큰 배너 (학생이 이동 결심하도록)
+  showLocCompleteBanner() {
+    const dim = this.add.graphics().setDepth(28);
+    dim.fillStyle(0x0c3528, 0.85);
+    dim.fillRoundedRect(180, 380, 600, 70, 12);
+    dim.lineStyle(2, 0x7fd07f, 1);
+    dim.strokeRoundedRect(180, 380, 600, 70, 12);
+    dim.setAlpha(0);
+    const t = this.add.text(480, 415,
+      '✓  이 장소의 단서를 모두 찾았어요!\n[이동한다] 버튼으로 다음 장소로 이동해 보세요.', {
+      fontFamily: FONT_TITLE, fontSize: '15px', color: '#dfffe0',
+      align: 'center', lineSpacing: 4
+    }).setOrigin(0.5).setDepth(29).setAlpha(0);
+    if (window.SFX) window.SFX.play('evidence');
+    this.tweens.add({
+      targets: [dim, t], alpha: 1, duration: 320, ease: 'Sine.out',
+      onComplete: () => {
+        this.time.delayedCall(2800, () => {
+          this.tweens.add({
+            targets: [dim, t], alpha: 0, duration: 320,
+            onComplete: () => { dim.destroy(); t.destroy(); }
+          });
+        });
+      }
+    });
+    // 이동 버튼 라벨에 ✓ 표시 + 살짝 펄스
+    if (this.btnMove && this.btnMove.t) {
+      this.btnMove.t.setText('이동한다  ✓');
+      this.btnMove.t.setColor('#7fd07f');
+    }
   }
 
   closeInspectPopup() {
