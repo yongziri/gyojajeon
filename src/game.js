@@ -1957,18 +1957,19 @@ const CASE_LIST = [
   {
     id: 'palestine',
     title: '오래된 갈등',
-    subtitle: '팔레스타인 — 인권과 공존',
+    subtitle: '팔레스타인 — 평화와 인도주의',
     region: '서아시아 · 가자/요르단강 서안',
-    status: 'coming-soon',
-    accent: 0xe79a78,
+    status: 'available',
+    accent: 0xc9a3ff,
     // lat 32°N, lng 35°E  → 예루살렘/가자 부근
     mapX: 705, mapY: 206,
     mission: [
-      '오래된 갈등의 한복판에서',
-      '서로 다른 사람들이 어떻게 공존할 수 있는지,',
-      '인권의 보편성과 평화의 의미를 탐구할 것.',
+      '천 년 넘게 세 종교가 함께 살아온 땅,',
+      '지금은 가장 오래된 갈등의 한복판.',
       '',
-      '(후속 업데이트 예정)',
+      '안내인 카림과 만나 올리브 농장·예루살렘 골목·UN 캠프를',
+      '조사하고, 평화와 인도주의의 길을',
+      'UN에 보고서로 송부할 것.',
     ],
     code: 'CASE-003  PALESTINE',
   },
@@ -2735,9 +2736,9 @@ class BriefingScene extends Phaser.Scene {
 
     // 사건별 lng/lat (실제 세계 좌표)
     const EVENT_GEO = {
-      aralsea:   { lng: 59.5, lat: 43.8, label: 'Moynaq',          name: 'Aral Sea Region'    },
-      ukraine:   { lng: 30.5, lat: 50.4, label: 'Kyiv',             name: 'Ukraine'            },
-      palestine: { lng: 34.7, lat: 31.7, label: 'Gaza / West Bank', name: 'Palestine'          },
+      aralsea:   { lng: 59.5, lat: 43.8, label: 'Moynaq',           name: 'Aral Sea Region' },
+      ukraine:   { lng: 30.5, lat: 50.4, label: 'Kyiv',              name: 'Ukraine'         },
+      palestine: { lng: 35.2, lat: 31.8, label: 'Jerusalem / Gaza', name: 'Palestine'       },
     };
     const ev = EVENT_GEO[c.id] || EVENT_GEO.aralsea;
 
@@ -3136,10 +3137,12 @@ class WorldScene extends Phaser.Scene {
 
     // 바닥(16:10 폭 GAME_W=960으로 통째로 채움) + 벽만 타일
     // ── 사건별 분기 ──
-    //  aralsea : 사막 흙 (카라칼팍 마을)
-    //  ukraine : 회색 콘크리트 보도 (키이우 거리)
+    //  aralsea   : 사막 흙 (카라칼팍 마을)
+    //  ukraine   : 회색 콘크리트 보도 (키이우 거리)
+    //  palestine : 사막 흙 톤 재사용 (석회암·올리브 분위기는 데코로)
     const caseId = this.registry.get('caseId') || 'aralsea';
     const isUkraine = (caseId === 'ukraine');
+    const isPalestine = (caseId === 'palestine');
     this.add.image(0, 0, isUkraine ? 'ground_concrete' : 'ground').setOrigin(0, 0);
     this.walls = this.physics.add.staticGroup();
     const wallKey = isUkraine ? 'wall_kyiv' : 'wall';
@@ -3200,7 +3203,10 @@ class WorldScene extends Phaser.Scene {
       this.enemy.body.setSize(20, 16).setOffset(6, 14);
       this.enemy.setDepth(this.enemy.y);
       // 사건별 안내인 일러스트가 있으면 도트를 숨기고 일러스트로 시각화
-      const guidePortraitKey = isUkraine ? 'portrait_kateryna' : 'portrait_aijoli';
+      const guidePortraitKey =
+        caseId === 'ukraine'   ? 'portrait_kateryna' :
+        caseId === 'palestine' ? 'portrait_karim'    :
+        'portrait_aijoli';
       if (this.textures.exists(guidePortraitKey)) {
         this.enemy.setVisible(false);
         this.enemyArt = this.add.image(15 * TILE, 9 * TILE + 14, guidePortraitKey)
@@ -3250,7 +3256,10 @@ class WorldScene extends Phaser.Scene {
     // 옛 항구 조사 입구 (노란 표지판) — scale 고정 (꿈틀 제거)
     this.portal = this.physics.add.staticImage(4 * TILE, 11 * TILE, 'portal');
     this.portal.setDepth(this.portal.y);
-    this.add.text(4 * TILE, 11 * TILE - 30, isUkraine ? '키이우 조사' : '아랄해 조사', {
+    const portalLabel = isUkraine ? '키이우 조사'
+                      : isPalestine ? '팔레스타인 조사'
+                      : '아랄해 조사';
+    this.add.text(4 * TILE, 11 * TILE - 30, portalLabel, {
       fontFamily: FONT, fontSize: '12px', color: '#ffe082',
       backgroundColor: '#00000088', padding: { x: 4, y: 2 }
     }).setOrigin(0.5).setDepth(2000);
@@ -3421,6 +3430,37 @@ class WorldScene extends Phaser.Scene {
       tinyProp(5,  80,  340, false);
       tinyProp(17, 460, 280, false);
       tinyProp(5,  720, 140, false);
+    } else if (isPalestine) {
+      // ─────────── 사건 3 — 팔레스타인·이스라엘 ───────────
+      // 안전 영역: x 40~880, baseY 40~470
+      // 컨셉: 돌담·올리브 농장·UN 텐트의 평화로운 광장
+      // 평화 비둘기 상징 (가운데 위)
+      prop('peace_dove', 600, 180, 2);
+      // UN 텐트 (좌하단 — 구호 거점)
+      prop('un_tent', 280, 420, 2);
+      this.add.text(280, 424, 'UN', {
+        fontFamily: FONT, fontSize: '10px', color: '#dff1ff',
+        backgroundColor: '#00000088', padding: { x: 3, y: 1 }
+      }).setOrigin(0.5).setDepth(2000);
+      // 건물 (모스크·집·분수 — 옛 예루살렘 분위기)
+      building('mosque', 720, 132, 86, 26);
+      building('minaret', 640, 132, 18, 24);
+      building('house', 520, 470, 74, 24);
+      building('fountain', 320, 360, 62, 16);
+      // 올리브 나무 (palm 재사용 — 잎이 무성한 분위기)
+      prop('palm', 160, 200);
+      prop('palm', 480, 460);
+      prop('palm', 760, 470);
+      // 침엽수 = 사이프러스 (지중해성, 4분면 골고루)
+      tinyProp(4,  60,  150, true, 16, 10);
+      tinyProp(4,  400, 100, true, 16, 10);
+      tinyProp(4,  840, 200, true, 16, 10);
+      tinyProp(16, 880, 380, true, 16, 10);
+      // 덤불 (통과 가능)
+      tinyProp(5,  100, 320, false);
+      tinyProp(17, 460, 160, false);
+      tinyProp(17, 700, 410, false);
+      tinyProp(5,  820, 460, false);
     } else {
       // ─────────── 사건 1 — 카라칼팍 사막 마을 ───────────
       // 건물 (4분면 골고루)
@@ -4022,10 +4062,14 @@ class DialogueScene extends Phaser.Scene {
     this.add.rectangle(480, 300, 960, 600, 0x000000, 0.45);
 
     // 좌측 큰 캐릭터 — 사건별 안내인 일러스트 (있으면 상반신 컷, 없으면 도트)
-    //  aralsea  → portrait_aijoli (zola)
-    //  ukraine  → portrait_kateryna (cate)
+    //  aralsea   → portrait_aijoli (zola)
+    //  ukraine   → portrait_kateryna (cate)
+    //  palestine → portrait_karim
     const caseId = this.registry.get('caseId') || 'aralsea';
-    const guidePortraitKey = (caseId === 'ukraine') ? 'portrait_kateryna' : 'portrait_aijoli';
+    const guidePortraitKey =
+      caseId === 'ukraine'   ? 'portrait_kateryna' :
+      caseId === 'palestine' ? 'portrait_karim'    :
+      'portrait_aijoli';
     if (this.textures.exists(guidePortraitKey)) {
       this.portrait = this.add.image(140, 20, guidePortraitKey)
         .setOrigin(0.5, 0).setDepth(5);
