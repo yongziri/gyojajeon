@@ -2264,30 +2264,32 @@ class CaseSelectScene extends Phaser.Scene {
 
   // 카드 아이콘 — 사건별 단순 도형
   drawCaseIcon(g, cx, cy, c) {
+    // 사건 발생국 국기 (단순화 픽셀 도트)
+    const w = 34, h = 22;
+    const x = cx - w / 2, y = cy - h / 2;
+    const band = h / 3;
     if (c.id === 'aralsea') {
-      // 물결 (사라진 바다)
-      g.fillStyle(c.accent, 1);
-      g.fillRect(cx - 14, cy - 6, 28, 4);
-      g.fillRect(cx - 10, cy + 0, 20, 3);
-      g.fillRect(cx - 14, cy + 6, 28, 3);
-      g.fillStyle(0xffe9b8, 0.5);
-      g.fillRect(cx - 12, cy - 5, 6, 2);
+      // 우즈베키스탄 — 파랑/흰/녹 3색 + 빨간 가는 분리선
+      g.fillStyle(0x0099b5, 1); g.fillRect(x, y, w, band);
+      g.fillStyle(0xffffff, 1); g.fillRect(x, y + band, w, band);
+      g.fillStyle(0x1eb53a, 1); g.fillRect(x, y + 2 * band, w, band);
+      g.fillStyle(0xce1126, 1);
+      g.fillRect(x, y + band - 1, w, 1);
+      g.fillRect(x, y + 2 * band, w, 1);
     } else if (c.id === 'ukraine') {
-      // 깨어진 평화 — 비둘기 + 균열
-      g.fillStyle(c.accent, 1);
-      g.fillRect(cx - 10, cy - 8, 4, 18);
-      g.fillRect(cx - 6, cy - 4, 14, 4);
-      g.fillRect(cx + 4, cy - 8, 4, 16);
-      g.fillStyle(0xff5050, 1);
-      g.fillRect(cx - 2, cy - 12, 2, 26);
+      // 우크라이나 — 파랑/노랑 2색
+      g.fillStyle(0x0057b8, 1); g.fillRect(x, y, w, h / 2);
+      g.fillStyle(0xffd500, 1); g.fillRect(x, y + h / 2, w, h / 2);
     } else if (c.id === 'palestine') {
-      // 분리 — 두 영역 + 경계선
-      g.fillStyle(c.accent, 1);
-      g.fillRect(cx - 14, cy - 8, 12, 16);
-      g.fillRect(cx + 2, cy - 8, 12, 16);
-      g.fillStyle(0xffffff, 0.6);
-      g.fillRect(cx - 1, cy - 10, 2, 20);
+      // 팔레스타인 — 검정/흰/녹 3색 + 좌측 빨간 삼각형
+      g.fillStyle(0x000000, 1); g.fillRect(x, y, w, band);
+      g.fillStyle(0xffffff, 1); g.fillRect(x, y + band, w, band);
+      g.fillStyle(0x007a3d, 1); g.fillRect(x, y + 2 * band, w, band);
+      g.fillStyle(0xce1126, 1);
+      g.fillTriangle(x, y, x + 12, y + h / 2, x, y + h);
     }
+    // 깃발 테두리
+    g.lineStyle(1, 0x000000, 0.5); g.strokeRect(x, y, w, h);
   }
 
   // 세계 지도 (Wikimedia Commons Public Domain "흰 대륙 + 투명 바다" PNG)

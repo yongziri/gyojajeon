@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v64';
+const CACHE = 'vanished-sea-v65';
 const PRECACHE = [
   './',
   './index.html',
@@ -38,8 +38,9 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // portraits/* — network-first (일러스트가 자주 교체되므로 항상 최신 우선)
-  if (url.pathname.includes('/assets/portraits/')) {
+  // portraits/* 및 photos/* — network-first (자주 교체되는 이미지 항상 최신 우선)
+  if (url.pathname.includes('/assets/portraits/') ||
+      url.pathname.includes('/assets/photos/')) {
     e.respondWith(
       fetch(req).then((resp) => {
         if (resp && resp.status === 200 && resp.type === 'basic') {
