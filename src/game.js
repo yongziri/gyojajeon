@@ -3273,7 +3273,8 @@ class WorldScene extends Phaser.Scene {
     const portalLabel = isUkraine ? '키이우 조사'
                       : isPalestine ? '팔레스타인 조사'
                       : '아랄해 조사';
-    this.add.text(4 * TILE, 11 * TILE - 30, portalLabel, {
+    // 라벨은 NPC 명찰과 동일하게 물체 아래에 표시 (시각 통일)
+    this.add.text(4 * TILE, 11 * TILE + 22, portalLabel, {
       fontFamily: FONT, fontSize: '12px', color: '#ffe082',
       backgroundColor: '#00000088', padding: { x: 4, y: 2 }
     }).setOrigin(0.5).setDepth(2000);
@@ -3291,7 +3292,7 @@ class WorldScene extends Phaser.Scene {
     // UN 우편함 (편지 쓰기 입구) — scale 고정 (꿈틀 제거)
     this.mailbox = this.physics.add.staticImage(12 * TILE, 11 * TILE, 'mailbox');
     this.mailbox.setDepth(this.mailbox.y);
-    this.add.text(12 * TILE, 11 * TILE - 36, '보고서 송부', {
+    this.add.text(12 * TILE, 11 * TILE + 22, '보고서 송부', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
       backgroundColor: '#00000088', padding: { x: 4, y: 2 }
     }).setOrigin(0.5).setDepth(2000);
@@ -3344,7 +3345,7 @@ class WorldScene extends Phaser.Scene {
     chairG.fillRect(chairX - 11, chairY - 17, 22, 2);
 
     // 라벨
-    this.add.text(chairX, chairY - 36, '🪞 성찰의 의자', {
+    this.add.text(chairX, chairY + 28, '🪞 성찰의 의자', {
       fontFamily: FONT, fontSize: '11px', color: '#ffe9b8',
       backgroundColor: '#00000088', padding: { x: 4, y: 2 }
     }).setOrigin(0.5).setDepth(2000);
