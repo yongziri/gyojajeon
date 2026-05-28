@@ -3392,75 +3392,77 @@ class WorldScene extends Phaser.Scene {
 
     if (isUkraine) {
       // ─────────── 사건 2 — 키이우 거리 ───────────
-      // 안전 영역: x 40~880, baseY 40~470 (외벽 c=23 우측, r=12 하단 안쪽)
-      // 평화 비둘기 동상 (광장의 중심·상징물)
-      prop('peace_dove', 600, 200, 2);
-      // UN 텐트 (구호 거점)
-      prop('un_tent', 180, 220, 2);
-      this.add.text(180, 224, 'UN', {
+      // 안전 영역: x 40~880, baseY 40~470
+      // 데코·NPC가 가운데·하단에 몰리지 않도록 4분면 균등 분포 의도
+      // 평화 비둘기 동상 (가운데 위 — 광장의 중심)
+      prop('peace_dove', 600, 180, 2);
+      // UN 텐트 (좌하단 — 구호 거점)
+      prop('un_tent', 280, 420, 2);
+      this.add.text(280, 424, 'UN', {
         fontFamily: FONT, fontSize: '10px', color: '#dff1ff',
         backgroundColor: '#00000088', padding: { x: 3, y: 1 }
       }).setOrigin(0.5).setDepth(2000);
-      // 우크라이나 국기 (두 곳에 휘날림)
+      // 우크라이나 국기 (좌상·우상 두 곳)
+      prop('ua_flag', 280, 140, 1.5);
       prop('ua_flag', 700, 180, 1.5);
-      prop('ua_flag', 380, 240, 1.5);
-      // 모래주머니 바리케이드 (입구 방어 라인 — 3개 일렬)
-      prop('sandbag', 80,  470, 1.5);
-      prop('sandbag', 130, 470, 1.5);
-      prop('sandbag', 180, 470, 1.5);
-      prop('sandbag', 700, 460, 1.5);
-      prop('sandbag', 750, 460, 1.5);
-      // 부서진 벤치 (광장 산책로 흔적)
-      prop('broken_bench', 540, 380, 1.5);
-      prop('broken_bench', 350, 460, 1.5);
-      // 부서진 차량 (도로 옆)
-      prop('broken_car', 820, 250, 1.5);
-      // 폭격 자국 (크레이터 — 바닥에 가까운 depth)
-      this.add.image(220, 350, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.5);
-      this.add.image(620, 450, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.5);
-      this.add.image(820, 400, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.2);
-      // 도시 가로수 (Kenney tiny_town tree — 잎이 풍성한 활엽수)
-      tinyProp(4,  50,  240, true, 16, 10);
-      tinyProp(4,  430, 130, true, 16, 10);
-      tinyProp(4,  840, 130, true, 16, 10);
-      tinyProp(4,  860, 440, true, 16, 10);
-      tinyProp(16, 230, 200, true, 16, 10);
-      // 덤불 (도시 화단)
-      tinyProp(5,  100, 280, false);
-      tinyProp(17, 820, 460, false);
-      tinyProp(5,  450, 160, false);
+      // 모래주머니 — 입구 좌하단 일렬(축소) + 우상단 2개 분리
+      prop('sandbag', 70,  450, 1.5);
+      prop('sandbag', 120, 450, 1.5);
+      prop('sandbag', 760, 200, 1.5);
+      prop('sandbag', 730, 380, 1.5);
+      // 부서진 벤치 (가운데 약간 좌측 · 우하단)
+      prop('broken_bench', 520, 380, 1.5);
+      prop('broken_bench', 380, 460, 1.5);
+      // 부서진 차량 (우상단 도로 옆)
+      prop('broken_car', 820, 260, 1.5);
+      // 폭격 자국 (좌중·가운데하단·우하단으로 분산)
+      this.add.image(210, 320, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.5);
+      this.add.image(550, 440, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.4);
+      this.add.image(870, 430, 'crater').setOrigin(0.5, 0.5).setDepth(0).setScale(1.2);
+      // 도시 가로수 (4분면 골고루)
+      tinyProp(4,  60,  180, true, 16, 10);
+      tinyProp(4,  430, 110, true, 16, 10);
+      tinyProp(4,  840, 110, true, 16, 10);
+      tinyProp(4,  640, 460, true, 16, 10);
+      tinyProp(16, 230, 280, true, 16, 10);
+      tinyProp(16, 880, 360, true, 16, 10);
+      // 덤불 (도시 화단 — 빈 공간 메움)
+      tinyProp(5,  80,  340, false);
+      tinyProp(17, 460, 280, false);
+      tinyProp(5,  720, 140, false);
     } else {
       // ─────────── 사건 1 — 카라칼팍 사막 마을 ───────────
+      // 건물 (4분면 골고루)
       building('mosque', 690, 132, 86, 26);
       building('minaret', 610, 132, 18, 24);
       building('house', 560, 470, 74, 24);
       building('fountain', 300, 360, 62, 16);
-      prop('palm', 300, 196);
-      prop('palm', 470, 478);
-      // 침엽수 (단단·통과 불가)
-      tinyProp(4, 400, 100, true, 16, 10);
-      tinyProp(4, 520, 240, true, 16, 10);
-      tinyProp(16, 700, 290, true, 16, 10);
-      tinyProp(16, 60,  220, true, 16, 10);
-      // 덤불 (통과 가능 데코)
-      tinyProp(5, 440, 140, false);
-      tinyProp(17, 220, 440, false);
-      tinyProp(17, 160, 380, false);
-      tinyProp(5,  660, 460, false);
+      // 야자수 (가운데 두 곳 → 좌측 + 우측 분산)
+      prop('palm', 260, 196);
+      prop('palm', 540, 470);
+      // 침엽수 (4분면 골고루)
+      tinyProp(4,  60,  140, true, 16, 10);
+      tinyProp(4,  400, 90,  true, 16, 10);
+      tinyProp(4,  520, 280, true, 16, 10);
+      tinyProp(16, 720, 290, true, 16, 10);
+      // 덤불 (통과 가능)
+      tinyProp(5,  440, 140, false);
+      tinyProp(17, 220, 450, false);
+      tinyProp(17, 130, 320, false);
+      tinyProp(5,  660, 410, false);
 
-      // ── 16:10 우측 영역(800~960) 데코 — 사라진 바다 주제 ─────
-      this.add.image(870, 200, 'rusty_boat')
-        .setOrigin(0.5, 1).setDepth(200).setScale(2);
-      this.add.image(890, 360, 'dry_well')
+      // ── 16:10 우측 영역(700~880) 데코 — 사라진 바다 주제 ─────
+      // 우측에 몰리지 않도록 거리 두고 분산
+      this.add.image(820, 180, 'rusty_boat')
+        .setOrigin(0.5, 1).setDepth(180).setScale(2);
+      this.add.image(870, 360, 'dry_well')
         .setOrigin(0.5, 1).setDepth(360).setScale(2);
-      this.add.image(840, 450, 'sand_pile')
-        .setOrigin(0.5, 1).setDepth(450).setScale(2);
-      this.add.image(910, 530, 'sand_pile')
-        .setOrigin(0.5, 1).setDepth(530).setScale(2);
-      tinyProp(16, 850, 130, true, 16, 10);
-      tinyProp(4,  920, 280, true, 16, 10);
-      tinyProp(17, 870, 565, false);
-      tinyProp(5,  920, 175, false);
+      this.add.image(770, 440, 'sand_pile')
+        .setOrigin(0.5, 1).setDepth(440).setScale(2);
+      this.add.image(850, 460, 'sand_pile')
+        .setOrigin(0.5, 1).setDepth(460).setScale(2);
+      tinyProp(16, 800, 250, true, 16, 10);
+      tinyProp(17, 730, 220, false);
     }
 
     // 시민 NPC (Kenney Tiny Dungeon CC0 도트 + 일러스트 portrait overlay) — 상호작용 + 퀴즈
