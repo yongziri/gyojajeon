@@ -4117,6 +4117,11 @@ class DialogueScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '16px', color: '#bfe6ff'
     }).setOrigin(0.5);
 
+    // 우상단 — 대화 도중 빠져나가기 (월드로 복귀)
+    fancyButton(this, 880, 30, 130, 36, '← 닫기',
+      () => this.bailOut(),
+      { base: 0x3a2410, hover: 0x5c4718, edge: 0xe8b86a, text: '#ffe9b8' });
+
     // 하단 대사 박스 (전체 너비)
     panel(this, 480, 510, 940, 170, 0x0c1620, 0xe8b86a);
 
@@ -4268,6 +4273,13 @@ class DialogueScene extends Phaser.Scene {
       this.registry.set('enemyDefeated', true);
     }
     // 오버레이 종료 후 월드 재개
+    this.scene.stop();
+    this.scene.resume('WorldScene');
+  }
+
+  // 사용자가 대화 중간에 닫기 버튼 누름 — 상태 변경 없이 월드 복귀
+  bailOut() {
+    if (this.timer) this.timer.remove();
     this.scene.stop();
     this.scene.resume('WorldScene');
   }
@@ -4836,6 +4848,11 @@ class QuizScene extends Phaser.Scene {
       });
     }
 
+    // 우상단 — 인터뷰 도중 빠져나가기 (월드로 복귀)
+    fancyButton(this, 880, 30, 130, 36, '← 닫기',
+      () => this.bailOut(),
+      { base: 0x3a2410, hover: 0x5c4718, edge: 0xe8b86a, text: '#ffe9b8' });
+
     // 하단 대사 박스
     panel(this, 480, 510, 940, 170, 0x0c1620, 0xe8b86a);
     this.nameText = this.add.text(54, 438, '[' + this.citizen.name + ']', {
@@ -5007,6 +5024,13 @@ class QuizScene extends Phaser.Scene {
         });
       });
     });
+  }
+
+  // 사용자가 인터뷰 중간에 닫기 버튼 누름 — 상태 변경 없이 월드 복귀
+  bailOut() {
+    if (this.typeTimer) this.typeTimer.remove();
+    this.scene.stop();
+    this.scene.resume('WorldScene');
   }
 }
 
