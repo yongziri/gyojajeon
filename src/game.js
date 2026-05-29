@@ -1235,6 +1235,8 @@ class BootScene extends Phaser.Scene {
     // 팔레스타인 안내인·시민 일러스트
     this.load.image('portrait_karim',     'assets/portraits/karim.png');
     this.load.image('portrait_abbas',     'assets/portraits/abbas.png');
+    this.load.image('portrait_rachel',    'assets/portraits/rachel.png');
+    this.load.image('portrait_hana',      'assets/portraits/hana.png');
     // 주인공 일러스트 (있으면 도트 generateTexture 대신 사용)
     this.load.image('hero_down_0', 'assets/character/hero_down_0.png');
     this.load.image('hero_down_1', 'assets/character/hero_down_1.png');
