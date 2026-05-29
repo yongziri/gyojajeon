@@ -2789,29 +2789,31 @@ class BriefingScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '9px', color: '#7aa6c8'
     }).setOrigin(1, 0.5).setAlpha(0);
 
-    // 사건별 lng/lat (실제 세계 좌표)
-    const EVENT_GEO = {
-      aralsea:   { lng: 59.5, lat: 43.8, label: 'Moynaq',           name: 'Aral Sea Region' },
-      ukraine:   { lng: 30.5, lat: 50.4, label: 'Kyiv',              name: 'Ukraine'         },
-      palestine: { lng: 35.2, lat: 31.8, label: 'Jerusalem / Gaza', name: 'Palestine'       },
+    // 사건별 라벨 (위치는 CASE_LIST.mapX/mapY 직접 사용 — CaseSelectScene과
+    // 동일 좌표계라 사용자가 디버그 픽커로 보정한 정확 위치 자동 반영)
+    const EVENT_LABELS = {
+      aralsea:   { label: 'Moynaq',           name: 'Aral Sea Region' },
+      ukraine:   { label: 'Kyiv',              name: 'Ukraine'         },
+      palestine: { label: 'Jerusalem / Gaza', name: 'Palestine'       },
     };
-    const ev = EVENT_GEO[c.id] || EVENT_GEO.aralsea;
+    const ev = EVENT_LABELS[c.id] || EVENT_LABELS.aralsea;
 
     // 미니맵 내부 본문 영역 (헤더 24px 제외)
     const bodyY = mapY + 24, bodyH = mapH - 24;
 
     // world_map 원본 사이즈 (BootScene preload에 있는 PD 세계지도 1280x836)
     const WORLD_ORIG_W = 1280, WORLD_ORIG_H = 836;
-    // 줌 — 미니맵 폭 mapW가 약 22도(경도) 폭이 되도록 더 확대
-    // (마커가 위경도 변환의 미세 오차에도 사건 영토 안에 들어가도록)
-    const ZOOM_LNG_SPAN = 22;
-    const PX_PER_DEG = mapW / ZOOM_LNG_SPAN;
-    const worldScale = PX_PER_DEG * 360 / WORLD_ORIG_W;
+    // CaseSelectScene 지도 패널 사이즈 (580x274, 이미지 origin (360, 118))
+    const CASE_SCALE_X = 580 / WORLD_ORIG_W;
+    const CASE_SCALE_Y = 274 / WORLD_ORIG_H;
+    // 사건 위치 → 원본 픽셀 좌표 (mapX/mapY 역변환)
+    // 이미지 위경도 변환이 부정확하므로 CaseSelectScene과 동일한 좌표계 사용
+    const evXorig = (c.mapX - 360) / CASE_SCALE_X;
+    const evYorig = (c.mapY - 118) / CASE_SCALE_Y;
+    // 미니맵 줌 — CaseSelectScene 표시 비율 대비 약 2배 확대 (지역 디테일)
+    const worldScale = CASE_SCALE_X * 2;
     const dispW = WORLD_ORIG_W * worldScale;
     const dispH = WORLD_ORIG_H * worldScale;
-    // 사건 위치 → 원본 픽셀 좌표
-    const evXorig = (ev.lng + 180) * WORLD_ORIG_W / 360;
-    const evYorig = (90 - ev.lat)  * WORLD_ORIG_H / 180;
     // 미니맵 본문 가운데에 사건 위치 오도록 이미지 좌상단 좌표 계산
     const cx = mapX + mapW / 2, cy = bodyY + bodyH / 2;
     const imgX = cx - evXorig * worldScale;
