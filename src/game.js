@@ -1001,35 +1001,26 @@ function drawPortal(g) {
   pxMap(g, PORTAL_MAP, PORTAL_PAL, 2);
 }
 
-// ── 돋보기 커서 (40x40) ─────────────────────────────────────────
-const MAGNIFIER_PAL = {
-  '.': null, k: 0x1a1228, w: 0xffffff, g: 0xa6c5d8,
-};
-const MAGNIFIER_MAP = [
-  '....kkkkkkkk........',
-  '...kggggggggk.......',
-  '..kgwwggggggggk.....',
-  '..kwwggggggggggk....',
-  '.kgwggggggggggggk...',
-  '.kgggggggggggggggk..',
-  '.kggggggggggggggggk.',
-  '..kggggggggggggggk..',
-  '..kggggggggggggkk...',
-  '...kkkkkkkkkkkk.....',
-  '..............kk....',
-  '...............kk...',
-  '................kk..',
-  '.................kk.',
-  '..................kk',
-  '...................k',
-  '....................',
-  '....................',
-  '....................',
-  '....................',
-];
+// ── 조사 커서 (40x40) — 빨간 조준점 ─────────────────────────────
+// 돋보기 대신 깔끔한 타겟 마커: 흰 외곽 + 반투명 빨간 원 + 흰 십자선
 function drawMagnifier(g) {
   g.clear();
-  pxMap(g, MAGNIFIER_MAP, MAGNIFIER_PAL, 2);
+  const cx = 20, cy = 20;
+  // 외곽 흰 링 (어두운 배경에서 잘 보임)
+  g.lineStyle(2, 0xffffff, 1);
+  g.strokeCircle(cx, cy, 14);
+  // 반투명 빨간 본체
+  g.fillStyle(0xff3030, 0.45);
+  g.fillCircle(cx, cy, 13);
+  // 가운데 흰 점
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(cx, cy, 2.5);
+  // 십자선 (4방향 짧은 선)
+  g.lineStyle(2, 0xffffff, 1);
+  g.lineBetween(cx, cy - 18, cx, cy - 6);   // 위
+  g.lineBetween(cx, cy + 6,  cx, cy + 18);  // 아래
+  g.lineBetween(cx - 18, cy, cx - 6, cy);   // 좌
+  g.lineBetween(cx + 6,  cy, cx + 18, cy);  // 우
 }
 
 // ── UN 우편함 (40x52) — 학생이 편지 쓰러 가는 입구 ─────────────
@@ -4443,6 +4434,47 @@ class InvestigationScene extends Phaser.Scene {
       z.on('pointerdown', () => { if (this.examine) this.inspect(spot); });
       this.zones.push(z);
     });
+
+    // ── 🛠 DEBUG 모드 (?debug=1) — spot 영역 시각화 + 좌표 picker ──
+    // 사용법: URL ?debug=1 → spot 영역이 노란 박스로 표시 + 사진 어디 클릭해도
+    //        화면 우상단에 좌표(x, y) 표시. 정확한 단서 위치를 클릭해 좌표 알려주면
+    //        cases.js spot 좌표를 정확히 보정 가능.
+    if (/[?&]debug=1\b/.test(location.search || '')) {
+      // 각 spot 영역을 노란 박스로 그림 + 라벨
+      loc.spots.forEach((spot, i) => {
+        const box = this.add.graphics().setDepth(50);
+        box.lineStyle(2, 0xffe082, 0.9);
+        box.strokeRect(spot.x, spot.y, spot.w, spot.h);
+        box.fillStyle(0xffe082, 0.12);
+        box.fillRect(spot.x, spot.y, spot.w, spot.h);
+        this.add.text(spot.x + 4, spot.y + 4,
+          (i + 1) + '. ' + spot.name + ' (' + spot.x + ',' + spot.y + ' ' + spot.w + 'x' + spot.h + ')',
+          {
+            fontFamily: FONT, fontSize: '10px', color: '#ffe082',
+            backgroundColor: '#000000bb', padding: { x: 4, y: 2 }
+          }).setDepth(51);
+      });
+      // 사진 위 클릭 → 좌표 표시
+      const dbgInfo = this.add.text(940, 60,
+        '🛠 DEBUG · click photo to log coordinates',
+        {
+          fontFamily: FONT, fontSize: '11px', color: '#ffe082',
+          backgroundColor: '#000000bb', padding: { x: 6, y: 3 },
+          align: 'right'
+        }).setOrigin(1, 0).setDepth(60);
+      const dbgZone = this.add.zone(0, 0, 960, BG_H)
+        .setOrigin(0, 0).setInteractive().setDepth(45);
+      dbgZone.on('pointerdown', (pointer) => {
+        const px = Math.round(pointer.x), py = Math.round(pointer.y);
+        dbgInfo.setText('🛠 DEBUG · Click: x=' + px + ', y=' + py);
+        console.log('[DEBUG][spot] x:', px, '  y:', py);
+        const dot = this.add.circle(px, py, 4, 0xff4040, 1).setDepth(55);
+        this.tweens.add({
+          targets: dot, alpha: 0, duration: 1500, ease: 'Sine.in',
+          onComplete: () => dot.destroy()
+        });
+      });
+    }
 
     // 하단 명령 바 — 16:10(960폭) 기준
     const bar = this.add.graphics().setDepth(4);
