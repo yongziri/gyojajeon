@@ -2093,6 +2093,46 @@ class CaseSelectScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', lineSpacing: 4
     });
 
+    // ── 🛠 DEBUG 모드 (URL ?debug=1) — 마커 좌표 픽커 ────────────
+    // 사용법: 1) 게임 URL에 ?debug=1 추가 (예: /gyojajeon/?debug=1)
+    //        2) 지도에서 원하는 위치 클릭 → 우상단에 좌표 표시 + 콘솔 출력
+    //        3) 좌표를 알려주면 cases.js / game.js CASE_LIST에 반영
+    if (/[?&]debug=1\b/.test(location.search || '')) {
+      // 우상단 — 디버그 안내 + 마지막 클릭 좌표
+      const debugInfo = this.add.text(940, 60,
+        '🛠 DEBUG MODE\nClick anywhere on map to get coordinates',
+        {
+          fontFamily: FONT, fontSize: '11px', color: '#ffe082',
+          backgroundColor: '#000000bb', padding: { x: 8, y: 4 },
+          align: 'right'
+        }).setOrigin(1, 0).setDepth(200);
+
+      // 지도 패널 안 클릭 zone
+      const dbgZone = this.add.zone(mapPanelX, mapPanelY, mapPanelW, mapPanelH)
+        .setOrigin(0, 0).setInteractive().setDepth(150);
+      dbgZone.on('pointerdown', (pointer) => {
+        const px = Math.round(pointer.x), py = Math.round(pointer.y);
+        debugInfo.setText('🛠 DEBUG MODE\nLast click: mapX=' + px + ', mapY=' + py);
+        console.log('[DEBUG] mapX:', px, '  mapY:', py);
+        // 클릭한 위치에 시각 표시 (작은 노란 점)
+        const dot = this.add.circle(px, py, 3, 0xffe082, 1).setDepth(180);
+        this.tweens.add({
+          targets: dot, alpha: 0, duration: 1500, ease: 'Sine.in',
+          onComplete: () => dot.destroy()
+        });
+      });
+
+      // 각 마커 옆에 현재 좌표 라벨
+      CASE_LIST.forEach(cc => {
+        this.add.text(cc.mapX + 12, cc.mapY - 8,
+          cc.id + ' (' + cc.mapX + ',' + cc.mapY + ')',
+          {
+            fontFamily: FONT, fontSize: '9px', color: '#ffe082',
+            backgroundColor: '#000000aa', padding: { x: 3, y: 1 }
+          }).setOrigin(0, 1).setDepth(180);
+      });
+    }
+
     // 하단 좌측 — 타이틀 복귀 / 학습 트리 (fade 적용 + 다중 클릭 가드)
     fancyButton(this, 90, 575, 140, 30, '← 타이틀',
       () => {
