@@ -2564,6 +2564,30 @@ class LearningTreeScene extends Phaser.Scene {
             wordWrap: { width: cardW - 160 }
           });
         }
+        // 학생 본인이 쓴 한 문장 (선택 입력)
+        if (refl && refl.userStatement) {
+          this.add.text(sx, sy + 36, '✍ 내 생각', {
+            fontFamily: FONT, fontSize: '11px', color: '#ffd96a', fontStyle: 'bold'
+          });
+          this.add.text(sx + 80, sy + 36,
+            '"' + refl.userStatement + '"', {
+            fontFamily: FONT, fontSize: '11px', color: '#fff8d0',
+            wordWrap: { width: cardW - 160 }, fontStyle: 'italic'
+          });
+        }
+        // 학생 본인이 쓴 다짐 (선택 입력) — 보고서 송부 직후 살아있음
+        const userPledge = (c.id === (this.registry.get('caseId') || ''))
+          ? (this.registry.get('userPledge') || '').trim() : '';
+        if (userPledge) {
+          this.add.text(sx, sy + 92, '✍ 내 다짐', {
+            fontFamily: FONT, fontSize: '11px', color: '#ffd96a', fontStyle: 'bold'
+          });
+          this.add.text(sx + 80, sy + 92,
+            '"' + userPledge + '"', {
+            fontFamily: FONT, fontSize: '11px', color: '#fff8d0',
+            wordWrap: { width: cardW - 160 }, fontStyle: 'italic'
+          });
+        }
         // 자기 평가 점수
         if (rv) {
           const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
@@ -5640,6 +5664,7 @@ ${pledges.join('\n')}
     const review = r.get('learningReview') || null;
     const tags = r.get('evidenceTags') || {};
     const tagsCount = Object.keys(tags).length;
+    const userPledge = (r.get('userPledge') || '').trim();
 
     // HTML 이스케이프
     const esc = (s) => String(s == null ? '' : s)
@@ -5658,11 +5683,18 @@ ${pledges.join('\n')}
         esc(refl.chainNames[1]) + '  →  ' +
         esc(refl.chainNames[2]) + '</p>';
     }
-    // 자기성찰 인용문
+    // 자기성찰 인용문 (선택 카드 + 자기 작성 둘 다)
     let stmtHtml = '';
-    if (refl && refl.statementText) {
-      stmtHtml = '<h2>💭 조사관의 자기성찰</h2>' +
-        '<blockquote>"' + esc(refl.statementText) + '"</blockquote>';
+    if (refl && (refl.statementText || refl.userStatement)) {
+      stmtHtml = '<h2>💭 조사관의 자기성찰</h2>';
+      if (refl.statementText) {
+        stmtHtml += '<blockquote>"' + esc(refl.statementText) + '"</blockquote>';
+      }
+      if (refl.userStatement) {
+        stmtHtml += '<blockquote class="user-quote">' +
+          '<span class="user-quote-label">✍ 조사관 본인의 한 문장:</span><br>' +
+          '"' + esc(refl.userStatement) + '"</blockquote>';
+      }
     }
     // 자기 평가 표
     let reviewHtml = '';
@@ -5684,8 +5716,9 @@ ${pledges.join('\n')}
     // 본문 조립
     el.innerHTML =
       '<div class="pr-doc">' +
-        '<h1>《 UN 환경계획 · ' + esc(caseTitle) + ' 현지 조사 보고서 》</h1>' +
+        '<h1><span class="un-logo">UN</span>《 ' + esc(caseTitle) + ' · 현지 조사 보고서 》</h1>' +
         '<div class="pr-meta">' +
+          '<strong>P.E.A.C.E. Agency · UN 분쟁 분석관 임무 보고</strong><br>' +
           '보고일 ' + esc(date) +
           '  ·  수신처: ' + esc(recipient.short) +
           '  ·  조사관: ' + esc(name) +
@@ -5703,10 +5736,16 @@ ${pledges.join('\n')}
         '<ul>' +
           pledges.map(p => '<li>' + esc(p) + '</li>').join('') +
         '</ul>' +
+        // 학생 본인이 쓴 한 줄 다짐 (선택 입력)
+        (userPledge
+          ? '<blockquote class="user-quote">' +
+            '<span class="user-quote-label">✍ 조사관 본인의 다짐 한 줄:</span><br>' +
+            '"' + esc(userPledge) + '"</blockquote>'
+          : '') +
 
         reviewHtml +
 
-        // 🆕 P.E.A.C.E. 종합 평가 — 계획서 5항목 자동 산출
+        // 🆕 P.E.A.C.E. 종합 평가 — UN 블루 톤 강조
         (() => {
           const sc = computePeaceScores(this.registry);
           const starsHtml = (n) => '<span class="stars">' + '★'.repeat(n) + '☆'.repeat(3 - n) + '</span>';
@@ -5717,7 +5756,9 @@ ${pledges.join('\n')}
                    '<td>' + starsHtml(v) + '</td>' +
                    '<td>' + v + '</td></tr>';
           }).join('');
-          return '<h2>🏛 P.E.A.C.E. 종합 평가</h2>' +
+          return '<h2 class="peace-eval">🏛 P.E.A.C.E. 종합 평가' +
+              '<span class="peace-grade-badge peace-grade-' + sc.grade + '">' +
+              sc.grade + ' · ' + sc.total + '/' + sc.max + '</span></h2>' +
             '<p style="margin:4px 0 8px">계획서 평가 루브릭(5항목 × 3점 = 15점)에 따라 ' +
             '게임 데이터로부터 자동 산출된 점수입니다.</p>' +
             '<table>' +

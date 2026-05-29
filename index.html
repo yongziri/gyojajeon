@@ -197,6 +197,18 @@
       padding: 4px 12px; background: #eef6fc;
       font-style: italic; color: #2a4a6a;
     }
+    /* 학생 본인이 쓴 한 문장 — 시각 강조 */
+    #printReport blockquote.user-quote {
+      border-left: 4px solid #c9a36b;
+      background: linear-gradient(90deg, #fff8e1, #fffefa);
+      color: #3a2410; font-style: normal; font-weight: 500;
+      padding: 8px 14px; margin: 6px 0 10px 0;
+      box-shadow: 0 1px 3px rgba(160, 110, 30, 0.15);
+    }
+    #printReport .user-quote-label {
+      display: inline-block; font-size: 11px; font-weight: bold;
+      color: #6a4f2a; letter-spacing: 0.5px; margin-bottom: 4px;
+    }
     #printReport table {
       width: 100%; border-collapse: collapse; margin: 4px 0 8px 0;
       font-size: 12px;
@@ -207,10 +219,30 @@
     #printReport table th {
       background: #fdf6e7; color: #6a4f2a; font-weight: bold;
     }
+    /* P.E.A.C.E. 종합 평가 표 — UN 블루 톤 강조 */
+    #printReport h2.peace-eval {
+      border-left-color: #1e4a8a; background: #e7f0fa; color: #1e4a8a;
+    }
+    #printReport .peace-grade-badge {
+      display: inline-block; padding: 4px 12px; border-radius: 4px;
+      font-size: 14px; font-weight: bold; margin-left: 8px;
+      background: #1e4a8a; color: #fff;
+    }
+    #printReport .peace-grade-S { background: #d4af37; }
+    #printReport .peace-grade-A { background: #2e8b57; }
+    #printReport .peace-grade-B { background: #4a7eb8; }
+    #printReport .peace-grade-C { background: #888; }
     #printReport .sign {
       text-align: right; margin-top: 18px; font-size: 12px; color: #555;
     }
     #printReport .stars { color: #d49a30; letter-spacing: 1px; }
+    /* UN 로고 (CSS만으로 단순 표현) */
+    #printReport .un-logo {
+      display: inline-block; vertical-align: middle; margin-right: 8px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #1e4a8a; color: #fff; text-align: center;
+      line-height: 28px; font-size: 16px; font-weight: bold;
+    }
   </style>
 </head>
 <body>
