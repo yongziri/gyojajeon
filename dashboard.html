@@ -427,6 +427,24 @@
           parts.push('<div><span class="lbl">💭</span> ' +
             '<span class="stmt">"' + esc(d.reflection.statement) + '"</span></div>');
         }
+        // 학생이 직접 쓴 자기성찰 한 문장
+        if (d.reflection && d.reflection.userStatement) {
+          parts.push('<div><span class="lbl" style="color:#ffd96a">✍ 내 생각</span> ' +
+            '<span class="stmt" style="color:#fff8d0;font-style:italic">"' +
+            esc(d.reflection.userStatement) + '"</span></div>');
+        }
+        // 학생이 직접 쓴 다짐
+        if (d.userPledge) {
+          parts.push('<div><span class="lbl" style="color:#ffd96a">✍ 내 다짐</span> ' +
+            '<span class="stmt" style="color:#fff8d0;font-style:italic">"' +
+            esc(d.userPledge) + '"</span></div>');
+        }
+        // P.E.A.C.E. 5차원 종합 점수
+        if (d.peace) {
+          parts.push('<div><span class="lbl">🏛 P.E.A.C.E.</span> ' +
+            '<span class="val">[' + esc(d.peace.grade) + '] ' +
+            d.peace.total + ' / ' + d.peace.max + '</span></div>');
+        }
         if (d.review) {
           const avg = ((d.review.goalMet + d.review.factConf + d.review.actionConf) / 3).toFixed(1);
           parts.push('<div><span class="lbl">📊 자기평가</span> ' +
@@ -486,6 +504,47 @@
           (chainHtml || '<p style="color:#7a8590">아직 미작성</p>') +
           (r.statement ? '<p>💭 자기성찰: <em>"' +
             esc(r.statement) + '"</em></p>' : '') +
+          (r.userStatement
+            ? '<p style="background:#3a2e10;padding:8px 12px;border-left:3px solid #ffd96a;margin-top:8px;color:#fff8d0;font-style:italic">' +
+              '<strong style="color:#ffd96a">✍ 학생이 직접 쓴 한 문장:</strong><br>' +
+              '"' + esc(r.userStatement) + '"</p>'
+            : '') +
+          '</section>'
+        );
+      }
+
+      // 1b. 학생이 직접 쓴 다짐 (UN 보고서 송부 전 입력)
+      if (d.userPledge) {
+        sections.push(
+          '<section><h4>✍ 학생 본인의 다짐 (Action)</h4>' +
+          '<p style="background:#3a2e10;padding:10px 14px;border-left:3px solid #ffd96a;color:#fff8d0;font-style:italic">' +
+          '"' + esc(d.userPledge) + '"</p>' +
+          '</section>'
+        );
+      }
+
+      // 1c. P.E.A.C.E. 5차원 종합 평가
+      if (d.peace) {
+        const dimNames = {
+          empathy: '🤝 공감', cognition: '🧠 사실 이해',
+          connection: '🔗 연결 의식', action: '✊ 실천 다짐',
+          cooperation: '🌍 국제 협력'
+        };
+        const dimsHtml = Object.keys(dimNames).map(k => {
+          const v = (d.peace.dims && d.peace.dims[k]) || 0;
+          return '<p><span class="lbl">' + dimNames[k] + '</span> ' +
+            '<span class="stars">' + '★'.repeat(v) + '☆'.repeat(3 - v) + '</span> ' +
+            v + '/3</p>';
+        }).join('');
+        const gradeColors = { S: '#d4af37', A: '#2e8b57', B: '#4a7eb8', C: '#888' };
+        const gc = gradeColors[d.peace.grade] || '#888';
+        sections.push(
+          '<section><h4>🏛 P.E.A.C.E. 종합 평가 ' +
+            '<span style="background:' + gc + ';color:#fff;padding:2px 10px;' +
+            'border-radius:4px;font-size:13px;margin-left:8px">' +
+            '등급 ' + esc(d.peace.grade) + ' · ' + d.peace.total + ' / ' + d.peace.max +
+            '</span></h4>' +
+          dimsHtml +
           '</section>'
         );
       }

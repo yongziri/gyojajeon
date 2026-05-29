@@ -3115,6 +3115,10 @@ function reportProgress(scene, extra) {
       if (t && t.id) tagCount[t.id] = (tagCount[t.id] || 0) + 1;
     });
 
+    // P.E.A.C.E. 5차원 점수 자동 산출 (대시보드에 전송)
+    let peace = null;
+    try { peace = computePeaceScores(r); } catch (e) { /* 무시 */ }
+
     const state = {
       caseId,                                       // 현재 진행 중 사건
       completedCases: completed.length,             // 완료 사건 개수
@@ -3127,7 +3131,9 @@ function reportProgress(scene, extra) {
       reflection: refl ? {
         chainNames: refl.chainNames || [],
         statement: refl.statementText || '',
+        userStatement: refl.userStatement || '',  // 학생이 직접 쓴 한 문장
       } : null,
+      userPledge: (r.get('userPledge') || '').trim(),
       review: review ? {
         goalMet:    review.goalMet,
         factConf:   review.factConf,
@@ -3136,6 +3142,7 @@ function reportProgress(scene, extra) {
       } : null,
       tagCount,                                     // { shock: N, sad: N, wow: N, anger: N }
       tagsCount: Object.keys(tags).length,          // 부착된 태그 총 개수
+      peace,                                        // { dims, total, max, grade }
     };
     if (extra) Object.assign(state, extra);
     window.Telemetry.update(state);
