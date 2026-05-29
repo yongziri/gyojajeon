@@ -1933,8 +1933,8 @@ const CASE_LIST = [
     status: 'available',
     accent: 0xe8b86a,
     guide: { name: '아이졸리' },
-    // 무이낙 (43.8°N, 59.5°E) — 시각 보정 좌표 (등각 투영 아님)
-    mapX: 745, mapY: 215,
+    // 무이낙 (43.8°N, 59.5°E) — 사용자 지정 정확 좌표
+    mapX: 727, mapY: 204,
     // 임무 브리핑 본문 (현장 이동 전 화면)
     mission: [
       '한때 세계 4번째로 컸던 호수가',
@@ -1954,8 +1954,8 @@ const CASE_LIST = [
     status: 'available',
     accent: 0x6fb7d6,
     guide: { name: '카테리나' },
-    // 키이우 (50.4°N, 30.5°E) — 시각 보정 좌표
-    mapX: 670, mapY: 195,
+    // 키이우 (50.4°N, 30.5°E) — 사용자 지정 정확 좌표
+    mapX: 685, mapY: 196,
     mission: [
       '평화는 어떻게 깨지는가.',
       '카테리나의 안내로 폭격받은 학교, 흑해 곡물 항구,',
@@ -1973,8 +1973,8 @@ const CASE_LIST = [
     region: '서아시아 · 가자/요르단강 서안',
     status: 'available',
     accent: 0xc9a3ff,
-    // 예루살렘/가자 (31.8°N, 35.2°E) — 시각 보정 좌표
-    mapX: 695, mapY: 248,
+    // 예루살렘/가자 (31.8°N, 35.2°E) — 사용자 지정 정확 좌표
+    mapX: 691, mapY: 225,
     mission: [
       '천 년 넘게 세 종교가 함께 살아온 땅,',
       '지금은 가장 오래된 갈등의 한복판.',
