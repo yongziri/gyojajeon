@@ -1211,10 +1211,8 @@ class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
 
   preload() {
-    // 선택 사항: assets/ 폴더에 사진이 있으면 자동으로 사용. 없으면 무시.
-    this.load.image('photo_port',   'assets/port.png');
-    this.load.image('photo_strait', 'assets/strait.jpg');
-    this.load.image('photo_market', 'assets/market.jpg');
+    // (옛 photo_port/strait/market 등록은 실제로는 assets/photos/* 아래에 있으므로
+    //  중복 등록을 제거. 새 경로는 아래 portraits/photos 블록에서 처리.)
     // Kenney CC0 스프라이트시트 (16x16, 1px 간격)
     this.load.spritesheet('tiny_town',
       'assets/sprites/kenney_tiny_town/Tilemap/tilemap.png',
