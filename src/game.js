@@ -5240,10 +5240,37 @@ class LetterScene extends Phaser.Scene {
       fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3);
 
+    // 단계 progress 표시 — 1.받는곳 → 2.단서 → 3.다짐 → 4.미리보기
+    const stages = [
+      { n: 1, label: '받는 곳', done: this.recipient !== undefined && this.recipient !== null },
+      { n: 2, label: '단서', done: this.factPicks.size > 0 },
+      { n: 3, label: '다짐', done: this.pledgePicks.size > 0 },
+      { n: 4, label: '미리보기', done: false },
+    ];
+    const stepY = 84;
+    stages.forEach((s, i) => {
+      const x = 200 + i * 180;
+      const colorBg = s.done ? 0x2e6b58 : 0x4a3a22;
+      const colorText = s.done ? '#ffffff' : '#c9a36b';
+      const cg = this.add.graphics().setDepth(3);
+      cg.fillStyle(colorBg, 0.92); cg.fillRoundedRect(x - 70, stepY - 12, 140, 24, 12);
+      cg.lineStyle(2, s.done ? 0xffd96a : 0x6a4f2a, 1);
+      cg.strokeRoundedRect(x - 70, stepY - 12, 140, 24, 12);
+      this.add.text(x, stepY, s.n + '. ' + s.label + (s.done ? '  ✓' : ''), {
+        fontFamily: FONT, fontSize: '12px', color: colorText, fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(4);
+      if (i < stages.length - 1) {
+        this.add.text(x + 90, stepY, '→', {
+          fontFamily: FONT_TITLE, fontSize: '16px',
+          color: s.done ? '#ffd96a' : '#6a4f2a'
+        }).setOrigin(0.5).setDepth(4);
+      }
+    });
+
     // 1) 받는 곳
-    this.sectionLabel(40, 96, '1. 누구에게 보낼까요?');
+    this.sectionLabel(40, 110, '1. 누구에게 보낼까요?');
     this.RECIPIENTS.forEach((r, i) => {
-      const x = 80 + i * 320, y = 124;
+      const x = 80 + i * 320, y = 132;
       const btn = fancyButton(this, x + 110, y + 18, 220, 38, r.short,
         () => { this.recipient = i; this.buildCompose(); },
         i === this.recipient
@@ -5927,12 +5954,14 @@ class ReflectionScene extends Phaser.Scene {
       this.slotObjs.push({ g, t1, t2, zone, x, y: slotY });
       this.drawSlot(i);
 
-      // 화살표 (마지막은 제외)
+      // 화살표 (마지막은 제외) — 슬롯 채워질수록 활성화
       if (i < 2) {
         const ax = x + 110;
-        this.add.text(ax + 10, slotY, '➔', {
-          fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffd96a'
+        const arrow = this.add.text(ax + 10, slotY, '➔', {
+          fontFamily: FONT_TITLE, fontSize: '22px', color: '#3a4a5a'
         }).setOrigin(0.5);
+        if (!this._arrowObjs) this._arrowObjs = [];
+        this._arrowObjs.push({ arrow, idx: i });
       }
     });
 
@@ -6002,6 +6031,25 @@ class ReflectionScene extends Phaser.Scene {
     fancyButton(this, 870, 38, 130, 32, '↩ 닫기',
       () => this.leaveBack(),
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+  }
+
+  // 인과 사슬 화살표 활성화 상태 갱신
+  refreshArrows() {
+    if (!this._arrowObjs) return;
+    this._arrowObjs.forEach(({ arrow, idx }) => {
+      const active = !!this.slots[idx];
+      arrow.setColor(active ? '#ffd96a' : '#3a4a5a');
+      // 활성화 시 살짝 펄스
+      if (active && !arrow._pulseTween) {
+        arrow._pulseTween = this.tweens.add({
+          targets: arrow, scale: 1.15, duration: 600,
+          yoyo: true, repeat: -1, ease: 'Sine.inOut'
+        });
+      } else if (!active && arrow._pulseTween) {
+        arrow._pulseTween.stop(); arrow._pulseTween = null;
+        arrow.setScale(1);
+      }
+    });
   }
 
   // 슬롯 한 칸 그리기
@@ -6163,6 +6211,8 @@ class ReflectionScene extends Phaser.Scene {
       this.statusText.setColor(
         (filled === 3 && stmtOk) ? '#7fd07f' : '#cfe9ff');
     }
+    // 인과 사슬 화살표 활성화 갱신
+    this.refreshArrows();
   }
 
   // 완료 시도
