@@ -177,6 +177,7 @@ const CITIZENS_BY_CASE = {
       name: '농부 페트로',
       sprite: 'tiny_dungeon',
       frame: 96,
+      portrait: 'portrait_farmer',
       x: 430, y: 250,    // 가운데 — 광장 한복판, 평화 비둘기 동상 옆
       intro: [
         '어서 오세요, 조사관님. 페트로라고 합니다. 오데사 근처 밀밭에서 일했죠.',
@@ -209,6 +210,7 @@ const CITIZENS_BY_CASE = {
       name: '자원봉사 마리아',
       sprite: 'tiny_dungeon',
       frame: 85,
+      portrait: 'portrait_volunteer',
       x: 770, y: 220,    // 우상단 — 부서진 차량 옆 의료 봉사 거점
       intro: [
         '반갑습니다, 조사관님. 마리아예요. NGO에서 의료 자원봉사를 해요.',
