@@ -3609,9 +3609,9 @@ class WorldScene extends Phaser.Scene {
         yoyo: true, repeat: -1, ease: 'Sine.inOut'
       });
 
-      // 발 아래 이름 라벨 — 누구인지 한눈에 (depth 2000: 데코·외벽보다 항상 위)
+      // 발 아래 이름 라벨 — enemyLabel로 저장해서 친구 됨 시 destroy 가능하도록
       const guideName = getGuideName(this.registry);
-      this.add.text(15 * TILE, 9 * TILE + 18, guideName, {
+      this.enemyLabel = this.add.text(15 * TILE, 9 * TILE + 18, guideName, {
         fontFamily: FONT, fontSize: '11px', color: '#ffd96a',
         backgroundColor: '#000000aa', padding: { x: 5, y: 2 }
       }).setOrigin(0.5, 0).setDepth(2100);
@@ -4503,15 +4503,22 @@ class WorldScene extends Phaser.Scene {
     this.cooldown = true;
     this.time.delayedCall(700, () => { this.cooldown = false; });
 
-    // 아이졸리 친구 됨 처리 — 캐릭터·마커 둘 다 제거 (tween 먼저 정리)
+    // 안내인 친구 됨 처리 — 도트·일러스트·마커·라벨 모두 제거 (tween 먼저 정리)
     if (this.registry.get('enemyDefeated')) {
       if (this.enemy && this.enemy.scene) {
         this.tweens.killTweensOf(this.enemy);
         this.enemy.destroy(); this.enemy = null;
       }
+      if (this.enemyArt && this.enemyArt.scene) {
+        this.tweens.killTweensOf(this.enemyArt);
+        this.enemyArt.destroy(); this.enemyArt = null;
+      }
       if (this.enemyMarker && this.enemyMarker.scene) {
         this.tweens.killTweensOf(this.enemyMarker);
         this.enemyMarker.destroy(); this.enemyMarker = null;
+      }
+      if (this.enemyLabel && this.enemyLabel.scene) {
+        this.enemyLabel.destroy(); this.enemyLabel = null;
       }
     }
 

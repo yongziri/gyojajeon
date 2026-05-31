@@ -29,7 +29,7 @@ const STORIES = {
 
     q1: {
       speaker: '한센',
-      text: '여기는 UN 본부 P.E.A.C.E. 에이전시. 30년 동안 전 세계 분쟁 현장을 다닌 늙은이의 사무실이지. 잠시 앉아 보게.',
+      text: '여기는 UN 본부 P.E.A.C.E. 에이전시. 30년 동안 분쟁 현장을 다닌 늙은이의 사무실이지.',
       choices: [
         { label: 'P.E.A.C.E.가 무슨 뜻인가요?', love: 1, next: 'meaning' },
         { label: '어떤 일을 하나요?',             next: 'mission' },
@@ -38,98 +38,69 @@ const STORIES = {
 
     meaning: {
       speaker: '한센',
-      text: 'Perceive 인식 · Explore 탐색 · Analyze 분석 · Connect 연결 · Enact 실천. 분쟁을 풀기 위한 다섯 가지 사고 단계라네. 우린 그걸 직접 한다네.',
+      text: 'Perceive 인식 · Explore 탐색 · Analyze 분석 · Connect 연결 · Enact 실천. 분쟁을 풀기 위한 다섯 가지 사고 단계라네.',
       next: 'mission'
     },
 
     mission: {
       speaker: '한센',
-      text: '자네 임무는 세 가지일세. 사라진 바다(아랄해), 깨어진 평화(우크라이나), 오래된 갈등(팔레스타인). 각 현장에 가서 사람을 만나고, 단서를 모으고, 보고서와 연설문을 가져오는 게야.',
+      text: '자네 임무는 세 가지일세. 사라진 바다(아랄해), 깨어진 평화(우크라이나), 오래된 갈등(팔레스타인). 각 현장에서 사람을 만나고, 단서를 모으고, UN에 보고서를 가져오는 게야.',
       next: 'training'
     },
 
     training: {
       speaker: '한센',
-      text: '하지만 그 전에, 자네에게 우리 방식을 직접 체험시켜야겠네. 이 사무실 안에서 짧게 연습해 보자. 자, 시작하세.',
-      next: 'gotoPhaseE'
+      text: '하지만 그 전에, 우리 방식을 짧게 체험해야겠네. 이 사무실 안의 책상·지도·서류함을 살펴보고, 동기 제임스와 한 가지 문제를 풀어 보게.',
+      next: 'q3'
     },
 
-    // ── E 탐색 안내 ──
-    gotoPhaseE: {
+    q3: {
       speaker: '한센',
-      text: '[E · 탐색] 책상 위·세계지도·서류함을 한 번씩 클릭해 단서 3개를 모아 보게. 손가락이나 마우스로 직접 찍으면 되네.',
-      end: true,
-      // HQScene이 이 다음 단계 안내 토스트로 전환
-      gotoStage: 'explore'
-    },
-
-    // ── 탐색 후 다시 호출되는 대화 ──
-    afterExplore: {
-      speaker: '한센',
-      text: '훌륭하네. 단서 셋. 이게 \"탐색(Explore)\"일세. 실제 현장에선 노란 표지판으로 들어가 사진 안의 사물을 찾게 될 거야.',
-      next: 'gotoPhaseA'
-    },
-
-    gotoPhaseA: {
-      speaker: '한센',
-      text: '[A · 분석] 자, 이번엔 한 가지 물어볼 테니 단서를 떠올려 답해 보게.',
-      end: true,
-      gotoStage: 'analyze'
-    },
-
-    // ── 분석(퀴즈) 후 ──
-    afterAnalyzeCorrect: {
-      speaker: '한센',
-      text: '맞혔네! 이게 \"분석(Analyze)\"일세. 사실을 사람의 이야기와 맞춰 보는 거지. 실제 현장에선 시민들과 이렇게 인터뷰하게 될 거야.',
-      next: 'gotoPhaseC'
-    },
-    afterAnalyzeWrong: {
-      speaker: '한센',
-      text: '괜찮네, 첫 시도라 그래. 이게 \"분석(Analyze)\"일세 — 단서를 사람의 이야기와 맞춰 보는 일. 정답이 중요한 게 아니라 \"왜\"를 생각하는 게 핵심이야.',
-      next: 'gotoPhaseC'
-    },
-
-    gotoPhaseC: {
-      speaker: '한센',
-      text: '[C · 성찰] 흩어진 사실을 큰 그림으로 잇는 단계일세. 칠판을 한번 보게.',
-      end: true,
-      gotoStage: 'connect'
-    },
-
-    // ── 성찰 후 ──
-    afterConnect: {
-      speaker: '한센',
-      text: '잘했어. 그것이 \"연결(Connect)\"일세. [원인 → 중간 → 결과]로 사실을 이으면, 분쟁의 진짜 얼굴이 보이지. 실제 현장에선 자네가 모은 단서로 직접 잇게 될 거야.',
-      next: 'gotoPhaseEnact'
-    },
-
-    gotoPhaseEnact: {
-      speaker: '한센',
-      text: '[E · 실천] 마지막일세. 알게 된 것을 행동으로 옮기는 일. 우리에겐 두 가지 도구가 있지 — UN 보고서, 그리고 UN 연설문.',
-      next: 'pledge'
-    },
-
-    pledge: {
-      speaker: '한센',
-      text: '자네 다짐은 어떤가? 멀리 사는 우리가, 멀리 있는 사람들을 위해 무엇을 할 수 있을까?',
+      text: '조사관, 한 가지 물어봐도 되겠나? 멀리 사는 우리가, 멀리 있는 사람들의 분쟁과 어떻게 연결될 수 있을까?',
       choices: [
-        { label: '관심을 갖고 알리겠습니다',         love: 3, next: 'praise' },
-        { label: '잘 모르겠지만 배워보겠습니다',     love: 2, next: 'praise' },
+        { label: '우리도 무관하지 않다',          love: 3, next: 'connect' },
+        { label: '잘 모르겠지만 배워보겠다',      love: 2, next: 'connect' },
+      ]
+    },
+
+    connect: {
+      speaker: '한센',
+      text: '좋은 답일세. 내가 입는 옷·먹는 음식·쓰는 물건 — 그 모든 것이 누군가의 분쟁과 닿아 있다네. 그게 바로 \"세계시민\"의 출발이야.',
+      next: 'q4'
+    },
+
+    q4: {
+      speaker: '한센',
+      text: '자네는 어떤 마음가짐으로 임무에 임할 텐가?',
+      choices: [
+        { label: '관심·연대·실천 — 셋 다 해보겠다',  love: 5, next: 'praise' },
+        { label: '한 사람이 뭘 바꿀 수 있을까',       next: 'forceEnd' },
       ]
     },
 
     praise: {
       speaker: '한센',
-      text: '좋네. 그 두 가지면 충분하지. 자, 이게 자네의 임무서일세. 첫 사건을 골라 출발하게.',
+      text: '훌륭하네. 그 세 가지면 충분해. 자, 이게 자네의 임무서일세. 첫 사건을 골라 출발하게.',
+      next: 'outro'
+    },
+
+    forceEnd: {
+      speaker: '한센',
+      text: '나도 30년 전에는 그렇게 생각했다네. 하지만 작은 관심이 모여 협정이 맺어지고, 작은 손길이 모여 학교가 다시 짓네. 한번 직접 해보면 알게 될 거야.',
       next: 'outro'
     },
 
     outro: {
       speaker: '',
-      text: '한센이 책상 서랍에서 봉인된 임무 서류 세 통을 꺼냈다. 아랄해, 우크라이나, 팔레스타인 — 모두 자네의 첫 임무가 될 수 있다.',
+      text: '한센이 책상 서랍에서 봉인된 임무 서류 세 통을 꺼냈다. 아랄해, 우크라이나, 팔레스타인 — 자네의 첫 임무가 자네를 기다린다.',
       end: true,
-      befriend: true,           // intro 완료 플래그 (enemyDefeated는 사건과 별개로 처리)
-      gotoStage: 'finish'       // HQScene이 CaseSelectScene으로 이동
+      befriend: true
+    },
+
+    flee: {
+      speaker: '한센',
+      text: '천천히 둘러보게. 사무실은 자네의 첫 교실일세.',
+      end: true
     }
   },
 
