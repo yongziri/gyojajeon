@@ -1,9 +1,10 @@
 # 개발 이력 (Development Log)
 
-> 2026-05-19 ~ 2026-05-25  
-> Phaser + Electron 픽셀 RPG · 세계시민교육 컨셉으로 진화
+> 2026-05-19 ~ 2026-05-31
+> Phaser + PWA/Electron 픽셀 RPG · **P.E.A.C.E. — 통(通)하는 국제 분쟁 탐구하기**
+> 제73회 경기도교육자료전 (사회·역사) 출품 — 공도중학교 염태철·이문호·이용빈
 
-작은 데모에서 시작해 **세계시민교육 RPG**로 발전한 전 과정 정리입니다.
+작은 데모에서 시작해 **3사건 통합 세계시민교육 RPG**로 발전한 전 과정 정리.
 
 ---
 
@@ -297,26 +298,26 @@ WorldScene  ←──┬─→ DialogueScene  (overlay, pause+launch)
 
 ---
 
-## 📊 통계
+## 📊 통계 (v84 기준, 2026-05-31)
 
-- **총 작업 단계**: 84개 (TaskCreate 기준)
-- **씬 수**: 11 (Boot, Title, Credits, **TeacherGuide**, **Curriculum**, World, Dialogue, Investigation, Quiz, Letter, Battle[유휴])
-- **데이터 파일**: 3 (dialogue.js, cases.js, quizzes.js) — 단서/보상에 UNESCO `area` 태깅
-- **에셋 팩**: 4 (Kenney Tiny Town/Dungeon/1-Bit/Pixel Platformer — 모두 CC0)
-- **폰트**: 2 종 (NeoDunggeunmoPro, PFStardust × 3 굵기)
-- **사진**: 1 (무이낙 픽셀아트)
-- **외부 모듈**: mqtt.js (브라우저 빌드, 교사 대시보드 통신용)
-- **`game.js` 크기**: 약 2,700 lines
+- **총 작업 단계**: 100+ 개 (TaskCreate 기준)
+- **사건**: 3 (아랄해 환경 / 우크라이나 전쟁 / 팔레스타인·이스라엘)
+- **씬 수**: 16 (Boot, Title, Help, Credits, TeacherGuide, Curriculum, CaseSelect, LearningTree, Briefing, World, Dialogue, Investigation, Quiz, Reflection, Letter, **Speech**) — BattleScene 제거됨
+- **데이터 파일**: 3 (dialogue.js / cases.js / quizzes.js) — 사건별 분기 객체 구조 + UNESCO area 태깅
+- **에셋**: Kenney Tiny Town/Dungeon/1-Bit (CC0), 자체 NPC 일러스트 13장, 배경 사진 9장, MonaS 폰트(SIL OFL)
+- **외부 모듈**: phaser.min.js, mqtt.js (브라우저 빌드)
+- **`game.js` 크기**: 약 6,700 lines
+- **SW 캐시 버전**: v84
+- **PWA·APK 배포**: GitHub Pages + PWABuilder TWA
 
 ---
 
-## 🚧 다음 후보 (선택 작업)
+## 🚧 다음 후보 (출품 직전 권장)
 
-1. 한국 측 발단 장면 (텃밭 흰 가루로 게임 시작)
-2. 인과 사슬 정리 화면 (단서 모두 모이면 다이어그램)
-3. 편지 결과물 PNG 저장 기능 (캡처 자동화)
-4. 해협·시장 사진 교체 (시각 일관성)
-5. **포터블 Windows .exe 빌드** (electron-builder)
-6. 8비트 BGM·SFX 추가
-7. 한국어 + 영어 다국어 지원
-8. 학생 보고서 자동 수합 (대시보드 측 CSV 내보내기)
+1. e2e 테스트 — 우크라/팔레스타인 실제 완주 (정적 검증 완료, 손 검증 미완)
+2. 계획서 PDF 본문 Ⅴ~Ⅶ 작성 (자료 특징·활용방법·활용결과)
+3. 출품 폴더(`교육자료전2/사라진바다`) PC v1.0 → 모바일 PWA 동기화
+4. PWABuilder APK 재빌드 (앱 이름 P.E.A.C.E. 반영)
+5. 첫 진입 튜토리얼 모달
+6. 저장/이어하기 (localStorage)
+7. 8비트 BGM·환경음 + 시연 영상
