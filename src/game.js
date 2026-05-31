@@ -1363,8 +1363,8 @@ class BootScene extends Phaser.Scene {
     const startNext = () => this.scene.start('TitleScene');
     if (document.fonts && document.fonts.ready) {
       Promise.all([
-        document.fonts.load('20px NeoDunggeunmo'),
-        document.fonts.load('bold 32px PFStardust'),
+        document.fonts.load('20px MonaS'),
+        document.fonts.load('bold 32px MonaS'),
       ]).then(startNext).catch(startNext);
     } else {
       startNext();
