@@ -3578,10 +3578,11 @@ class WorldScene extends Phaser.Scene {
       this.enemy.body.setSize(20, 16).setOffset(6, 14);
       this.enemy.setDepth(this.enemy.y);
       // 사건별 안내인 일러스트가 있으면 도트를 숨기고 일러스트로 시각화
+      // intro의 한센은 일러스트 미제공 → 임시로 어부 할아버지 일러스트(fisher) 재활용
       const guidePortraitKey =
         caseId === 'ukraine'   ? 'portrait_kateryna' :
         caseId === 'palestine' ? 'portrait_karim'    :
-        caseId === 'intro'     ? 'portrait_hansen'   :
+        caseId === 'intro'     ? (this.textures.exists('portrait_hansen') ? 'portrait_hansen' : 'portrait_fisher') :
         'portrait_aijoli';
       if (this.textures.exists(guidePortraitKey)) {
         this.enemy.setVisible(false);
@@ -3769,11 +3770,11 @@ class WorldScene extends Phaser.Scene {
     };
 
     if (isIntro) {
-      // ─────────── 사건 0 — UN 본부 38층 사무실 ───────────
-      // 컨셉: 디렉터 한센의 사무실. 마룻바닥은 ground_concrete 그대로,
-      // 가구·창문·UN 깃발·칠판·식물 등을 graphics로 직접 그림.
+      // ─────────── 사건 0 — UN 본부 사무실 (간소화) ───────────
+      // 핵심만 — 뒷벽 UN 깃발 + 창문 2짝 + 칠판 + 좌측 세계지도 + 한센 책상
+      // 잡다한 가구(회의 테이블·의자·화분·명패·램프·책장) 제거.
 
-      // 뒷벽 띠 (UN 블루) — y=0~120 영역만 어둡게 덮음
+      // 뒷벽 띠 (UN 블루)
       const wallBg = this.add.graphics().setDepth(0.5);
       wallBg.fillStyle(0x1a3a5c, 1);
       wallBg.fillRect(TILE, TILE, GAME_W - TILE * 2, TILE * 3);
@@ -3781,7 +3782,7 @@ class WorldScene extends Phaser.Scene {
       wallBg.fillStyle(0x3a2410, 1);
       wallBg.fillRect(TILE, TILE * 4 - 4, GAME_W - TILE * 2, 6);
 
-      // 좌측 큰 창문 (맨해튼 야경)
+      // 큰 창문 2짝 (좌·우, 맨해튼 야경)
       const drawHQWindow = (x, y, w, h) => {
         const g = this.add.graphics().setDepth(1);
         g.fillStyle(0x0a1828, 1); g.fillRect(x, y, w, h);
@@ -3789,22 +3790,20 @@ class WorldScene extends Phaser.Scene {
         g.lineStyle(2, 0xc9a36b, 1);
         g.lineBetween(x + w / 2, y, x + w / 2, y + h);
         g.lineBetween(x, y + h / 2, x + w, y + h / 2);
-        // 도시 실루엣
         g.fillStyle(0x122842, 1);
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 10; i++) {
           const sw = 6 + (i * 7) % 12, sh = 22 + (i * 19) % 60;
-          g.fillRect(x + 6 + i * (w - 12) / 12, y + h - sh, sw, sh);
+          g.fillRect(x + 6 + i * (w - 12) / 10, y + h - sh, sw, sh);
         }
-        // 창문 불빛
         g.fillStyle(0xffe082, 0.75);
-        for (let i = 0; i < 18; i++) {
+        for (let i = 0; i < 14; i++) {
           g.fillRect(x + 8 + (i * 13) % (w - 16), y + 20 + (i * 17) % (h - 50), 2, 2);
         }
       };
       drawHQWindow(80,  TILE + 8, 180, 110);
       drawHQWindow(700, TILE + 8, 180, 110);
 
-      // UN 깃발 (가운데 — 흰 바탕 + 파랑 띠 + 흰 지구)
+      // UN 깃발 (가운데)
       const flagG = this.add.graphics().setDepth(1);
       flagG.fillStyle(0xefefef, 1); flagG.fillRect(380, TILE + 8, 200, 110);
       flagG.lineStyle(3, 0x1a3a5c, 1); flagG.strokeRect(380, TILE + 8, 200, 110);
@@ -3814,152 +3813,55 @@ class WorldScene extends Phaser.Scene {
       flagG.lineStyle(2, 0x5b92e5, 1);
       flagG.strokeCircle(480, TILE + 64, 32);
 
-      // 칠판 (뒷벽 아래 — 좌측 회의 영역)
+      // 칠판 (우측 뒷벽 아래 — 인과 사슬용)
       const boardG = this.add.graphics().setDepth(1);
-      boardG.fillStyle(0x1a3a2a, 1); boardG.fillRect(80, 175, 280, 56);
-      boardG.lineStyle(4, 0x6a4f2a, 1); boardG.strokeRect(80, 175, 280, 56);
+      boardG.fillStyle(0x1a3a2a, 1); boardG.fillRect(620, 175, 260, 56);
+      boardG.lineStyle(4, 0x6a4f2a, 1); boardG.strokeRect(620, 175, 260, 56);
       boardG.fillStyle(0xefe6cc, 0.7);
-      boardG.fillRect(96, 192, 36, 4); boardG.fillRect(140, 192, 36, 4);
-      boardG.fillRect(184, 192, 36, 4); boardG.fillRect(228, 192, 36, 4);
-      this.add.text(220, 220, '🪞 인과 사슬 칠판', {
+      boardG.fillRect(636, 192, 36, 4); boardG.fillRect(680, 192, 36, 4);
+      boardG.fillRect(724, 192, 36, 4); boardG.fillRect(768, 192, 36, 4);
+      this.add.text(750, 220, '🪞 인과 사슬 칠판', {
         fontFamily: FONT, fontSize: '10px', color: '#a8d4b0'
       }).setOrigin(0.5).setDepth(2);
 
-      // 우측 책장 (책으로 채워진 — 우상단)
-      const shelfG = this.add.graphics().setDepth(1);
-      shelfG.fillStyle(0x4a3a22, 1); shelfG.fillRect(620, 175, 260, 60);
-      shelfG.lineStyle(3, 0x2a1810, 1); shelfG.strokeRect(620, 175, 260, 60);
-      // 책장 칸막이 + 책
-      const bookColors = [0xa0282e, 0x5b92e5, 0x6a8a6a, 0xffd96a, 0xc9a3ff, 0xe79a78];
-      for (let row = 0; row < 2; row++) {
-        for (let i = 0; i < 12; i++) {
-          shelfG.fillStyle(bookColors[(row * 7 + i) % bookColors.length], 1);
-          shelfG.fillRect(626 + i * 21, 180 + row * 28, 18, 24);
-        }
-        shelfG.lineStyle(2, 0x2a1810, 1);
-        shelfG.lineBetween(620, 178 + row * 28 + 26, 880, 178 + row * 28 + 26);
-      }
-
-      // 디렉터 책상 (한센 앞 — portal이 책상 자리 역할)
-      // portal 위치 (4*TILE=160, 11*TILE=440)는 책상 입구 근처. 책상은 한센(15*TILE=600, 9*TILE=360) 앞에 큰 거.
-      const deskG = this.add.graphics().setDepth(400);  // 한센 가리지 않도록 depth 조정
-      deskG.fillStyle(0x6a4f2a, 1); deskG.fillRect(500, 400, 220, 70);
-      deskG.lineStyle(3, 0x3a2410, 1); deskG.strokeRect(500, 400, 220, 70);
-      // 책상 다리 (정면)
-      deskG.fillStyle(0x4a3a22, 1);
-      deskG.fillRect(510, 458, 16, 12); deskG.fillRect(696, 458, 16, 12);
-      // 책상 위 소품
-      deskG.fillStyle(0x1a1a2e, 1); deskG.fillRect(512, 410, 50, 30);    // 노트북 베이스
-      deskG.fillStyle(0x5b92e5, 1); deskG.fillRect(514, 412, 46, 26);     // 노트북 화면
-      deskG.fillStyle(0xfff8d0, 1); deskG.fillRect(572, 412, 60, 24);     // 서류 더미
-      deskG.lineStyle(1, 0x3a2410, 1); deskG.strokeRect(572, 412, 60, 24);
-      deskG.fillStyle(0xa0282e, 1); deskG.fillRect(644, 416, 18, 22);     // 빨간 머그
-      deskG.fillStyle(0x6a4f2a, 1); deskG.fillRect(660, 420, 4, 10);
-      deskG.fillStyle(0xffd96a, 1); deskG.fillRect(680, 414, 20, 20);     // 작은 트로피
-      // 책상 충돌 (한센 앞을 막지 않도록 위쪽만 살짝 충돌)
-      const deskBody = this.add.rectangle(610, 460, 220, 18, 0, 0);
-      this.physics.add.existing(deskBody, true);
-      this.solids.push(deskBody);
-
-      // 회의 테이블 (가운데 — 작은 원탁)
-      const tblG = this.add.graphics().setDepth(380);
-      tblG.fillStyle(0x6a4f2a, 1); tblG.fillEllipse(280, 370, 110, 40);
-      tblG.lineStyle(3, 0x3a2410, 1); tblG.strokeEllipse(280, 370, 110, 40);
-      tblG.fillStyle(0x4a3a22, 1); tblG.fillRect(275, 388, 10, 20);
-      tblG.fillRect(245, 408, 70, 6);
-      // 테이블 위 — 컵·노트
-      tblG.fillStyle(0xefe6cc, 1); tblG.fillEllipse(260, 365, 22, 8);
-      tblG.fillStyle(0x5b92e5, 1); tblG.fillEllipse(295, 372, 14, 6);
-      const tblBody = this.add.rectangle(280, 408, 70, 14, 0, 0);
-      this.physics.add.existing(tblBody, true);
-      this.solids.push(tblBody);
-
-      // 의자들 (회의 테이블 주변)
-      const drawChair = (cx, cy, facing) => {
-        const cg = this.add.graphics().setDepth(cy - 4);
-        cg.fillStyle(0x2a1810, 1); cg.fillRect(cx - 12, cy - 14, 24, 8);   // 등받이
-        cg.fillStyle(0x6a4f2a, 1); cg.fillRect(cx - 12, cy - 6, 24, 12);   // 앉는 자리
-        cg.fillStyle(0x2a1810, 1);
-        cg.fillRect(cx - 12, cy + 6, 3, 8); cg.fillRect(cx + 9, cy + 6, 3, 8);
-      };
-      drawChair(220, 350); drawChair(340, 350); drawChair(280, 320);
-
       // 좌측 세계지도 (벽에 걸린 보드)
       const mapG = this.add.graphics().setDepth(1);
-      mapG.fillStyle(0x3a2410, 1); mapG.fillRect(60, 260, 130, 90);
-      mapG.lineStyle(3, 0x1a1008, 1); mapG.strokeRect(60, 260, 130, 90);
-      mapG.fillStyle(0xefe6cc, 1); mapG.fillRect(66, 266, 118, 78);
-      // 대륙 추상
+      mapG.fillStyle(0x3a2410, 1); mapG.fillRect(80, 175, 220, 60);
+      mapG.lineStyle(3, 0x1a1008, 1); mapG.strokeRect(80, 175, 220, 60);
+      mapG.fillStyle(0xefe6cc, 1); mapG.fillRect(86, 181, 208, 48);
       mapG.fillStyle(0x6a8a6a, 1);
-      mapG.fillRect(74, 278, 24, 12); mapG.fillRect(104, 274, 22, 18);
-      mapG.fillRect(130, 282, 18, 12); mapG.fillRect(74, 302, 18, 16);
-      mapG.fillRect(100, 304, 26, 14); mapG.fillRect(132, 304, 22, 18);
+      mapG.fillRect(96, 192, 32, 12); mapG.fillRect(134, 188, 30, 18);
+      mapG.fillRect(170, 195, 24, 12); mapG.fillRect(200, 192, 30, 14);
+      mapG.fillRect(238, 196, 22, 14); mapG.fillRect(96, 212, 22, 12);
+      mapG.fillRect(124, 215, 28, 10); mapG.fillRect(160, 212, 24, 12);
+      mapG.fillRect(196, 216, 30, 10);
       // 빨간 핀 (3분쟁 지점)
       mapG.fillStyle(0xff3a3a, 1);
-      mapG.fillCircle(118, 286, 2.5);
-      mapG.fillCircle(112, 308, 2.5);
-      mapG.fillCircle(138, 312, 2.5);
-      this.add.text(125, 358, '🗺 세계 분쟁 지도', {
+      mapG.fillCircle(180, 196, 3);
+      mapG.fillCircle(210, 200, 3);
+      mapG.fillCircle(245, 204, 3);
+      this.add.text(190, 220, '🗺 세계 분쟁 지도', {
         fontFamily: FONT, fontSize: '9px', color: '#cfe9ff'
       }).setOrigin(0.5).setDepth(2);
 
-      // 우측 서류함 (mailbox 자리 근처에)
-      // mailbox는 12*TILE=480, 11*TILE=440. 옆에 서류함 하나.
-      const cabG = this.add.graphics().setDepth(380);
-      cabG.fillStyle(0x3a4a5a, 1); cabG.fillRect(380, 380, 70, 100);
-      cabG.lineStyle(3, 0x1a2a3a, 1); cabG.strokeRect(380, 380, 70, 100);
-      const drawers = 3;
-      for (let i = 0; i < drawers; i++) {
-        const dy = 388 + i * 30;
-        cabG.lineStyle(2, 0x1a2a3a, 1);
-        cabG.strokeRect(386, dy, 58, 26);
-        cabG.fillStyle(0xc9a36b, 1);
-        cabG.fillCircle(415, dy + 13, 3);
-      }
-      const cabBody = this.add.rectangle(415, 470, 70, 18, 0, 0);
-      this.physics.add.existing(cabBody, true);
-      this.solids.push(cabBody);
-
-      // 화분 (구석 2개 — 좌하단·우상단)
-      const drawPlant = (cx, cy) => {
-        const pg = this.add.graphics().setDepth(cy);
-        // 화분
-        pg.fillStyle(0x8a4422, 1); pg.fillRect(cx - 12, cy - 4, 24, 18);
-        pg.lineStyle(2, 0x4a2410, 1); pg.strokeRect(cx - 12, cy - 4, 24, 18);
-        // 잎
-        pg.fillStyle(0x3a7a3a, 1);
-        pg.fillCircle(cx - 6, cy - 6, 8);
-        pg.fillCircle(cx + 6, cy - 8, 7);
-        pg.fillCircle(cx, cy - 14, 8);
-        pg.fillStyle(0x5a9a5a, 1);
-        pg.fillCircle(cx - 8, cy - 12, 4);
-        pg.fillCircle(cx + 8, cy - 4, 4);
-      };
-      drawPlant(80, 490);
-      drawPlant(880, 270);
-      // 화분 충돌
-      [{x:80,y:496},{x:880,y:276}].forEach(p => {
-        const b = this.add.rectangle(p.x, p.y, 24, 14, 0, 0);
-        this.physics.add.existing(b, true);
-        this.solids.push(b);
-      });
-
-      // 데스크 램프 (한센 책상 위 — 작은 노란 빛)
-      const lampG = this.add.graphics().setDepth(401);
-      lampG.fillStyle(0x2a1810, 1);
-      lampG.fillRect(706, 380, 6, 30);            // 대
-      lampG.fillStyle(0xffd96a, 1);
-      lampG.fillTriangle(700, 380, 718, 380, 709, 360);   // 갓
-      lampG.fillStyle(0xffe082, 0.4);
-      lampG.fillCircle(709, 395, 24);              // 빛 글로우
-
-      // 「P.E.A.C.E. 에이전시」 명패 (책상 앞에 작게)
-      const plate = this.add.graphics().setDepth(402);
-      plate.fillStyle(0xc9a36b, 1); plate.fillRect(560, 466, 100, 12);
-      plate.lineStyle(2, 0x3a2410, 1); plate.strokeRect(560, 466, 100, 12);
-      this.add.text(610, 472, 'P.E.A.C.E.', {
-        fontFamily: FONT_TITLE, fontSize: '8px', color: '#3a2410', fontStyle: 'bold'
-      }).setOrigin(0.5).setDepth(403);
+      // 디렉터 책상 (한센 NPC 앞 — 한센 위치는 15*TILE=600, 9*TILE=360)
+      // 책상은 한센 발 앞쪽(y=400~440)에 좁게 — 주인공이 옆으로 접근 가능하도록
+      const deskG = this.add.graphics().setDepth(400);
+      deskG.fillStyle(0x6a4f2a, 1); deskG.fillRect(520, 405, 160, 55);
+      deskG.lineStyle(3, 0x3a2410, 1); deskG.strokeRect(520, 405, 160, 55);
+      // 책상 다리
+      deskG.fillStyle(0x4a3a22, 1);
+      deskG.fillRect(528, 450, 14, 10); deskG.fillRect(660, 450, 14, 10);
+      // 책상 위 소품 — 노트북 + 서류만 (간소화)
+      deskG.fillStyle(0x1a1a2e, 1); deskG.fillRect(530, 414, 50, 28);
+      deskG.fillStyle(0x5b92e5, 1); deskG.fillRect(532, 416, 46, 24);
+      deskG.fillStyle(0xfff8d0, 1); deskG.fillRect(594, 416, 56, 22);
+      deskG.lineStyle(1, 0x3a2410, 1); deskG.strokeRect(594, 416, 56, 22);
+      deskG.fillStyle(0xa0282e, 1); deskG.fillRect(660, 418, 14, 18);  // 작은 머그
+      // 책상 충돌 (얇게 — 한센 앞은 통과 가능)
+      const deskBody = this.add.rectangle(600, 452, 160, 14, 0, 0);
+      this.physics.add.existing(deskBody, true);
+      this.solids.push(deskBody);
 
     } else if (isUkraine) {
       // ─────────── 사건 2 — 키이우 거리 ───────────
