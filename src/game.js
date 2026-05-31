@@ -1441,20 +1441,53 @@ class TitleScene extends Phaser.Scene {
       yoyo: true, repeat: -1
     });
 
-    // 새 게임 시작 — 사건 선택 화면으로 부드럽게 전환
+    // 새 게임 / 이어하기 — localStorage 세이브 여부에 따라 분기
     let started = false;
     const newGame = () => {
       if (started) return;
       started = true;
+      // 새 게임은 옛 세이브 삭제 — 사건 선택 시 새로운 진행 시작
+      clearGameState();
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('CaseSelectScene');
       });
     };
+    const resumeGame = () => {
+      if (started) return;
+      started = true;
+      const save = loadGameState();
+      if (!save) { started = false; newGame(); return; }
+      // registry 복원 후 곧장 WorldScene으로 진입 (BriefingScene 건너뜀)
+      restoreRegistryFromSave(this.registry, save);
+      this.cameras.main.fadeOut(280, 0, 0, 0);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.scene.start('WorldScene');
+      });
+    };
 
-    // 시작 버튼은 강조해서 중앙 상단에
-    fancyButton(this, 480, 525, 240, 44, '▶  시작하기', newGame,
-      { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+    // 시작 버튼 — 세이브가 있으면 "이어하기 + 새 게임" 두 버튼,
+    // 없으면 단일 "시작하기" 버튼
+    const canResume = hasResumableSave();
+    if (canResume) {
+      const save = loadGameState();
+      const caseLabel = (typeof CASE_LIST !== 'undefined' && save)
+        ? ((CASE_LIST.find(c => c.id === save.caseId) || {}).title || '진행 중')
+        : '진행 중';
+      const stageNum = (save && save.stage) || 1;
+      // 좌: 이어하기 (강조, 사건명·단계 표시)
+      fancyButton(this, 350, 525, 260, 44,
+        '▶  이어하기 (' + caseLabel + ' · ' + stageNum + '단계)',
+        resumeGame,
+        { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+      // 우: 새 게임 (서브)
+      fancyButton(this, 620, 525, 180, 44, '🔄  새 게임', newGame,
+        { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+    } else {
+      // 세이브 없음 — 단일 시작 버튼
+      fancyButton(this, 480, 525, 240, 44, '▶  시작하기', newGame,
+        { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+    }
     // 보조 버튼 3개는 아래쪽에
     const openHelp = () => {
       this.registry.set('helpFrom', 'TitleScene');
@@ -1475,6 +1508,133 @@ class TitleScene extends Phaser.Scene {
     this.input.keyboard.once('keydown-SPACE', newGame);
     this.input.keyboard.once('keydown-ENTER', newGame);
     start.setVisible(false);
+
+    // 첫 진입 튜토리얼 모달 — localStorage 'peace_tutorial_seen' 없으면 표시
+    if (this.shouldShowTutorial()) {
+      this.showTutorialModal();
+    }
+  }
+
+  // 튜토리얼을 한 번이라도 본 적이 없으면 true
+  shouldShowTutorial() {
+    if (typeof localStorage === 'undefined') return false;
+    try { return localStorage.getItem('peace_tutorial_seen') !== '1'; }
+    catch (e) { return false; }
+  }
+
+  // 첫 진입 튜토리얼 — 3페이지 모달
+  showTutorialModal() {
+    const W = GAME_W, H = GAME_H;
+    const layer = this.add.container(0, 0).setDepth(9000);
+
+    // 어두운 배경
+    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.78)
+      .setInteractive();
+    layer.add(dim);
+
+    // 모달 패널
+    const panelG = this.add.graphics();
+    const pw = 720, ph = 480, px = (W - pw) / 2, py = (H - ph) / 2;
+    panelG.fillStyle(0x1a2a3a, 0.97);
+    panelG.fillRoundedRect(px, py, pw, ph, 14);
+    panelG.lineStyle(3, 0xffd96a, 1);
+    panelG.strokeRoundedRect(px, py, pw, ph, 14);
+    layer.add(panelG);
+
+    // 페이지 데이터 — 게임 컨셉·흐름·평가 3장
+    const pages = [
+      {
+        emoji: '🕊',
+        title: '환영합니다, UN 조사관님',
+        body:
+          '당신은 세 가지 국제 분쟁 현장을\n' +
+          '조사하는 UN 청소년 조사관입니다.\n\n' +
+          '🌊 사라진 바다 — 아랄해 환경 분쟁\n' +
+          '🕯 깨어진 평화 — 우크라이나 전쟁\n' +
+          '🫒 오래된 갈등 — 팔레스타인·이스라엘\n\n' +
+          '각 사건에서 사람을 만나고, 단서를 모으고,\n' +
+          'UN에 보고서와 연설문을 송부하세요.',
+      },
+      {
+        emoji: '🗺',
+        title: 'P.E.A.C.E. 5단계 흐름',
+        body:
+          'P  인식    안내인과 첫 만남\n' +
+          'E  탐색    🟨 노란 표지판으로 현장 조사\n' +
+          'A  분석    💬 시민(!) 인터뷰 + 객관식\n' +
+          'C  성찰    🪞 의자 — 인과 사슬 + 자기성찰\n' +
+          'E  실천    📮 우편함 — 보고서 + 🕊 연설문\n\n' +
+          '단계가 잠겨 있으면 머리 위 안내 토스트가\n' +
+          '다음 할 일을 알려줍니다.',
+      },
+      {
+        emoji: '🏛',
+        title: '평가 — P.E.A.C.E. 5차원 (총 15점)',
+        body:
+          '게임이 학생 활동을 자동 채점합니다:\n\n' +
+          '🤝 공감 / 🧠 사실 이해 / 🔗 연결 의식 /\n' +
+          '✊ 실천 다짐 / 🌍 국제 협력\n\n' +
+          '등급: S(13+) · A(10+) · B(7+) · C\n\n' +
+          '🌳 학습 트리에서 사건별 점수·뱃지가\n' +
+          '누적됩니다. 인쇄 보고서도 같은 화면에서.',
+      },
+    ];
+    let pageIdx = 0;
+
+    const titleTxt = this.add.text(W / 2, py + 50, '', {
+      fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8',
+      fontStyle: 'bold', align: 'center'
+    }).setOrigin(0.5);
+    layer.add(titleTxt);
+
+    const bodyTxt = this.add.text(W / 2, py + 100, '', {
+      fontFamily: FONT, fontSize: '14px', color: '#dff1ff',
+      align: 'center', lineSpacing: 6, wordWrap: { width: pw - 80 }
+    }).setOrigin(0.5, 0);
+    layer.add(bodyTxt);
+
+    // 페이지 인디케이터 (점 3개)
+    const dotsY = py + ph - 80;
+    const dots = pages.map((_, i) => {
+      const dot = this.add.circle(W / 2 - 24 + i * 24, dotsY, 5, 0xffd96a, 1);
+      layer.add(dot);
+      return dot;
+    });
+
+    // 버튼들 — 좌하: 건너뛰기, 우하: 다음 / 시작
+    const skip = fancyButton(this, W / 2 - 200, py + ph - 36, 140, 36, '건너뛰기',
+      () => this.closeTutorial(layer, true),
+      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+    layer.add(skip.bg); layer.add(skip.t);
+
+    let nextBtn;
+    const renderPage = () => {
+      const p = pages[pageIdx];
+      titleTxt.setText(p.emoji + '  ' + p.title);
+      bodyTxt.setText(p.body);
+      dots.forEach((d, i) => d.setFillStyle(i === pageIdx ? 0xffd96a : 0x4a5a6a));
+      if (nextBtn) { nextBtn.bg.destroy(); nextBtn.t.destroy(); }
+      const isLast = pageIdx === pages.length - 1;
+      nextBtn = fancyButton(this, W / 2 + 200, py + ph - 36, 160, 36,
+        isLast ? '✓  시작하기' : '다음  ▶',
+        () => {
+          if (isLast) this.closeTutorial(layer, true);
+          else { pageIdx++; renderPage(); }
+        },
+        { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+      layer.add(nextBtn.bg); layer.add(nextBtn.t);
+    };
+    renderPage();
+
+    this._tutorialLayer = layer;
+  }
+
+  closeTutorial(layer, markSeen) {
+    if (markSeen && typeof localStorage !== 'undefined') {
+      try { localStorage.setItem('peace_tutorial_seen', '1'); } catch (e) {}
+    }
+    if (layer) { layer.destroy(true); }
+    this._tutorialLayer = null;
   }
 }
 
@@ -1939,6 +2099,62 @@ function getCaseShortName(registry) {
   const id = (registry && registry.get && registry.get('caseId')) || 'aralsea';
   const SHORT = { aralsea: '아랄해', ukraine: '우크라이나', palestine: '팔레스타인' };
   return SHORT[id] || '현장';
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  저장·이어하기 (localStorage)
+//  · 핵심 진행 상태(registry)를 'peace_save_v1' 키에 저장.
+//  · reportProgress() 호출 시마다 자동 저장 (모든 단계 전환점).
+//  · TitleScene에 "이어하기" 버튼 노출 — 세이브가 있고 현재 사건이
+//    아직 완료 안 됐을 때.
+//  · "새 게임"으로 시작하면 세이브 삭제.
+// ══════════════════════════════════════════════════════════════════
+const SAVE_KEY = 'peace_save_v1';
+const SAVE_FIELDS = [
+  'caseId', 'stage', 'enemyDefeated', 'evidence', 'coreClues',
+  'quizSolved', 'slimeLove', 'invLoc', 'reportSent', 'reflectionDone',
+  'reflection', 'speech', 'completedCases', 'caseBadges', 'caseReviews',
+  'learningReview', 'evidenceTags', 'userPledge', 'userReflection',
+];
+function saveGameState(registry) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const state = { ts: Date.now(), version: 1 };
+    SAVE_FIELDS.forEach(k => {
+      const v = registry.get(k);
+      if (v !== undefined) state[k] = v;
+    });
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  } catch (e) { /* quota exceeded 등 무시 */ }
+}
+function loadGameState() {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || s.version !== 1) return null;
+    return s;
+  } catch (e) { return null; }
+}
+function restoreRegistryFromSave(registry, state) {
+  if (!state) return;
+  SAVE_FIELDS.forEach(k => {
+    if (state[k] !== undefined) registry.set(k, state[k]);
+  });
+}
+function clearGameState() {
+  if (typeof localStorage === 'undefined') return;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+// 세이브가 "이어할 가치"가 있는지 (현재 사건이 진행 중인지) 판별.
+function hasResumableSave() {
+  const s = loadGameState();
+  if (!s || !s.caseId) return false;
+  const done = (s.completedCases || []).includes(s.caseId);
+  // 완료되지 않았고 단계가 ≥1 이면 이어하기 노출
+  return !done && (s.stage || 1) >= 1 &&
+         ((s.enemyDefeated) || (s.evidence && s.evidence.length > 0));
 }
 
 // 사건별 UN 보고서 템플릿 — 수신처 후보·다짐 목록·헤더·권고 단락
@@ -2666,6 +2882,21 @@ class LearningTreeScene extends Phaser.Scene {
             wordWrap: { width: cardW - 160 }, fontStyle: 'italic'
           });
         }
+        // 🕊 UN 연설문 (선택) — SpeechScene에서 작성한 본문 한 줄 인용 (50자)
+        const speech = (c.id === (this.registry.get('caseId') || ''))
+          ? this.registry.get('speech') : null;
+        if (speech && speech.fullText) {
+          this.add.text(sx, sy + 56, '🕊 UN 연설', {
+            fontFamily: FONT, fontSize: '11px', color: '#a8d4b0', fontStyle: 'bold'
+          });
+          const snippet = speech.fullText.length > 60
+            ? speech.fullText.slice(0, 60) + '…'
+            : speech.fullText;
+          this.add.text(sx + 80, sy + 56, '"' + snippet + '"', {
+            fontFamily: FONT, fontSize: '11px', color: '#cfe9ff',
+            wordWrap: { width: cardW - 160 }, fontStyle: 'italic'
+          });
+        }
         // 학생 본인이 쓴 다짐 (선택 입력) — 보고서 송부 직후 살아있음
         const userPledge = (c.id === (this.registry.get('caseId') || ''))
           ? (this.registry.get('userPledge') || '').trim() : '';
@@ -3198,6 +3429,8 @@ function setCfgBarVisible(visible) {
 
 // 교사 대시보드로 현재 진행도 발행 (Telemetry 없거나 미연결이면 무시)
 function reportProgress(scene, extra) {
+  // 자동 저장 — MQTT 연결 여부와 무관하게 매 단계 전환점에서 호출됨
+  try { saveGameState(scene.registry); } catch (e) { /* 무시 */ }
   if (!window.Telemetry) return;
   try {
     const r = scene.registry;
@@ -5775,6 +6008,8 @@ ${tmpl.signature}`;
     const curCase = (typeof CASE_LIST !== 'undefined')
       ? CASE_LIST.find(c => c.id === caseId) : null;
     const caseTitle = curCase ? curCase.title : getCaseShortName(this.registry);
+    // 사건별 권고·서명 — buildSent 본문과 동일 템플릿 사용
+    const tmpl = this.tmpl || getLetterTemplate(this.registry);
     const recipient = this.RECIPIENTS[this.recipient];
     const facts = this.collected
       .filter(ev => this.factPicks.has(ev.id));
@@ -5913,13 +6148,28 @@ ${tmpl.signature}`;
             '</ul>';
         })() +
 
-        '<p style="margin-top:16px">' +
-          '이 문제는 멀리 떨어진 우리의 소비와도 연결됩니다. ' +
-          '국제사회·정부·시민이 협력해 재발을 막고, 훼손된 ' +
-          '생태계의 회복을 위해 노력할 것을 권고합니다.' +
-        '</p>' +
+        // 🕊 UN 연설문 — SpeechScene에서 학생이 직접 만든 연설을 보고서에 인용
+        (() => {
+          const speech = this.registry.get('speech');
+          if (!speech || !speech.fullText) return '';
+          const phraseList = (speech.phrases || []).map(p =>
+            '<li>' + esc(p) + '</li>').join('');
+          return '<h2>🕊 UN 연설문 (조사관 발표)</h2>' +
+            '<blockquote class="user-quote">' +
+              '<span class="user-quote-label">조사관의 호소:</span><br>' +
+              '"' + esc(speech.fullText) + '"' +
+            '</blockquote>' +
+            (phraseList
+              ? '<details style="margin-top:6px"><summary>본문 문장 분해</summary>' +
+                '<ul>' + phraseList +
+                (speech.closing ? '<li><em>(마무리)</em> ' + esc(speech.closing) + '</li>' : '') +
+                '</ul></details>'
+              : '');
+        })() +
 
-        '<div class="sign">— UN 환경계획 파견 조사관 —</div>' +
+        '<p style="margin-top:16px">' + esc(tmpl.footer).replace(/\n/g, '<br>') + '</p>' +
+
+        '<div class="sign">' + esc(tmpl.signature) + '</div>' +
       '</div>';
 
     // 인쇄 다이얼로그 호출 — Electron/브라우저 모두 동작
