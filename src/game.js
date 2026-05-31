@@ -4793,8 +4793,18 @@ class InvestigationScene extends Phaser.Scene {
       // Flow로 생성된 사진은 이미 픽셀 아트로 그려져 있으므로
       // 추가 픽셀화 필터를 적용하지 않고 원본 해상도 그대로 표시
       this.add.image(480, BG_H / 2, photoKey).setDisplaySize(BG_W, BG_H);
-    } else {
+    } else if (loc.bg === 'bg_un_hq') {
+      // intro: UN 본부 사무실 — graphics로 사무실 풍 배경 그림 (사진 자산 없음)
+      this.drawHQOfficeBg();
+    } else if (this.textures.exists(loc.bg)) {
       this.add.image(480, BG_H / 2, loc.bg);
+    } else {
+      // 텍스처 없는 사건 — 검은 배경 + 안내
+      const fb = this.add.graphics();
+      fb.fillStyle(0x1a2030, 1); fb.fillRect(0, 0, BG_W, BG_H);
+      this.add.text(480, BG_H / 2, '(' + loc.bg + ' 배경 없음)', {
+        fontFamily: FONT, fontSize: '14px', color: '#7a8a98'
+      }).setOrigin(0.5);
     }
     // 장소 이름 칩
     const np = this.add.graphics().setDepth(5);
@@ -5073,6 +5083,93 @@ class InvestigationScene extends Phaser.Scene {
   }
 
   // 이 장소의 단서를 모두 찾았을 때 화면 가운데 큰 배너 (학생이 이동 결심하도록)
+  // intro 전용 — UN 본부 사무실 배경 (사진 자산이 없을 때 graphics로 직접 그림)
+  // spot 좌표(cases.js intro.office): 책상 80~300, 지도 340~580, 서류함 620~840 (y 120~340)
+  drawHQOfficeBg() {
+    const g = this.add.graphics().setDepth(0);
+    // 뒷벽 (UN 블루) + 마룻바닥
+    g.fillStyle(0x1a3a5c, 1); g.fillRect(0, 0, BG_W, 200);
+    g.fillStyle(0x5a3f22, 1); g.fillRect(0, 200, BG_W, BG_H - 200);
+    // 마룻바닥 결
+    g.lineStyle(1, 0x3a2410, 0.6);
+    for (let i = 0; i < 6; i++) g.lineBetween(0, 200 + i * 45, BG_W, 200 + i * 45);
+    // 걸레받이
+    g.fillStyle(0x3a2410, 1); g.fillRect(0, 195, BG_W, 8);
+
+    // 큰 창문 (가운데 위)
+    g.fillStyle(0x0a1828, 1); g.fillRect(BG_W / 2 - 70, 30, 140, 130);
+    g.lineStyle(4, 0xc9a36b, 1); g.strokeRect(BG_W / 2 - 70, 30, 140, 130);
+    g.lineStyle(2, 0xc9a36b, 1);
+    g.lineBetween(BG_W / 2, 30, BG_W / 2, 160);
+    g.lineBetween(BG_W / 2 - 70, 95, BG_W / 2 + 70, 95);
+    // 도시 실루엣
+    g.fillStyle(0x122842, 1);
+    for (let i = 0; i < 10; i++) {
+      const sw = 6 + (i * 7) % 12, sh = 22 + (i * 19) % 60;
+      g.fillRect(BG_W / 2 - 66 + i * 13, 160 - sh, sw, sh);
+    }
+    g.fillStyle(0xffe082, 0.75);
+    for (let i = 0; i < 14; i++) {
+      g.fillRect(BG_W / 2 - 64 + (i * 13) % 124, 55 + (i * 17) % 90, 2, 2);
+    }
+
+    // 디렉터 책상 (좌측, 책상 위에 종이·노트북 — spot: 80~300, y 120~340)
+    g.fillStyle(0x6a4f2a, 1); g.fillRect(80, 220, 220, 100);
+    g.lineStyle(4, 0x3a2410, 1); g.strokeRect(80, 220, 220, 100);
+    g.fillStyle(0x4a3a22, 1); g.fillRect(90, 310, 18, 30); g.fillRect(272, 310, 18, 30);
+    // 책상 위 — 노트북·서류 더미·머그
+    g.fillStyle(0x1a1a2e, 1); g.fillRect(100, 240, 70, 44);
+    g.fillStyle(0x5b92e5, 1); g.fillRect(104, 244, 62, 36);
+    g.fillStyle(0xfff8d0, 1); g.fillRect(180, 244, 78, 36);
+    g.lineStyle(2, 0x3a2410, 1); g.strokeRect(180, 244, 78, 36);
+    g.fillStyle(0xa0282e, 1); g.fillRect(266, 250, 22, 28);
+    // 빨간 봉인 도장이 찍힌 종이 (책상 위 임무서)
+    g.fillStyle(0xff3a3a, 1); g.fillCircle(218, 262, 5);
+    this.add.text(190, 200, '📋 한센의 책상', {
+      fontFamily: FONT, fontSize: '11px', color: '#ffe082',
+      backgroundColor: '#00000088', padding: { x: 4, y: 2 }
+    }).setOrigin(0.5).setDepth(1);
+
+    // 세계지도 (가운데, 벽에 걸린 보드 — spot: 340~580, y 120~340)
+    g.fillStyle(0x3a2410, 1); g.fillRect(340, 220, 240, 130);
+    g.lineStyle(4, 0x1a1008, 1); g.strokeRect(340, 220, 240, 130);
+    g.fillStyle(0xefe6cc, 1); g.fillRect(350, 230, 220, 110);
+    // 대륙 추상
+    g.fillStyle(0x6a8a6a, 1);
+    g.fillRect(362, 246, 36, 18); g.fillRect(402, 240, 32, 28);
+    g.fillRect(442, 252, 26, 14); g.fillRect(476, 246, 36, 22);
+    g.fillRect(520, 252, 30, 22);
+    g.fillRect(362, 282, 28, 22); g.fillRect(398, 290, 36, 16);
+    g.fillRect(442, 282, 30, 22); g.fillRect(480, 286, 32, 18);
+    g.fillRect(520, 290, 32, 14);
+    // 빨간 핀 (3분쟁)
+    g.fillStyle(0xff3a3a, 1);
+    g.fillCircle(450, 250, 4); g.fillCircle(488, 258, 4); g.fillCircle(522, 264, 4);
+    this.add.text(460, 200, '🗺 세계 분쟁 지도', {
+      fontFamily: FONT, fontSize: '11px', color: '#ffe082',
+      backgroundColor: '#00000088', padding: { x: 4, y: 2 }
+    }).setOrigin(0.5).setDepth(1);
+
+    // 서류함 (우측 — spot: 620~840, y 120~340)
+    g.fillStyle(0x3a4a5a, 1); g.fillRect(620, 220, 220, 200);
+    g.lineStyle(4, 0x1a2a3a, 1); g.strokeRect(620, 220, 220, 200);
+    // 4단 서랍
+    for (let i = 0; i < 4; i++) {
+      const dy = 232 + i * 46;
+      g.lineStyle(2, 0x1a2a3a, 1);
+      g.strokeRect(632, dy, 196, 38);
+      g.fillStyle(0xc9a36b, 1);
+      g.fillCircle(730, dy + 19, 4);
+      // 라벨 자리 (작은 흰 띠)
+      g.fillStyle(0xefefef, 0.8);
+      g.fillRect(648, dy + 12, 50, 14);
+    }
+    this.add.text(730, 200, '🗄 과거 사건 파일함', {
+      fontFamily: FONT, fontSize: '11px', color: '#ffe082',
+      backgroundColor: '#00000088', padding: { x: 4, y: 2 }
+    }).setOrigin(0.5).setDepth(1);
+  }
+
   showLocCompleteBanner() {
     const dim = this.add.graphics().setDepth(28);
     dim.fillStyle(0x0c3528, 0.85);

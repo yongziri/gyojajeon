@@ -25,10 +25,11 @@ const CASES = {
     locations: {
       office: {
         name: 'UN 본부 38층 · P.E.A.C.E. 에이전시',
-        bg: 'bg_un_hq',         // photo가 없으면 InvestigationScene이 회색 폴백
+        bg: 'bg_un_hq',         // InvestigationScene이 drawHQOfficeBg()로 폴백 렌더링
         spots: [
           {
-            x: 80, y: 120, w: 220, h: 200,
+            // 한센 책상 (좌측, 사무실 그림과 일치)
+            x: 80, y: 220, w: 220, h: 120,
             name: '📋 책상 위 임무 명세서',
             text: '디렉터 한센의 책상 위. 빨간 도장이 찍힌 봉인 서류 세 통.',
             evidence: {
@@ -37,7 +38,8 @@ const CASES = {
             }
           },
           {
-            x: 340, y: 120, w: 240, h: 220,
+            // 세계지도 (가운데 보드)
+            x: 340, y: 220, w: 240, h: 130,
             name: '🗺 벽에 걸린 세계지도',
             text: '카라칼팍·키이우·예루살렘 세 곳에 빨간 핀이 꽂혀 있다.',
             evidence: {
@@ -46,7 +48,8 @@ const CASES = {
             }
           },
           {
-            x: 620, y: 120, w: 220, h: 220,
+            // 서류함 (우측 4단 캐비넷)
+            x: 620, y: 220, w: 220, h: 200,
             name: '🗄 과거 사건 파일함',
             text: 'UN의 30년 평화 활동 기록이 색인되어 있다.',
             evidence: {
