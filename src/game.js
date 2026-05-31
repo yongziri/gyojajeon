@@ -1226,6 +1226,9 @@ class BootScene extends Phaser.Scene {
     this.load.image('portrait_abbas',     'assets/portraits/abbas.png');
     this.load.image('portrait_rachel',    'assets/portraits/rachel.png');
     this.load.image('portrait_hana',      'assets/portraits/hana.png');
+    // 인트로(튜토리얼) 일러스트 — 추후 제공. 미존재 시 fallback 자동
+    this.load.image('portrait_hansen',    'assets/portraits/hansen.png');
+    this.load.image('portrait_james',     'assets/portraits/james.png');
     // 주인공 일러스트 (있으면 도트 generateTexture 대신 사용)
     this.load.image('hero_down_0', 'assets/character/hero_down_0.png');
     this.load.image('hero_down_1', 'assets/character/hero_down_1.png');
@@ -3314,11 +3317,18 @@ function computePeaceScores(registry) {
   else if (love >= 2) empathy = 1;
 
   // 사실 이해 (Cognition) — 현장 단서 + 핵심 단서 수집량
+  // intro는 단서가 3개뿐(본 사건은 12개)이라 임계값 별도
   const evTotal = evidence.length + cores.length;
   let cognition = 0;
-  if (evTotal >= 12) cognition = 3;
-  else if (evTotal >= 9) cognition = 2;
-  else if (evTotal >= 5) cognition = 1;
+  if (caseId === 'intro') {
+    if (evTotal >= 4) cognition = 3;   // 단서 3 + 핵심 1 = 만점
+    else if (evTotal >= 3) cognition = 2;
+    else if (evTotal >= 1) cognition = 1;
+  } else {
+    if (evTotal >= 12) cognition = 3;
+    else if (evTotal >= 9) cognition = 2;
+    else if (evTotal >= 5) cognition = 1;
+  }
 
   // 연결 의식 (Connection) — 인과 사슬 + 자기성찰
   let connection = 0;
@@ -3635,7 +3645,7 @@ class WorldScene extends Phaser.Scene {
     // 옛 항구 조사 입구 (노란 표지판) — scale 고정 (꿈틀 제거)
     this.portal = this.physics.add.staticImage(4 * TILE, 11 * TILE, 'portal');
     this.portal.setDepth(this.portal.y);
-    const portalLabel = isIntro ? '한센의 책상'
+    const portalLabel = isIntro ? '🔍 사무실 둘러보기'
                       : isUkraine ? '키이우 조사'
                       : isPalestine ? '팔레스타인 조사'
                       : '아랄해 조사';
@@ -6357,6 +6367,13 @@ ${tmpl.signature}`;
 // ══════════════════════════════════════════════════════════════
 // 사건별 자기성찰 5장 풀 — 학생이 '가장 마음에 남은 단서/생각' 1장 선택
 const REFLECTION_STATEMENTS_BY_CASE = {
+  intro: [
+    { id: 's_p5',      text: 'P.E.A.C.E. 다섯 단계 — 인식·탐색·분석·연결·실천 — 이 머릿속에 새겨졌다.' },
+    { id: 's_link',    text: '내가 입는 옷·먹는 음식이 누군가의 분쟁과 닿아 있다는 사실이 충격이었다.' },
+    { id: 's_hansen',  text: '한센 디렉터의 30년 경험에서 평화 활동의 무게가 느껴졌다.' },
+    { id: 's_james',   text: '동기 제임스와 함께 시작한다는 사실이 든든했다.' },
+    { id: 's_three',   text: '아랄해·우크라이나·팔레스타인 — 세 현장이 모두 나를 기다린다는 게 가슴 뛴다.' },
+  ],
   aralsea: [
     { id: 's_shrink',  text: '한 인간의 일생 안에 호수의 90%가 사라졌다는 사실이 충격이었다.' },
     { id: 's_people',  text: '4만 명의 어부가 바다와 함께 일자리를 잃었다는 점이 마음에 남았다.' },
