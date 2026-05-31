@@ -3069,14 +3069,23 @@ function computePeaceScores(registry) {
   if (letterSent) action = 2;
   if (letterSent && speech && speech.fullText) action = 3;
 
-  // 국제 협력 (Cooperation) — 코카랄 댐·UN 단서 + 보고서 송부
-  const hasRestore = evidence.some(e => e.id === 'restore');
-  const hasAction  = evidence.some(e => e.id === 'action');
+  // 국제 협력 (Cooperation) — 사건별 "국제 협력의 손길" 단서 두 개
+  //   아랄해 : restore(코카랄 댐) + action(UN·국제기구)
+  //   우크라이나: corridor(흑해 곡물 협정) + aid(UN·NGO 구호)
+  //   팔레스타인: aid_alliance(UN·적신월·NGO) + shared_water(공동 식수 탱크)
+  const COOP_IDS = {
+    aralsea:   ['restore', 'action'],
+    ukraine:   ['corridor', 'aid'],
+    palestine: ['aid_alliance', 'shared_water'],
+  };
+  const coopIds = COOP_IDS[caseId] || COOP_IDS.aralsea;
+  const hasA = evidence.some(e => e.id === coopIds[0]);
+  const hasB = evidence.some(e => e.id === coopIds[1]);
   let cooperation = 0;
-  if (hasRestore && hasAction) {
+  if (hasA && hasB) {
     cooperation = 2;
     if (letterSent) cooperation = 3;
-  } else if (hasRestore || hasAction) cooperation = 1;
+  } else if (hasA || hasB) cooperation = 1;
 
   const dims = { empathy, cognition, connection, action, cooperation };
   const total = empathy + cognition + connection + action + cooperation;
@@ -4344,9 +4353,7 @@ class DialogueScene extends Phaser.Scene {
     // 즉시 스킵하는 것 방지
     this.inputLocked = true;
     this.time.delayedCall(200, () => { this.inputLocked = false; });
-    if (ch.battle) {
-      this.scene.start('BattleScene');
-    } else if (ch.next) {
+    if (ch.next) {
       this.show(ch.next);
     }
   }
@@ -6011,6 +6018,8 @@ class ReflectionScene extends Phaser.Scene {
           cur);
         if (txt !== null) {
           this.userStmt = txt.trim().slice(0, 200);
+          // 입력 즉시 저장 — "닫기"로 나가도 본인 작성 보존
+          this.registry.set('userReflection', this.userStmt);
           this.userStmtBtn.t.setText(userBtnLabel());
         }
       },
@@ -6506,101 +6515,7 @@ class SpeechScene extends Phaser.Scene {
   }
 }
 
-class BattleScene extends Phaser.Scene {
-  constructor() { super('BattleScene'); }
-
-  create() {
-    this.playerHp = this.registry.get('playerHp') || 30;
-    this.enemyHp = 20;
-    this.over = false;
-
-    this.cameras.main.setBackgroundColor('#15152b');
-    this.add.text(480, 45, '⚔  전  투  ⚔', {
-      fontFamily: FONT, fontSize: '28px', color: '#ffd54f'
-    }).setOrigin(0.5);
-
-    // 적
-    const slime = this.add.sprite(480, 170, 'kid_0').setScale(3);
-    slime.play('kid_idle');
-    this.tweens.add({
-      targets: slime, y: 160, duration: 600,
-      yoyo: true, repeat: -1, ease: 'Sine.inOut'
-    });
-    this.enemyHpText = this.add.text(480, 240, '', {
-      fontFamily: FONT, fontSize: '20px', color: '#ce93d8'
-    }).setOrigin(0.5);
-
-    // 아군 — PNG 일러스트면 키 ~140px, 도트면 setScale(3)
-    const heroBSrc = this.textures.get('hero_up_0').getSourceImage();
-    const heroBSc = (heroBSrc && heroBSrc.height > 60) ? (140 / heroBSrc.height) : 3;
-    const hero = this.add.sprite(480, 330, 'hero_up_0').setScale(heroBSc);
-    this.tweens.add({
-      targets: hero, scaleY: heroBSc * 1.03, duration: 500,
-      yoyo: true, repeat: -1, ease: 'Sine.inOut'
-    });
-    this.playerHpText = this.add.text(480, 385, '', {
-      fontFamily: FONT, fontSize: '20px', color: '#a5d6a7'
-    }).setOrigin(0.5);
-
-    this.log = this.add.text(480, 425, '명령을 선택하세요', {
-      fontFamily: FONT, fontSize: '18px', color: '#ffffff'
-    }).setOrigin(0.5);
-
-    this.makeButton(300, 500, '공격', () => this.attack());
-    this.makeButton(500, 500, '도망', () => this.flee());
-
-    this.refresh();
-  }
-
-  makeButton(x, y, label, onClick) {
-    const btn = this.add.rectangle(x, y, 140, 50, 0x3949ab)
-      .setInteractive({ useHandCursor: true });
-    this.add.text(x, y, label, { fontFamily: FONT, fontSize: '20px', color: '#ffffff' })
-      .setOrigin(0.5);
-    btn.on('pointerover', () => btn.setFillStyle(0x5c6bc0));
-    btn.on('pointerout', () => btn.setFillStyle(0x3949ab));
-    btn.on('pointerdown', () => { if (!this.over) onClick(); });
-  }
-
-  refresh() {
-    this.enemyHpText.setText('상대 HP: ' + Math.max(0, this.enemyHp));
-    this.playerHpText.setText('내 HP: ' + Math.max(0, this.playerHp));
-  }
-
-  attack() {
-    const dmg = Phaser.Math.Between(4, 9);
-    this.enemyHp -= dmg;
-    if (this.enemyHp <= 0) { this.refresh(); return this.win(); }
-    const back = Phaser.Math.Between(3, 7);
-    this.playerHp -= back;
-    this.log.setText(`${dmg} 피해! 상대의 반격 ${back} 피해.`);
-    this.refresh();
-    if (this.playerHp <= 0) this.lose();
-  }
-
-  flee() {
-    this.registry.set('playerHp', this.playerHp);
-    this.scene.start('WorldScene');
-  }
-
-  win() {
-    this.over = true;
-    this.registry.set('enemyDefeated', true);
-    this.registry.set('playerHp', 30);
-    this.log.setText('승리! 클릭하면 계속');
-    this.input.once('pointerdown', () => this.scene.start('WorldScene'));
-  }
-
-  lose() {
-    this.over = true;
-    this.log.setText('패배... 클릭하면 처음부터');
-    this.input.once('pointerdown', () => {
-      this.registry.set('enemyDefeated', false);
-      this.registry.set('playerHp', 30);
-      this.scene.start('WorldScene');
-    });
-  }
-}
+// (BattleScene 제거됨 — 옛 dungeon RPG 잔재. P.E.A.C.E.는 비폭력 교육 게임)
 
 // 모바일/터치 환경 감지 (가상 D-Pad 표시 여부 등에 사용)
 // — pointer가 'coarse'면 손가락 입력 환경 (폰·태블릿)
@@ -6632,7 +6547,7 @@ const phaserConfig = {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false }
   },
-  scene: [BootScene, TitleScene, HelpScene, CreditsScene, TeacherGuideScene, CurriculumScene, CaseSelectScene, LearningTreeScene, BriefingScene, WorldScene, DialogueScene, InvestigationScene, QuizScene, ReflectionScene, LetterScene, SpeechScene, BattleScene]
+  scene: [BootScene, TitleScene, HelpScene, CreditsScene, TeacherGuideScene, CurriculumScene, CaseSelectScene, LearningTreeScene, BriefingScene, WorldScene, DialogueScene, InvestigationScene, QuizScene, ReflectionScene, LetterScene, SpeechScene]
 };
 if (window.IS_MOBILE) {
   phaserConfig.scale = {
