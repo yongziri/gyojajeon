@@ -3552,8 +3552,10 @@ class WorldScene extends Phaser.Scene {
         r * TILE + TILE/2, wallKey));
     }
 
-    // 플레이어
-    this.player = this.physics.add.sprite(3 * TILE, 2 * TILE, 'hero_down_0');
+    // 플레이어 — intro(사무실)는 좌하단 입구 spawn (창문 위 spawn 방지)
+    const spawnX = isIntro ? 3 * TILE : 3 * TILE;
+    const spawnY = isIntro ? 10 * TILE : 2 * TILE;
+    this.player = this.physics.add.sprite(spawnX, spawnY, 'hero_down_0');
     // 일러스트 PNG라면(키>60px) 키 ~64px로 표시 + 발 부근 body 재계산
     const heroSrc = this.textures.get('hero_down_0').getSourceImage();
     if (heroSrc && heroSrc.height > 60) {
