@@ -53,6 +53,36 @@
     .stat .n { font-size: 26px; font-weight: bold; color: #ffe9b8; }
     .stat .l { font-size: 12px; color: #9aa6ad; }
 
+    /* P.E.A.C.E. 학급 통계 */
+    #peaceStats {
+      display: none; padding: 14px 20px; background: #0e1828;
+      border-bottom: 1px solid #28323e;
+    }
+    #peaceStats h3 {
+      margin: 0 0 10px 0; color: #ffe9b8; font-size: 16px;
+    }
+    #peaceStats .gradeRow {
+      display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    #peaceStats .gChip {
+      display: inline-block; padding: 4px 12px; border-radius: 14px;
+      color: #fff; font-size: 13px; font-weight: bold;
+    }
+    #peaceStats .dimGrid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 8px;
+    }
+    #peaceStats .pBar {
+      display: flex; align-items: center; gap: 10px;
+      background: #14202c; padding: 6px 10px; border-radius: 4px;
+    }
+    #peaceStats .pBar .lbl { font-size: 12px; color: #cfe9ff; min-width: 90px; }
+    #peaceStats .pBar .b {
+      flex: 1; height: 10px; background: #28323e; border-radius: 5px; overflow: hidden;
+    }
+    #peaceStats .pBar .b > div { height: 100%; transition: width .3s; }
+    #peaceStats .pBar .val { font-size: 12px; color: #ffe082; min-width: 50px; text-align: right; }
+
     /* 학생 카드 그리드 */
     #grid {
       display: grid;
@@ -239,10 +269,12 @@
     <button id="connectBtn">연결</button>
     <button id="clearBtn" class="gray">보드 초기화</button>
     <button id="printBtn" class="gray">🖨 학급 리포트</button>
+    <button id="csvBtn" class="gray">📋 CSV 다운로드</button>
     <div id="status"><span class="dot off"></span>연결 안 됨</div>
   </header>
 
   <div id="summary"></div>
+  <div id="peaceStats"></div>
   <div id="tagDist"></div>
   <div id="grid"></div>
   <div id="empty">
@@ -354,6 +386,57 @@
         statBox(s4, '4단계 실천') +
         statBox(done, '보고서 완료 ✅') +
         statBox(avgReview + ' / 5', '자기 평가 평균');
+
+      // ── 🏛 P.E.A.C.E. 학급 종합 통계 (5차원 + 등급 분포) ────
+      const peaceList = list.filter(d => d.peace);
+      const ps = $('peaceStats');
+      if (peaceList.length > 0) {
+        const grades = { S: 0, A: 0, B: 0, C: 0 };
+        const dimsAvg = { empathy: 0, cognition: 0, connection: 0, action: 0, cooperation: 0 };
+        let totalSum = 0;
+        peaceList.forEach(d => {
+          grades[d.peace.grade] = (grades[d.peace.grade] || 0) + 1;
+          totalSum += d.peace.total;
+          Object.keys(dimsAvg).forEach(k => {
+            dimsAvg[k] += (d.peace.dims && d.peace.dims[k]) || 0;
+          });
+        });
+        const avgTotal = (totalSum / peaceList.length).toFixed(1);
+        Object.keys(dimsAvg).forEach(k => { dimsAvg[k] = dimsAvg[k] / peaceList.length; });
+
+        const gradeColors = { S: '#d4af37', A: '#2e8b57', B: '#4a7eb8', C: '#888' };
+        const gradeChips = ['S','A','B','C'].map(g =>
+          '<span class="gChip" style="background:' + gradeColors[g] + '">' +
+          g + ' · ' + grades[g] + '명</span>'
+        ).join('');
+
+        const dimInfo = {
+          empathy:     { label: '🤝 공감',       color: '#e79a78' },
+          cognition:   { label: '🧠 사실 이해',  color: '#6fb7d6' },
+          connection:  { label: '🔗 연결',       color: '#7fd07f' },
+          action:      { label: '✊ 실천',       color: '#ffd96a' },
+          cooperation: { label: '🌍 국제 협력',  color: '#c9a3ff' },
+        };
+        const dimBars = Object.keys(dimInfo).map(k => {
+          const v = dimsAvg[k];
+          const pct = Math.round(v / 3 * 100);
+          const info = dimInfo[k];
+          return '<div class="pBar">' +
+            '<div class="lbl">' + info.label + '</div>' +
+            '<div class="b"><div style="width:' + pct + '%;background:' + info.color + '"></div></div>' +
+            '<div class="val">' + v.toFixed(1) + ' / 3</div>' +
+          '</div>';
+        }).join('');
+
+        ps.style.display = 'block';
+        ps.innerHTML =
+          '<h3>🏛 P.E.A.C.E. 학급 종합 평가 · 평균 <strong>' + avgTotal + ' / 15</strong> ' +
+          '<span style="font-size:13px;color:#9aa6ad">(' + peaceList.length + '명 기준)</span></h3>' +
+          '<div class="gradeRow">' + gradeChips + '</div>' +
+          '<div class="dimGrid">' + dimBars + '</div>';
+      } else {
+        ps.style.display = 'none';
+      }
 
       // 학급 감정 태그 분포 — 학생들이 단서마다 부착한 감정 합계
       const tagAgg = { shock: 0, sad: 0, wow: 0, anger: 0 };
@@ -618,6 +701,64 @@
       render();
     });
     $('printBtn').addEventListener('click', () => buildPrintPanel());
+    $('csvBtn').addEventListener('click', () => downloadCSV());
+
+    // CSV 다운로드 — 학급 전체 데이터를 표 형태로
+    function downloadCSV() {
+      const list = Object.values(students)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const room = curRoom || $('room').value || 'class';
+      const date = new Date().toISOString().slice(0, 10);
+
+      const csvEsc = (s) => {
+        const t = String(s == null ? '' : s).replace(/"/g, '""');
+        return /[,"\n]/.test(t) ? '"' + t + '"' : t;
+      };
+      const header = [
+        '번호', '이름', '단계', '보고서송부',
+        '현장단서', '핵심단서', '감정태그수',
+        'P.E.A.C.E.총점', '등급',
+        '공감', '사실이해', '연결', '실천', '국제협력',
+        '인과사슬', '자기성찰(카드)', '내 생각(자유)', '내 다짐(자유)',
+        '자기평가평균',
+      ];
+      const rows = list.map((d, i) => {
+        const p = d.peace || {};
+        const dims = p.dims || {};
+        const refl = d.reflection || {};
+        const rv = d.review;
+        const avgRv = rv ? ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1) : '';
+        const chain = (refl.chainNames && refl.chainNames.length === 3)
+          ? refl.chainNames.join(' → ') : '';
+        return [
+          i + 1,
+          d.name || d.id,
+          d.reportSent ? '완료' : (STAGE_NAME[d.stage] || '1·인식'),
+          d.reportSent ? 'Y' : '',
+          d.evidence || 0, d.cores || 0, d.tagsCount || 0,
+          p.total != null ? (p.total + '/' + (p.max || 15)) : '',
+          p.grade || '',
+          dims.empathy || 0, dims.cognition || 0, dims.connection || 0,
+          dims.action || 0, dims.cooperation || 0,
+          chain,
+          refl.statement || '',
+          refl.userStatement || '',
+          d.userPledge || '',
+          avgRv,
+        ].map(csvEsc).join(',');
+      });
+      const csv = '﻿' + header.join(',') + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'PEACE_' + room + '_' + date + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(a.href);
+        a.remove();
+      }, 200);
+    }
 
     // 학급 리포트 인쇄 — 학생별 자기주도성 표
     function buildPrintPanel() {
