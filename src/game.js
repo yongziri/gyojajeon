@@ -1602,10 +1602,11 @@ class TitleScene extends Phaser.Scene {
     });
 
     // 버튼들 — 좌하: 건너뛰기, 우하: 다음 / 시작
+    // fancyButton 반환은 { g, zone, t } — Container에 g·zone·t 모두 추가
     const skip = fancyButton(this, W / 2 - 200, py + ph - 36, 140, 36, '건너뛰기',
       () => this.closeTutorial(layer, true),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
-    layer.add(skip.bg); layer.add(skip.t);
+    layer.add(skip.g); layer.add(skip.zone); layer.add(skip.t);
 
     let nextBtn;
     const renderPage = () => {
@@ -1613,7 +1614,7 @@ class TitleScene extends Phaser.Scene {
       titleTxt.setText(p.emoji + '  ' + p.title);
       bodyTxt.setText(p.body);
       dots.forEach((d, i) => d.setFillStyle(i === pageIdx ? 0xffd96a : 0x4a5a6a));
-      if (nextBtn) { nextBtn.bg.destroy(); nextBtn.t.destroy(); }
+      if (nextBtn) { nextBtn.g.destroy(); nextBtn.zone.destroy(); nextBtn.t.destroy(); }
       const isLast = pageIdx === pages.length - 1;
       nextBtn = fancyButton(this, W / 2 + 200, py + ph - 36, 160, 36,
         isLast ? '✓  시작하기' : '다음  ▶',
@@ -1622,7 +1623,7 @@ class TitleScene extends Phaser.Scene {
           else { pageIdx++; renderPage(); }
         },
         { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
-      layer.add(nextBtn.bg); layer.add(nextBtn.t);
+      layer.add(nextBtn.g); layer.add(nextBtn.zone); layer.add(nextBtn.t);
     };
     renderPage();
 
