@@ -6797,10 +6797,25 @@ class SpeechScene extends Phaser.Scene {
 //  · 흐름: 대화(P) → 책상·지도·서류함 클릭(E) → 한센 퀴즈(A)
 //          → 칠판 인과 사슬 시연(C) → 임무서(E) → CaseSelectScene 복귀
 //  · 끝나면 completedCases에 'intro' 추가 → CaseSelectScene 잠금 해제
-//  · STORY = STORIES.intro 가 활성화돼있어야 함 (CaseSelectScene에서 setStory)
-//  · WorldScene과 동일한 타일 이동 + D-pad + NPC overlap 패턴 (III-1 재작성)
+//  · WorldScene과 100% 동일 패턴 — MAP[][] + walls.create('wall') + 한센 NPC
 // ══════════════════════════════════════════════════════════════════
-const HQ_MAP_W = 24, HQ_MAP_H = 13;   // 24×13 타일 (외벽 포함)
+
+// 사무실 MAP — 24열 × 13행 (1 = 벽, 0 = 바닥)
+const HQ_MAP = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,1,0,1],
+  [1,0,0,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,1,0,1],
+  [1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
 
 class HQScene extends Phaser.Scene {
   constructor() { super('HQScene'); }
@@ -6808,86 +6823,88 @@ class HQScene extends Phaser.Scene {
   create() {
     setCfgBarVisible(false);
     this.cameras.main.fadeIn(280, 0, 0, 0);
-    this.busy = false;
-    this.entering = false;
-    this.cooldown = true;
+    this.busy = false; this.entering = false; this.cooldown = true;
     this.time.delayedCall(450, () => { this.cooldown = false; });
-
-    // 진행 단계 — perceive(P) → explore(E) → analyze(A) → connect(C) → enact(E) → finish
-    // 회기 안에서 다시 들어오면 registry로부터 복원
     this.stage = this.registry.get('hqStage') || 'perceive';
     this.cluesFound = new Set(this.registry.get('hqClues') || []);
-
     const W = GAME_W, H = GAME_H;
 
-    // ── 배경: 뒷벽(UN 블루) + 마룻바닥 ──────────────────────────
-    const bgFloor = this.add.graphics().setDepth(0);
-    bgFloor.fillStyle(0x1a3a5c, 1); bgFloor.fillRect(0, 0, W, TILE * 5);
-    bgFloor.fillStyle(0x5a3f22, 1); bgFloor.fillRect(0, TILE * 5, W, H - TILE * 5);
-    bgFloor.lineStyle(1, 0x3a2410, 0.5);
-    for (let i = 0; i < 10; i++) bgFloor.lineBetween(0, TILE * 5 + i * TILE, W, TILE * 5 + i * TILE);
-    bgFloor.fillStyle(0x3a2410, 1); bgFloor.fillRect(0, TILE * 5 - 4, W, 8);
+    // 바닥 + 뒷벽
+    const bg = this.add.graphics().setDepth(0);
+    bg.fillStyle(0x1a3a5c, 1); bg.fillRect(0, 0, W, TILE * 5);
+    bg.fillStyle(0x5a3f22, 1); bg.fillRect(0, TILE * 5, W, H - TILE * 5);
+    bg.lineStyle(1, 0x3a2410, 0.5);
+    for (let i = 0; i < 10; i++) bg.lineBetween(0, TILE * 5 + i * TILE, W, TILE * 5 + i * TILE);
+    bg.fillStyle(0x3a2410, 1); bg.fillRect(0, TILE * 5 - 4, W, 8);
 
-    // ── 외벽 (walls 그룹) ────────────────────────────────────────
+    // 외벽 + 가구 충돌 — WorldScene과 동일한 walls.create('wall')
     this.walls = this.physics.add.staticGroup();
-    for (let c = 0; c < HQ_MAP_W; c++) {
-      this.addWall(c * TILE, 0, TILE, TILE);
-      this.addWall(c * TILE, (HQ_MAP_H - 1) * TILE, TILE, TILE);
+    for (let r = 0; r < HQ_MAP.length; r++) {
+      for (let c = 0; c < HQ_MAP[r].length; c++) {
+        if (HQ_MAP[r][c] === 1) {
+          this.walls.create(c * TILE + TILE / 2, r * TILE + TILE / 2, 'wall');
+        }
+      }
     }
-    for (let r = 1; r < HQ_MAP_H - 1; r++) {
-      this.addWall(0, r * TILE, TILE, TILE);
-      this.addWall((HQ_MAP_W - 1) * TILE, r * TILE, TILE, TILE);
-    }
-    const wallG = this.add.graphics().setDepth(2);
+    // 외벽 어두운 띠 (wall 텍스처 위에 사무실 톤)
+    const wallG = this.add.graphics().setDepth(1);
     wallG.fillStyle(0x1a2a3a, 1);
     wallG.fillRect(0, 0, W, TILE);
-    wallG.fillRect(0, (HQ_MAP_H - 1) * TILE, W, TILE);
-    wallG.fillRect(0, 0, TILE, HQ_MAP_H * TILE);
-    wallG.fillRect((HQ_MAP_W - 1) * TILE, 0, TILE, HQ_MAP_H * TILE);
+    wallG.fillRect(0, (HQ_MAP.length - 1) * TILE, W, TILE);
+    wallG.fillRect(0, 0, TILE, HQ_MAP.length * TILE);
+    wallG.fillRect((HQ_MAP[0].length - 1) * TILE, 0, TILE, HQ_MAP.length * TILE);
 
-    // ── 뒷벽 데코: 창문·UN 깃발·칠판 ────────────────────────────
+    // 뒷벽 데코
     this.drawWindow(2 * TILE, TILE, 4, 3);
     this.drawUNFlag(10 * TILE, TILE, 4, 3);
     this.drawBlackboard(17 * TILE, TILE, 5, 3);
 
-    // ── 가구 (충돌) ──────────────────────────────────────────────
+    // 가구 시각 (wall 텍스처 위에 그려서 가림)
     this.drawDesk(10 * TILE, 6 * TILE, 4 * TILE, 2 * TILE);
-    this.addWall(10 * TILE, 6 * TILE, 4 * TILE, 2 * TILE);
-    this.drawMapBoard(2 * TILE, 7 * TILE, 3 * TILE, 2 * TILE);
-    this.addWall(2 * TILE, 7 * TILE, 3 * TILE, 2 * TILE);
-    this.drawCabinet(19 * TILE, 6 * TILE, 3 * TILE, 3 * TILE);
-    this.addWall(19 * TILE, 6 * TILE, 3 * TILE, 2 * TILE);
+    this.drawMapBoard(3 * TILE, 7 * TILE, 3 * TILE, 2 * TILE);
+    this.drawCabinet(19 * TILE, 6 * TILE, 3 * TILE, 2 * TILE);
 
-    // ── 한센 NPC — 책상 바로 뒤 ─────────────────────────────────
-    this.hansen = this.physics.add.sprite(12 * TILE, 5 * TILE + TILE / 2, 'hero_up_0');
-    this.hansen.body.setSize(22, 18).setOffset(5, 14);
-    this.hansen.body.setImmovable(true);
+    // 한센 NPC — WorldScene 안내인 패턴 (kid_0 + portrait overlay)
+    this.hansen = this.physics.add.sprite(12 * TILE, 5 * TILE + TILE / 2 + 10, 'kid_0');
+    this.hansen.body.setSize(20, 16).setOffset(6, 14);
     this.hansen.setDepth(this.hansen.y);
     if (this.textures.exists('portrait_hansen')) {
       this.hansen.setVisible(false);
       const tex = this.textures.get('portrait_hansen').getSourceImage();
-      this.hansenArt = this.add.image(12 * TILE, 5 * TILE + TILE / 2 + 14, 'portrait_hansen')
+      this.hansenArt = this.add.image(12 * TILE, 5 * TILE + TILE / 2 + 24, 'portrait_hansen')
         .setOrigin(0.5, 1).setDepth(this.hansen.y);
       this.hansenArt.setScale(80 / tex.height);
+      this.tweens.add({
+        targets: this.hansenArt, y: this.hansenArt.y - 3,
+        duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut'
+      });
+    } else if (this.textures.exists('hero_up_0')) {
+      this.hansen.setVisible(false);
+      const tex = this.textures.get('hero_up_0').getSourceImage();
+      this.hansenArt = this.add.image(12 * TILE, 5 * TILE + TILE / 2 + 24, 'hero_up_0')
+        .setOrigin(0.5, 1).setDepth(this.hansen.y).setTint(0xdde3ec);
+      this.hansenArt.setScale(tex && tex.height > 60 ? 80 / tex.height : 3);
+      this.tweens.add({
+        targets: this.hansenArt, y: this.hansenArt.y - 3,
+        duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut'
+      });
     } else {
-      const heroSrc = this.textures.get('hero_up_0').getSourceImage();
-      if (heroSrc && heroSrc.height > 60) this.hansen.setScale(80 / heroSrc.height);
-      else this.hansen.setScale(3);
-      this.hansen.setTint(0xdde3ec);
+      this.hansen.setScale(2).setTint(0xdde3ec);
+      try { this.hansen.play('kid_idle'); } catch (e) {}
     }
-    this.add.text(12 * TILE, 5 * TILE + TILE / 2 + 8, '디렉터 한센', {
+    this.add.text(12 * TILE, 5 * TILE + TILE / 2 + 32, '디렉터 한센', {
       fontFamily: FONT, fontSize: '12px', color: '#ffe9b8',
       backgroundColor: '#000000aa', padding: { x: 5, y: 2 }
     }).setOrigin(0.5, 0).setDepth(2100);
-    this.hansenMarker = this.add.text(12 * TILE, 5 * TILE - 32, '!', MARKER_STYLE_ACTIVE)
+    this.hansenMarker = this.add.text(12 * TILE, 5 * TILE - 30, '!', MARKER_STYLE_ACTIVE)
       .setOrigin(0.5).setDepth(2100);
     this.tweens.add({
-      targets: this.hansenMarker, y: 5 * TILE - 38,
-      duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut'
+      targets: this.hansenMarker, y: 5 * TILE - 36,
+      duration: 500, yoyo: true, repeat: -1, ease: 'Sine.inOut'
     });
 
-    // ── 주인공 — 입구(좌하단) ────────────────────────────────────
-    this.player = this.physics.add.sprite(2 * TILE + TILE / 2, 11 * TILE + TILE / 2, 'hero_down_0');
+    // 주인공
+    this.player = this.physics.add.sprite(3 * TILE, 11 * TILE, 'hero_down_0');
     const heroSrc = this.textures.get('hero_down_0').getSourceImage();
     if (heroSrc && heroSrc.height > 60) {
       const sc = 64 / heroSrc.height;
@@ -6902,31 +6919,18 @@ class HQScene extends Phaser.Scene {
     }
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.walls);
-    this.physics.add.collider(this.player, this.hansen);
     this.facing = 'down';
 
-    // ── 인터랙션 trigger zones ───────────────────────────────────
-    this.hansenZone = this.add.rectangle(12 * TILE, 6 * TILE - 4, 4 * TILE, TILE, 0, 0);
-    this.physics.add.existing(this.hansenZone, true);
-    this.physics.add.overlap(this.player, this.hansenZone, () => this.onNearHansen());
+    // 한센과 overlap
+    this.physics.add.overlap(this.player, this.hansen, () => this.onNearHansen());
 
-    this.deskZone = this.add.rectangle(12 * TILE, 8 * TILE + TILE / 2, 4 * TILE, TILE, 0, 0);
-    this.physics.add.existing(this.deskZone, true);
-    this.physics.add.overlap(this.player, this.deskZone, () => this.onNearSpot('desk', 12 * TILE, 7 * TILE, '📋 책상 살펴보기'));
+    // 스팟 trigger zones
+    this.makeSpotTrigger('desk',    12 * TILE, 9 * TILE,  4 * TILE, TILE, '📋 책상 살펴보기', 12 * TILE, 7 * TILE);
+    this.makeSpotTrigger('map',      4 * TILE, 10 * TILE, 3 * TILE, TILE, '🗺 세계지도 살펴보기', 4 * TILE, 8 * TILE);
+    this.makeSpotTrigger('cabinet', 20 * TILE, 9 * TILE,  3 * TILE, TILE, '🗄 서류함 살펴보기', 20 * TILE, 7 * TILE);
+    this.makeSpotTrigger('board',   19 * TILE, 4 * TILE,  5 * TILE, TILE, '🪞 칠판 보기', 19 * TILE, 4 * TILE - 8);
 
-    this.mapZone = this.add.rectangle(3.5 * TILE, 9 * TILE + TILE / 2, 3 * TILE, TILE, 0, 0);
-    this.physics.add.existing(this.mapZone, true);
-    this.physics.add.overlap(this.player, this.mapZone, () => this.onNearSpot('map', 3.5 * TILE, 8 * TILE, '🗺 세계지도 살펴보기'));
-
-    this.cabZone = this.add.rectangle(20.5 * TILE, 9 * TILE + TILE / 2, 3 * TILE, TILE, 0, 0);
-    this.physics.add.existing(this.cabZone, true);
-    this.physics.add.overlap(this.player, this.cabZone, () => this.onNearSpot('cabinet', 20.5 * TILE, 8 * TILE, '🗄 서류함 살펴보기'));
-
-    this.boardZone = this.add.rectangle(19 * TILE, 5 * TILE - 4, 5 * TILE, TILE, 0, 0);
-    this.physics.add.existing(this.boardZone, true);
-    this.physics.add.overlap(this.player, this.boardZone, () => this.onNearBoard());
-
-    // ── HUD: 상단 목표 띠 ────────────────────────────────────────
+    // HUD
     const hud = this.add.graphics().setDepth(3000).setScrollFactor(0);
     hud.fillStyle(0x000000, 0.7); hud.fillRect(0, 0, W, 38);
     hud.lineStyle(2, 0xc9a36b, 1); hud.lineBetween(0, 38, W, 38);
@@ -6940,7 +6944,7 @@ class HQScene extends Phaser.Scene {
       () => this.bailOut(),
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
 
-    // ── 입력 (WorldScene과 동일) ────────────────────────────────
+    // 입력
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys('W,A,S,D');
     this.touchDir = { up: false, down: false, left: false, right: false };
@@ -6954,14 +6958,24 @@ class HQScene extends Phaser.Scene {
     }
   }
 
-  // ── 헬퍼 ───────────────────────────────────────────────────
-  addWall(x, y, w, h) {
-    const r = this.add.rectangle(x + w / 2, y + h / 2, w, h, 0, 0);
-    this.physics.add.existing(r, true);
-    this.walls.add(r);
+  makeSpotTrigger(key, x, y, w, h, label, btnX, btnY) {
+    const z = this.add.rectangle(x + w / 2, y + h / 2, w, h, 0, 0);
+    this.physics.add.existing(z, true);
+    this.physics.add.overlap(this.player, z, () => {
+      if (this.busy || this.cooldown) return;
+      if (key === 'board') {
+        if (this.stage !== 'connect') return;
+        this.requestTalkPrompt('board', btnX + 2 * TILE, btnY, '칠판 보기', () => this.onConnectBoard());
+        return;
+      }
+      if (this.stage !== 'explore') return;
+      if (this.cluesFound.has(key)) return;
+      this.requestTalkPrompt('spot:' + key, btnX, btnY, label, () => this.onClueAction(key));
+    });
   }
+
   drawWindow(x, y, tw, th) {
-    const g = this.add.graphics().setDepth(1);
+    const g = this.add.graphics().setDepth(2);
     const w = tw * TILE, h = th * TILE;
     g.fillStyle(0x0a1828, 1); g.fillRect(x, y, w, h);
     g.lineStyle(4, 0xc9a36b, 1); g.strokeRect(x, y, w, h);
@@ -6979,7 +6993,7 @@ class HQScene extends Phaser.Scene {
     }
   }
   drawUNFlag(x, y, tw, th) {
-    const g = this.add.graphics().setDepth(1);
+    const g = this.add.graphics().setDepth(2);
     const w = tw * TILE, h = th * TILE;
     g.fillStyle(0xefefef, 1); g.fillRect(x, y, w, h);
     g.lineStyle(3, 0x1a3a5c, 1); g.strokeRect(x, y, w, h);
@@ -6990,7 +7004,7 @@ class HQScene extends Phaser.Scene {
     g.strokeCircle(x + w / 2, y + h / 2, Math.min(w, h) / 3.4);
   }
   drawBlackboard(x, y, tw, th) {
-    const g = this.add.graphics().setDepth(1);
+    const g = this.add.graphics().setDepth(2);
     const w = tw * TILE, h = th * TILE;
     g.fillStyle(0x1a3a2a, 1); g.fillRect(x, y, w, h);
     g.lineStyle(4, 0x6a4f2a, 1); g.strokeRect(x, y, w, h);
@@ -7000,19 +7014,19 @@ class HQScene extends Phaser.Scene {
     g.fillRect(x + 100, y + 18, 36, 4);
     this.add.text(x + w / 2, y + h - 10, '🪞 칠판', {
       fontFamily: FONT, fontSize: '10px', color: '#a8d4b0'
-    }).setOrigin(0.5).setDepth(2);
+    }).setOrigin(0.5).setDepth(3);
   }
   drawDesk(x, y, w, h) {
     const g = this.add.graphics().setDepth(3);
     g.fillStyle(0x6a4f2a, 1); g.fillRect(x, y, w, h);
     g.lineStyle(3, 0x3a2410, 1); g.strokeRect(x, y, w, h);
     g.fillStyle(0x4a3a22, 1); g.fillRect(x + 6, y + h - 8, w - 12, 6);
-    g.fillStyle(0x1a1a2e, 1); g.fillRect(x + 8, y + 8, 48, 28);
-    g.fillStyle(0x5b92e5, 1); g.fillRect(x + 10, y + 10, 44, 24);
-    g.fillStyle(0xfff8d0, 1); g.fillRect(x + 64, y + 10, 56, 22);
-    g.lineStyle(1, 0x3a2410, 1); g.strokeRect(x + 64, y + 10, 56, 22);
-    g.fillStyle(0xa0282e, 1); g.fillRect(x + w - 28, y + 12, 18, 22);
-    g.fillStyle(0x6a4f2a, 1); g.fillRect(x + w - 12, y + 16, 4, 10);
+    g.fillStyle(0x1a1a2e, 1); g.fillRect(x + 12, y + 12, 48, 28);
+    g.fillStyle(0x5b92e5, 1); g.fillRect(x + 14, y + 14, 44, 24);
+    g.fillStyle(0xfff8d0, 1); g.fillRect(x + 70, y + 14, 56, 22);
+    g.lineStyle(1, 0x3a2410, 1); g.strokeRect(x + 70, y + 14, 56, 22);
+    g.fillStyle(0xa0282e, 1); g.fillRect(x + w - 30, y + 14, 18, 22);
+    g.fillStyle(0x6a4f2a, 1); g.fillRect(x + w - 14, y + 18, 4, 10);
   }
   drawMapBoard(x, y, w, h) {
     const g = this.add.graphics().setDepth(3);
@@ -7053,10 +7067,8 @@ class HQScene extends Phaser.Scene {
       hit.on('pointerup',   () => { this.touchDir[key] = false; });
       hit.on('pointerout',  () => { this.touchDir[key] = false; });
     };
-    mk(0, -r, '▲', 'up');
-    mk(0,  r, '▼', 'down');
-    mk(-r, 0, '◀', 'left');
-    mk( r, 0, '▶', 'right');
+    mk(0, -r, '▲', 'up'); mk(0, r, '▼', 'down');
+    mk(-r, 0, '◀', 'left'); mk(r, 0, '▶', 'right');
   }
 
   update() {
@@ -7074,51 +7086,42 @@ class HQScene extends Phaser.Scene {
     if (this._talkPromptKey) {
       const dx = this.player.x - this._talkPromptAnchorX;
       const dy = this.player.y - this._talkPromptAnchorY;
-      if (Math.hypot(dx, dy) > 140) this.hideTalkPrompt();
+      if (Math.hypot(dx, dy) > 150) this.hideTalkPrompt();
     }
   }
 
   setStage(stage) {
     this.stage = stage;
     this.registry.set('hqStage', stage);
-    const msg = {
+    const m = {
       perceive: ['🎯 P · 인식 — 디렉터 한센(!)에게 다가가 인사하세요',
                  '책상 뒤 한센에게 가까이 가면 💬 버튼이 떠요.'],
       explore:  ['🎯 E · 탐색 — 책상·세계지도·서류함을 모두 살펴보세요 (' + this.cluesFound.size + '/3)',
                  '각 가구에 가까이 가서 👆 버튼을 누르세요.'],
       analyze:  ['🎯 A · 분석 — 한센(!)이 한 가지 물을 거예요',
-                 '책상 뒤 한센에게 다시 가서 인터뷰하세요.'],
+                 '한센에게 다시 다가가 인터뷰하세요.'],
       connect:  ['🎯 C · 연결 — 뒷벽 🪞 칠판을 살펴보세요',
-                 '한센이 인과 사슬을 칠판에 보여줍니다.'],
+                 '칠판에 다가가면 💬 버튼이 떠요.'],
       enact:    ['🎯 E · 실천 — 한센(!)에게 다짐을 전하세요',
                  '책상으로 돌아가 한센과 대화.'],
       finish:   ['✓ 튜토리얼 완료!', '사건 선택 화면으로 돌아갑니다…'],
     }[stage] || ['', ''];
-    if (this.objText) this.objText.setText(msg[0]);
-    if (this.subText) this.subText.setText(msg[1]);
+    if (this.objText) this.objText.setText(m[0]);
+    if (this.subText) this.subText.setText(m[1]);
     const hansenActive = (stage === 'perceive' || stage === 'analyze' || stage === 'enact');
     if (this.hansenMarker) this.hansenMarker.setVisible(hansenActive);
   }
 
   onNearHansen() {
     if (this.busy || this.cooldown) return;
+    const cx = this.hansen.x, cy = this.hansen.y - 100;
     if (this.stage === 'perceive') {
-      this.requestTalkPrompt('hansen', this.hansen.x, this.hansen.y - 88,
-        '한센과 인사하기', () => this.startDialogue('start'));
+      this.requestTalkPrompt('hansen', cx, cy, '한센과 인사하기', () => this.startDialogue('start'));
     } else if (this.stage === 'analyze') {
-      this.requestTalkPrompt('hansen', this.hansen.x, this.hansen.y - 88,
-        '한센의 질문 받기', () => this.openMiniQuiz());
+      this.requestTalkPrompt('hansen', cx, cy, '한센의 질문 받기', () => this.openMiniQuiz());
     } else if (this.stage === 'enact') {
-      this.requestTalkPrompt('hansen', this.hansen.x, this.hansen.y - 88,
-        '한센에게 다짐 전하기', () => this.startDialogue('pledge'));
+      this.requestTalkPrompt('hansen', cx, cy, '한센에게 다짐 전하기', () => this.startDialogue('pledge'));
     }
-  }
-
-  onNearSpot(key, x, y, label) {
-    if (this.busy || this.cooldown) return;
-    if (this.stage !== 'explore') return;
-    if (this.cluesFound.has(key)) return;
-    this.requestTalkPrompt('spot:' + key, x, y - 4, label, () => this.onClueAction(key));
   }
 
   onClueAction(key) {
@@ -7138,12 +7141,6 @@ class HQScene extends Phaser.Scene {
     });
   }
 
-  onNearBoard() {
-    if (this.busy || this.cooldown) return;
-    if (this.stage !== 'connect') return;
-    this.requestTalkPrompt('board', 19 * TILE + TILE / 2, 4 * TILE - 4,
-      '칠판 보기', () => this.onConnectBoard());
-  }
   onConnectBoard() {
     if (this.busy) return;
     this.busy = true;
@@ -7153,7 +7150,7 @@ class HQScene extends Phaser.Scene {
       '   [내가 입는 면 옷]\n         ↓\n' +
       '   [중앙아시아의 강물 우회]\n         ↓\n' +
       '   [사라진 바다 · 호흡기 질환]\n\n' +
-      '"이게 연결(Connect)일세. 자네가 실제 현장에서\n모은 단서로 직접 이렇게 잇게 될 거야."',
+      '"이게 연결(Connect)일세."',
       () => this.startDialogue('afterConnect')
     );
   }
@@ -7187,10 +7184,10 @@ class HQScene extends Phaser.Scene {
     this.busy = false;
     this.cooldown = true;
     this.time.delayedCall(300, () => { this.cooldown = false; });
-    if (fromNode === 'start' || fromNode === 'gotoPhaseE')          this.setStage('explore');
+    if (fromNode === 'start' || fromNode === 'gotoPhaseE')             this.setStage('explore');
     else if (fromNode === 'afterExplore' || fromNode === 'gotoPhaseA') this.setStage('analyze');
     else if (fromNode === 'afterAnalyzeCorrect' || fromNode === 'afterAnalyzeWrong'
-             || fromNode === 'gotoPhaseC')                            this.setStage('connect');
+             || fromNode === 'gotoPhaseC')                              this.setStage('connect');
     else if (fromNode === 'afterConnect' || fromNode === 'gotoPhaseEnact') this.setStage('enact');
     else if (fromNode === 'pledge' || fromNode === 'praise' || fromNode === 'outro') this.finishTutorial();
   }
@@ -7199,30 +7196,18 @@ class HQScene extends Phaser.Scene {
     if (this.stage === 'finish') return;
     this.setStage('finish');
     const done = this.registry.get('completedCases') || [];
-    if (!done.includes('intro')) {
-      done.push('intro');
-      this.registry.set('completedCases', done);
-    }
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('peace_intro_seen', '1');
-      }
-    } catch (e) {}
+    if (!done.includes('intro')) { done.push('intro'); this.registry.set('completedCases', done); }
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem('peace_intro_seen', '1'); } catch (e) {}
     try { reportProgress(this, { introDone: true }); } catch (e) {}
     this.registry.set('hqStage', null);
     this.registry.set('hqClues', null);
-    this.openModal(
-      '✓ 튜토리얼 완료',
-      '훌륭합니다, 조사관!\n\n' +
-      'P.E.A.C.E. 다섯 단계를 모두 체험했습니다.\n' +
-      '이제 본 임무 — 아랄해·우크라이나·팔레스타인 —\n' +
-      '세 사건이 모두 잠금 해제되었습니다.\n\n' +
+    this.openModal('✓ 튜토리얼 완료',
+      '훌륭합니다, 조사관!\n\nP.E.A.C.E. 다섯 단계를 모두 체험했습니다.\n' +
+      '이제 본 임무 — 아랄해·우크라이나·팔레스타인 —\n세 사건이 모두 잠금 해제되었습니다.\n\n' +
       '"첫 사건을 골라 출발하게."',
       () => {
         this.cameras.main.fadeOut(420, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-          this.scene.start('CaseSelectScene');
-        });
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('CaseSelectScene'));
       }
     );
   }
@@ -7231,8 +7216,7 @@ class HQScene extends Phaser.Scene {
     if (this._talkPromptKey === key) return;
     this.hideTalkPrompt();
     this._talkPromptKey = key;
-    this._talkPromptAnchorX = x;
-    this._talkPromptAnchorY = y;
+    this._talkPromptAnchorX = x; this._talkPromptAnchorY = y;
     const bgW = Math.max(160, label.length * 12 + 70), bgH = 36;
     const bg = this.add.graphics().setDepth(2500);
     bg.fillStyle(0x000000, 0.85);
@@ -7244,10 +7228,7 @@ class HQScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(2501);
     const zone = this.add.zone(x, y, bgW, bgH)
       .setInteractive({ useHandCursor: true }).setDepth(2502);
-    zone.on('pointerdown', () => {
-      this.hideTalkPrompt();
-      if (typeof onTalk === 'function') onTalk();
-    });
+    zone.on('pointerdown', () => { this.hideTalkPrompt(); if (typeof onTalk === 'function') onTalk(); });
     const tw = this.tweens.add({
       targets: [bg, tx, zone], y: '-=4',
       duration: 700, yoyo: true, repeat: -1, ease: 'Sine.inOut'
@@ -7257,27 +7238,22 @@ class HQScene extends Phaser.Scene {
   hideTalkPrompt() {
     if (!this._talkPrompt) return;
     this._talkPrompt.forEach(o => { if (o && o.destroy) o.destroy(); });
-    this._talkPrompt = null;
-    this._talkPromptKey = null;
+    this._talkPrompt = null; this._talkPromptKey = null;
   }
 
   flashToast(msg) {
     if (this.toast && this.toast.active) this.toast.destroy();
     this.toast = this.add.text(GAME_W / 2, 70, msg, {
       fontFamily: FONT, fontSize: '13px', color: '#ffdcdc',
-      backgroundColor: '#000000cc', padding: { x: 10, y: 6 },
-      align: 'center'
+      backgroundColor: '#000000cc', padding: { x: 10, y: 6 }, align: 'center'
     }).setOrigin(0.5).setDepth(5000).setScrollFactor(0);
-    this.time.delayedCall(2400, () => {
-      if (this.toast) { this.toast.destroy(); this.toast = null; }
-    });
+    this.time.delayedCall(2400, () => { if (this.toast) { this.toast.destroy(); this.toast = null; } });
   }
 
   openModal(title, body, onClose) {
     this.busy = true;
     const layer = this.add.container(0, 0).setDepth(9000);
-    const dim = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x000000, 0.78)
-      .setInteractive();
+    const dim = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x000000, 0.78).setInteractive();
     layer.add(dim);
     const pw = 640, ph = 320, px = (GAME_W - pw) / 2, py = (GAME_H - ph) / 2;
     const g = this.add.graphics();
@@ -7292,8 +7268,7 @@ class HQScene extends Phaser.Scene {
       align: 'center', lineSpacing: 6, wordWrap: { width: pw - 60 }
     }).setOrigin(0.5, 0));
     const btn = fancyButton(this, GAME_W / 2, py + ph - 36, 180, 38, '✓  확인', () => {
-      layer.destroy(true);
-      this.busy = false;
+      layer.destroy(true); this.busy = false;
       if (typeof onClose === 'function') onClose();
     }, { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
     layer.add(btn.g); layer.add(btn.zone); layer.add(btn.t);
@@ -7302,8 +7277,7 @@ class HQScene extends Phaser.Scene {
   openChoiceModal(speaker, body, choices, onPick) {
     this.busy = true;
     const layer = this.add.container(0, 0).setDepth(9000);
-    const dim = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x000000, 0.78)
-      .setInteractive();
+    const dim = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x000000, 0.78).setInteractive();
     layer.add(dim);
     const pw = 720, ph = 380, px = (GAME_W - pw) / 2, py = (GAME_H - ph) / 2;
     const g = this.add.graphics();
@@ -7330,9 +7304,7 @@ class HQScene extends Phaser.Scene {
 
   bailOut() {
     this.cameras.main.fadeOut(280, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('CaseSelectScene');
-    });
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('CaseSelectScene'));
   }
 }
 
