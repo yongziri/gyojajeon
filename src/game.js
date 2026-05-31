@@ -1922,6 +1922,97 @@ function getGuideName(registry) {
   return (c && c.guide && c.guide.name) || '안내인';
 }
 
+// 현재 활성 사건의 첫 조사 장소 이름 (예: '옛 항구 무이낙', '폭격받은 학교').
+// 락 토스트·HUD 목표 메시지 등 학생에게 노출되는 모든 안내 텍스트의 통일 출처.
+function getFirstLocationName(registry) {
+  const id = (registry && registry.get && registry.get('caseId')) || 'aralsea';
+  // CASES는 cases.js 글로벌. setCase()와 별개로 직접 lookup (모달 등 비활성 사건 안전)
+  const c = (typeof CASES !== 'undefined') ? CASES[id] : null;
+  if (!c || !c.locations || !c.start) return '첫 장소';
+  const loc = c.locations[c.start];
+  return (loc && loc.name) || '첫 장소';
+}
+
+// 현재 활성 사건의 짧은 통칭 (예: '아랄해', '키이우', '팔레스타인').
+// 인쇄 보고서 헤더·자기평가 문항 등에 사용.
+function getCaseShortName(registry) {
+  const id = (registry && registry.get && registry.get('caseId')) || 'aralsea';
+  const SHORT = { aralsea: '아랄해', ukraine: '우크라이나', palestine: '팔레스타인' };
+  return SHORT[id] || '현장';
+}
+
+// 사건별 UN 보고서 템플릿 — 수신처 후보·다짐 목록·헤더·권고 단락
+// LetterScene이 caseId를 기준으로 적절한 세트를 선택해 본문 구성.
+const LETTER_TEMPLATES = {
+  aralsea: {
+    header: '《 UN 환경계획 · 아랄해 현지 조사 보고서 》',
+    recipients: [
+      { short: 'UN 환경계획(UNEP)', long: 'UN 환경계획(UNEP) 귀하에게' },
+      { short: '유네스코(UNESCO)',  long: '유네스코(UNESCO) 귀하에게' },
+      { short: '대한민국 환경부',    long: '대한민국 환경부 귀하에게' },
+    ],
+    pledges: [
+      '옷을 오래 입고 꼭 필요한 것만 사겠습니다.',
+      '환경·물 관련 뉴스에 꾸준히 관심을 갖겠습니다.',
+      '친구들과 가족에게 이 이야기를 알리겠습니다.',
+      '학교에서 환경 동아리·캠페인에 참여하겠습니다.',
+      '재활용·물 절약 습관을 작은 것부터 실천하겠습니다.',
+      '국제기구·NGO 활동에 응원과 작은 후원을 보내겠습니다.',
+    ],
+    footer:
+      '이 문제는 멀리 떨어진 우리의 소비와도 연결됩니다.\n' +
+      '국제사회·정부·시민이 협력해 재발을 막고, 훼손된\n' +
+      '생태계의 회복을 위해 노력할 것을 권고합니다.',
+    signature: '— UN 환경계획 파견 조사관 —',
+  },
+  ukraine: {
+    header: '《 UN 인도주의업무조정국 · 우크라이나 현지 조사 보고서 》',
+    recipients: [
+      { short: 'UN 인도주의(OCHA)', long: 'UN 인도주의업무조정국(OCHA) 귀하에게' },
+      { short: '유네스코(UNESCO)',  long: '유네스코(UNESCO) 귀하에게' },
+      { short: '대한민국 외교부',    long: '대한민국 외교부 귀하에게' },
+    ],
+    pledges: [
+      '식량·에너지 가격 뉴스에 꾸준히 관심을 갖겠습니다.',
+      '평화 교육·국제이해 수업에 적극 참여하겠습니다.',
+      '친구들과 가족에게 이 이야기를 알리겠습니다.',
+      '학교에서 평화·인권 동아리·캠페인에 참여하겠습니다.',
+      '에너지 절약을 작은 것부터 실천하겠습니다.',
+      'UN·적십자·NGO 인도주의 활동에 응원과 작은 후원을 보내겠습니다.',
+    ],
+    footer:
+      '전쟁의 영향은 멀리 떨어진 우리 식탁·난방까지 닿습니다.\n' +
+      '국제사회·정부·시민이 협력해 민간인 보호, 식량 안보,\n' +
+      '그리고 평화 교육에 힘쓸 것을 권고합니다.',
+    signature: '— UN 인도주의 파견 조사관 —',
+  },
+  palestine: {
+    header: '《 UN 팔레스타인 난민구호기관 · 현지 조사 보고서 》',
+    recipients: [
+      { short: 'UN 안전보장이사회', long: 'UN 안전보장이사회 귀하에게' },
+      { short: 'UNRWA',             long: 'UN 팔레스타인 난민구호기관(UNRWA) 귀하에게' },
+      { short: '대한민국 외교부',    long: '대한민국 외교부 귀하에게' },
+    ],
+    pledges: [
+      '분쟁 지역의 어린이와 학교 소식에 꾸준히 관심을 갖겠습니다.',
+      '평화 교육·세 종교 공존에 대해 더 배우겠습니다.',
+      '친구들과 가족에게 이 이야기를 알리겠습니다.',
+      '학교에서 평화·인권 동아리·캠페인에 참여하겠습니다.',
+      '편견 없는 시각으로 양쪽 사람들의 목소리를 함께 듣겠습니다.',
+      'UN·UNRWA·적신월 인도주의 활동에 응원과 작은 후원을 보내겠습니다.',
+    ],
+    footer:
+      '오래된 갈등의 한가운데에도 평범한 사람들의 일상이 있습니다.\n' +
+      '국제사회·종교 공동체·시민이 협력해 인도주의 통로 확보,\n' +
+      '아동 보호, 평화 교육에 힘쓸 것을 권고합니다.',
+    signature: '— UN 인도주의 파견 조사관 —',
+  },
+};
+function getLetterTemplate(registry) {
+  const id = (registry && registry.get && registry.get('caseId')) || 'aralsea';
+  return LETTER_TEMPLATES[id] || LETTER_TEMPLATES.aralsea;
+}
+
 const CASE_LIST = [
   {
     id: 'aralsea',
@@ -3664,7 +3755,7 @@ class WorldScene extends Phaser.Scene {
         }
         const ev = (this.registry.get('evidence') || []).length;
         if (ev < 3) {
-          this.showLockToast('먼저 옛 항구를 조사해 단서를 모으세요\n(2단계 · 관찰 / 단서 ' + ev + '/3)');
+          this.showLockToast('먼저 ' + getFirstLocationName(this.registry) + '을(를) 조사해 단서를 모으세요\n(2단계 · 관찰 / 단서 ' + ev + '/3)');
           return;
         }
         // 게이팅 통과 시에만 버튼 표시
@@ -3975,7 +4066,7 @@ class WorldScene extends Phaser.Scene {
       text = '🎯 인식 (P) — 안내인 ' + getGuideName(this.registry) + '에게 다가가 상황을 파악하세요';
     } else if (stage === 2) {
       if (ev < 3) {
-        text = '🎯 관찰 (E·탐색) — 노란 표지판으로 옛 항구를 조사해 단서 ' + ev + '/3 이상 모으세요';
+        text = '🎯 관찰 (E·탐색) — 노란 표지판으로 ' + getFirstLocationName(this.registry) + '을(를) 조사해 단서 ' + ev + '/3 이상 모으세요';
       } else {
         text = '🎯 관찰 (A·분석) — 시민(!)을 인터뷰해 핵심 단서 ' + co + '/' + need + '개를 얻으세요';
       }
@@ -5208,21 +5299,10 @@ class LetterScene extends Phaser.Scene {
     this.factPicks = new Set(); // 증거 id (최대 3개)
     this.pledgePicks = new Set(); // 다짐 인덱스 (최대 3개)
 
-    // 보낼 곳 후보
-    this.RECIPIENTS = [
-      { short: 'UN 환경계획(UNEP)', long: 'UN 환경계획(UNEP) 귀하에게' },
-      { short: '유네스코(UNESCO)',  long: '유네스코(UNESCO) 귀하에게' },
-      { short: '대한민국 환경부',    long: '대한민국 환경부 귀하에게' },
-    ];
-
-    // 학생이 고르는 다짐 카드
-    this.PLEDGES = [
-      '옷을 오래 입고 꼭 필요한 것만 사겠습니다.',
-      '환경·물 관련 뉴스에 꾸준히 관심을 갖겠습니다.',
-      '친구들과 가족에게 이 이야기를 알리겠습니다.',
-      '학교에서 환경 동아리·캠페인에 참여하겠습니다.',
-      '물을 아껴 쓰고, 한 번 더 생각하고 소비하겠습니다.',
-    ];
+    // 사건별 보낼 곳·다짐 — 통합 LETTER_TEMPLATES에서 가져옴 (헤더·권고도 같이 사용)
+    this.tmpl = getLetterTemplate(this.registry);
+    this.RECIPIENTS = this.tmpl.recipients;
+    this.PLEDGES = this.tmpl.pledges;
 
     this.cameras.main.setBackgroundColor('#1a1a2e');
     this.buildCompose();
@@ -5426,8 +5506,9 @@ class LetterScene extends Phaser.Scene {
   "${refl.statementText || ''}"\n`;
     }
 
+    const tmpl = this.tmpl || getLetterTemplate(this.registry);
     const body =
-`《 UN 환경계획 · 아랄해 현지 조사 보고서 》
+`${tmpl.header}
 보고일 ${date}   ·   수신처: ${r.short}
 
 [ 현장에서 확인한 사실 ]
@@ -5436,11 +5517,9 @@ ${reflBlock}
 [ 권고와 시민의 다짐 ]
 ${pledges.join('\n')}
 
-이 문제는 멀리 떨어진 우리의 소비와도 연결됩니다.
-국제사회·정부·시민이 협력해 재발을 막고, 훼손된
-생태계의 회복을 위해 노력할 것을 권고합니다.
+${tmpl.footer}
 
-— UN 환경계획 파견 조사관 —`;
+${tmpl.signature}`;
 
     this.add.text(42, 84, body, {
       fontFamily: FONT, fontSize: '13px', color: '#1a1a2e',
@@ -5482,7 +5561,7 @@ ${pledges.join('\n')}
     this.reviewScores = { goalMet: 3, factConf: 3, actionConf: 3 };
     const sliderRows = [
       { key: 'goalMet',    label: '내 목표 달성도',      desc: '이번 임무에서 알고 싶었던 것을 얼마나 알게 됐나요?' },
-      { key: 'factConf',   label: '사실 이해 자신감',    desc: '아랄해 사건의 원인·결과를 다른 사람에게 설명할 수 있나요?' },
+      { key: 'factConf',   label: '사실 이해 자신감',    desc: getCaseShortName(this.registry) + ' 사건의 원인·결과를 다른 사람에게 설명할 수 있나요?' },
       { key: 'actionConf', label: '실천 다짐 자신감',    desc: '오늘 적은 다짐을 실제로 지킬 수 있을 것 같나요?' },
     ];
     sliderRows.forEach((row, i) => {
@@ -5695,7 +5774,7 @@ ${pledges.join('\n')}
     const caseId = r.get('caseId') || 'aralsea';
     const curCase = (typeof CASE_LIST !== 'undefined')
       ? CASE_LIST.find(c => c.id === caseId) : null;
-    const caseTitle = curCase ? curCase.title : '사라진 바다';
+    const caseTitle = curCase ? curCase.title : getCaseShortName(this.registry);
     const recipient = this.RECIPIENTS[this.recipient];
     const facts = this.collected
       .filter(ev => this.factPicks.has(ev.id));
@@ -5879,28 +5958,36 @@ ${pledges.join('\n')}
 //  · 자기성찰: 5개 카드 중 1개 선택 ("가장 마음에 남은 단서는?")
 //  · 두 활동 모두 마치면 reflectionDone=true → 4단계 잠금 해제
 // ══════════════════════════════════════════════════════════════
-const REFLECTION_STATEMENTS = [
-  {
-    id: 's_shrink',
-    text: '한 인간의 일생 안에 호수의 90%가 사라졌다는 사실이 충격이었다.'
-  },
-  {
-    id: 's_people',
-    text: '4만 명의 어부가 바다와 함께 일자리를 잃었다는 점이 마음에 남았다.'
-  },
-  {
-    id: 's_dust',
-    text: '아이들이 매일 마시는 소금·농약 먼지가 가장 마음 아팠다.'
-  },
-  {
-    id: 's_connect',
-    text: '내가 입는 옷 한 벌이 이 호수와 연결돼 있다는 사실을 처음 알았다.'
-  },
-  {
-    id: 's_action',
-    text: '코카랄 댐처럼 작은 협력이 큰 변화를 만들 수 있다는 점이 인상적이었다.'
-  },
-];
+// 사건별 자기성찰 5장 풀 — 학생이 '가장 마음에 남은 단서/생각' 1장 선택
+const REFLECTION_STATEMENTS_BY_CASE = {
+  aralsea: [
+    { id: 's_shrink',  text: '한 인간의 일생 안에 호수의 90%가 사라졌다는 사실이 충격이었다.' },
+    { id: 's_people',  text: '4만 명의 어부가 바다와 함께 일자리를 잃었다는 점이 마음에 남았다.' },
+    { id: 's_dust',    text: '아이들이 매일 마시는 소금·농약 먼지가 가장 마음 아팠다.' },
+    { id: 's_connect', text: '내가 입는 옷 한 벌이 이 호수와 연결돼 있다는 사실을 처음 알았다.' },
+    { id: 's_action',  text: '코카랄 댐처럼 작은 협력이 큰 변화를 만들 수 있다는 점이 인상적이었다.' },
+  ],
+  ukraine: [
+    { id: 's_school',   text: '수천 개의 학교가 부서지고 1년 넘게 교실에 못 간 아이들이 있다는 사실이 충격이었다.' },
+    { id: 's_civilian', text: '전쟁에서 가장 많이 다치는 사람이 아이와 평범한 시민이라는 점이 마음에 남았다.' },
+    { id: 's_food',     text: '먼 나라의 항구가 멈추자 다른 대륙의 빵 값이 두 배가 됐다는 연결이 놀라웠다.' },
+    { id: 's_alarm',    text: '매일 공습 사이렌 소리에 두려움을 일상으로 살아야 한다는 점이 가장 마음 아팠다.' },
+    { id: 's_peace_ed', text: '평화 교육이 아이들의 그림에서 시작된다는 카테리나의 말이 인상적이었다.' },
+  ],
+  palestine: [
+    { id: 's_olive',     text: '천 년 된 올리브 한 그루가 한 가족 4대의 기억을 품고 있다는 점이 깊이 다가왔다.' },
+    { id: 's_check',     text: '5분 거리 학교를 가는 데 검문소 때문에 두 시간이 걸린다는 일상이 충격이었다.' },
+    { id: 's_three',     text: '한 골목 안에 세 종교가 천 년 넘게 함께 살아왔다는 사실이 놀라웠다.' },
+    { id: 's_aid_stamp', text: '아이들 백신 한 상자가 통과에 며칠씩 걸린다는 점이 마음 아팠다.' },
+    { id: 's_kids_dove', text: '양쪽 아이들이 똑같이 평화의 비둘기를 그린다는 사실이 가장 인상적이었다.' },
+  ],
+};
+function getReflectionStatements(registry) {
+  const id = (registry && registry.get && registry.get('caseId')) || 'aralsea';
+  return REFLECTION_STATEMENTS_BY_CASE[id] || REFLECTION_STATEMENTS_BY_CASE.aralsea;
+}
+// 하위 호환 — 옛 이름 참조 (한 곳이라도 남아있을 가능성)
+const REFLECTION_STATEMENTS = REFLECTION_STATEMENTS_BY_CASE.aralsea;
 
 class ReflectionScene extends Phaser.Scene {
   constructor() { super('ReflectionScene'); }
@@ -5988,8 +6075,10 @@ class ReflectionScene extends Phaser.Scene {
 
     // 5개 카드 — 한 줄에 가로 배치 (5장이라 좀 작게)
     // 16:10(960폭) 가운데 정렬: 카드 폭 144 + gap 10 → 시작 x = 100
+    // 사건별 STATEMENTS 풀에서 가져옴 (아랄해/우크라/팔레 각각 다른 5장)
+    this.stmtPool = getReflectionStatements(this.registry);
     this.stmtObjs = [];
-    REFLECTION_STATEMENTS.forEach((s, i) => {
+    this.stmtPool.forEach((s, i) => {
       const x = 100 + i * 154;
       const y = 296;
       const w = 144, h = 200;
@@ -6242,7 +6331,7 @@ class ReflectionScene extends Phaser.Scene {
       chain: this.slots.map(s => s.id),
       chainNames: this.slots.map(s => s.name),
       statement: this.statementId,
-      statementText: (REFLECTION_STATEMENTS.find(s => s.id === this.statementId) || {}).text || '',
+      statementText: ((this.stmtPool || REFLECTION_STATEMENTS).find(s => s.id === this.statementId) || {}).text || '',
       userStatement: this.userStmt || '',   // 학생이 직접 쓴 한 문장 (선택)
     });
     this.registry.set('userReflection', this.userStmt || '');
@@ -6288,7 +6377,7 @@ class ReflectionScene extends Phaser.Scene {
 // ══════════════════════════════════════════════════════════════
 const SPEECH_PHRASES = [
   { id: 'attention',  text: '저는 멀리서 이 분쟁을 지켜본 한 명의 학생입니다.' },
-  { id: 'witness',    text: '제 두 눈으로 사라진 바다와 마을 사람들의 삶을 보았습니다.' },
+  { id: 'witness',    text: '제 두 눈으로 그 현장과 그곳 사람들의 삶을 보았습니다.' },
   { id: 'connect',    text: '이 일은 멀리 있는 사람의 이야기가 아니라 우리 모두의 일입니다.' },
   { id: 'demand',     text: '국제 사회의 협력으로 강물을 되돌리고 사람들의 건강을 지켜야 합니다.' },
   { id: 'youth',      text: '학생인 저도 일상의 소비와 관심으로 함께 노력하겠습니다.' },
