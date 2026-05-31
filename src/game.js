@@ -1508,134 +1508,8 @@ class TitleScene extends Phaser.Scene {
     this.input.keyboard.once('keydown-SPACE', newGame);
     this.input.keyboard.once('keydown-ENTER', newGame);
     start.setVisible(false);
-
-    // 첫 진입 튜토리얼 모달 — localStorage 'peace_tutorial_seen' 없으면 표시
-    if (this.shouldShowTutorial()) {
-      this.showTutorialModal();
-    }
-  }
-
-  // 튜토리얼을 한 번이라도 본 적이 없으면 true
-  shouldShowTutorial() {
-    if (typeof localStorage === 'undefined') return false;
-    try { return localStorage.getItem('peace_tutorial_seen') !== '1'; }
-    catch (e) { return false; }
-  }
-
-  // 첫 진입 튜토리얼 — 3페이지 모달
-  showTutorialModal() {
-    const W = GAME_W, H = GAME_H;
-    const layer = this.add.container(0, 0).setDepth(9000);
-
-    // 어두운 배경
-    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.78)
-      .setInteractive();
-    layer.add(dim);
-
-    // 모달 패널
-    const panelG = this.add.graphics();
-    const pw = 720, ph = 480, px = (W - pw) / 2, py = (H - ph) / 2;
-    panelG.fillStyle(0x1a2a3a, 0.97);
-    panelG.fillRoundedRect(px, py, pw, ph, 14);
-    panelG.lineStyle(3, 0xffd96a, 1);
-    panelG.strokeRoundedRect(px, py, pw, ph, 14);
-    layer.add(panelG);
-
-    // 페이지 데이터 — 게임 컨셉·흐름·평가 3장
-    const pages = [
-      {
-        emoji: '🕊',
-        title: '환영합니다, UN 조사관님',
-        body:
-          '당신은 세 가지 국제 분쟁 현장을\n' +
-          '조사하는 UN 청소년 조사관입니다.\n\n' +
-          '🌊 사라진 바다 — 아랄해 환경 분쟁\n' +
-          '🕯 깨어진 평화 — 우크라이나 전쟁\n' +
-          '🫒 오래된 갈등 — 팔레스타인·이스라엘\n\n' +
-          '각 사건에서 사람을 만나고, 단서를 모으고,\n' +
-          'UN에 보고서와 연설문을 송부하세요.',
-      },
-      {
-        emoji: '🗺',
-        title: 'P.E.A.C.E. 5단계 흐름',
-        body:
-          'P  인식    안내인과 첫 만남\n' +
-          'E  탐색    🟨 노란 표지판으로 현장 조사\n' +
-          'A  분석    💬 시민(!) 인터뷰 + 객관식\n' +
-          'C  성찰    🪞 의자 — 인과 사슬 + 자기성찰\n' +
-          'E  실천    📮 우편함 — 보고서 + 🕊 연설문\n\n' +
-          '단계가 잠겨 있으면 머리 위 안내 토스트가\n' +
-          '다음 할 일을 알려줍니다.',
-      },
-      {
-        emoji: '🏛',
-        title: '평가 — P.E.A.C.E. 5차원 (총 15점)',
-        body:
-          '게임이 학생 활동을 자동 채점합니다:\n\n' +
-          '🤝 공감 / 🧠 사실 이해 / 🔗 연결 의식 /\n' +
-          '✊ 실천 다짐 / 🌍 국제 협력\n\n' +
-          '등급: S(13+) · A(10+) · B(7+) · C\n\n' +
-          '🌳 학습 트리에서 사건별 점수·뱃지가\n' +
-          '누적됩니다. 인쇄 보고서도 같은 화면에서.',
-      },
-    ];
-    let pageIdx = 0;
-
-    const titleTxt = this.add.text(W / 2, py + 50, '', {
-      fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8',
-      fontStyle: 'bold', align: 'center'
-    }).setOrigin(0.5);
-    layer.add(titleTxt);
-
-    const bodyTxt = this.add.text(W / 2, py + 100, '', {
-      fontFamily: FONT, fontSize: '14px', color: '#dff1ff',
-      align: 'center', lineSpacing: 6, wordWrap: { width: pw - 80 }
-    }).setOrigin(0.5, 0);
-    layer.add(bodyTxt);
-
-    // 페이지 인디케이터 (점 3개)
-    const dotsY = py + ph - 80;
-    const dots = pages.map((_, i) => {
-      const dot = this.add.circle(W / 2 - 24 + i * 24, dotsY, 5, 0xffd96a, 1);
-      layer.add(dot);
-      return dot;
-    });
-
-    // 버튼들 — 좌하: 건너뛰기, 우하: 다음 / 시작
-    // fancyButton 반환은 { g, zone, t } — Container에 g·zone·t 모두 추가
-    const skip = fancyButton(this, W / 2 - 200, py + ph - 36, 140, 36, '건너뛰기',
-      () => this.closeTutorial(layer, true),
-      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
-    layer.add(skip.g); layer.add(skip.zone); layer.add(skip.t);
-
-    let nextBtn;
-    const renderPage = () => {
-      const p = pages[pageIdx];
-      titleTxt.setText(p.emoji + '  ' + p.title);
-      bodyTxt.setText(p.body);
-      dots.forEach((d, i) => d.setFillStyle(i === pageIdx ? 0xffd96a : 0x4a5a6a));
-      if (nextBtn) { nextBtn.g.destroy(); nextBtn.zone.destroy(); nextBtn.t.destroy(); }
-      const isLast = pageIdx === pages.length - 1;
-      nextBtn = fancyButton(this, W / 2 + 200, py + ph - 36, 160, 36,
-        isLast ? '✓  시작하기' : '다음  ▶',
-        () => {
-          if (isLast) this.closeTutorial(layer, true);
-          else { pageIdx++; renderPage(); }
-        },
-        { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
-      layer.add(nextBtn.g); layer.add(nextBtn.zone); layer.add(nextBtn.t);
-    };
-    renderPage();
-
-    this._tutorialLayer = layer;
-  }
-
-  closeTutorial(layer, markSeen) {
-    if (markSeen && typeof localStorage !== 'undefined') {
-      try { localStorage.setItem('peace_tutorial_seen', '1'); } catch (e) {}
-    }
-    if (layer) { layer.destroy(true); }
-    this._tutorialLayer = null;
+    // (옛 모달 튜토리얼은 HHH-4에서 제거됨 —
+    //  지금은 CaseSelectScene의 "튜토리얼 — UN 본부" 카드 + HQScene 인터랙티브 인트로가 그 역할을 대신함)
   }
 }
 
@@ -2232,6 +2106,28 @@ function getLetterTemplate(registry) {
 
 const CASE_LIST = [
   {
+    // 사건 0 — 튜토리얼. CaseSelectScene 카드 맨 위.
+    // 완료 전엔 다른 3사건 잠금. id='intro', completedCases에 'intro' 들어가면 잠금 해제.
+    id: 'intro',
+    title: '튜토리얼 — UN 본부',
+    subtitle: '디렉터 한센과 첫 만남',
+    region: '북미 · 뉴욕 맨해튼',
+    status: 'available',
+    accent: 0xffd96a,
+    guide: { name: '한센' },
+    // 뉴욕 (40.7°N, -74.0°E) — 지도 좌표
+    mapX: 320, mapY: 220,
+    mission: [
+      '오늘은 자네의 첫 출근일.',
+      'UN 본부 P.E.A.C.E. 에이전시에서',
+      '디렉터 한센과 인사하고, 우리가 일하는',
+      '다섯 단계 — P·E·A·C·E — 를 직접 체험할 것.',
+      '',
+      '튜토리얼을 끝내야 본 임무가 잠금 해제된다.',
+    ],
+    code: 'CASE-000  ORIENTATION',
+  },
+  {
     id: 'aralsea',
     title: '사라진 바다',
     subtitle: '아랄해 — 환경 분쟁과 세계시민',
@@ -2389,12 +2285,18 @@ class CaseSelectScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
 
     // hover-out 시 복원할 기본 안내문
-    this.defaultInfo =
-      '좌측 임무 카드 위에 커서를 올리면 사건의 위치와\n' +
-      '간략 설명을 볼 수 있습니다.\n\n' +
-      '· 첫 사건은 「사라진 바다 — 아랄해」 입니다.\n' +
-      '· 「깨어진 평화」, 「오래된 갈등」은 향후 업데이트.\n' +
-      '· 출처: Wikimedia Commons (Public Domain) 세계지도';
+    const introDone = (this.registry.get('completedCases') || []).includes('intro');
+    this.defaultInfo = introDone
+      ? ('좌측 임무 카드 위에 커서를 올리면 사건의 위치와\n' +
+         '간략 설명을 볼 수 있습니다.\n\n' +
+         '· 「사라진 바다 — 아랄해」 환경 분쟁\n' +
+         '· 「깨어진 평화」 러시아·우크라이나 전쟁\n' +
+         '· 「오래된 갈등」 팔레스타인 — 평화·인도주의')
+      : ('🎓 먼저 「튜토리얼 — UN 본부」를 마쳐야\n' +
+         '본 임무 세 가지가 잠금 해제됩니다.\n\n' +
+         '디렉터 한센과 만나 P.E.A.C.E. 5단계 —\n' +
+         '인식 · 탐색 · 분석 · 연결 · 실천 — 을\n' +
+         '직접 체험하세요.');
     this.infoText = this.add.text(infoX + 14, infoY + 38, this.defaultInfo, {
       fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', lineSpacing: 4
     });
@@ -2462,9 +2364,15 @@ class CaseSelectScene extends Phaser.Scene {
 
   // 좌측 패널의 사건 카드 1개를 그린다
   buildCaseCard(x, y, w, h, c) {
-    const available = (c.status === 'available');
     // 송부 완료된 사건은 ✓ 표시 (다시 진입 가능)
     const completed = (this.registry.get('completedCases') || []).includes(c.id);
+    // 튜토리얼(intro)이 끝나야 본 3사건 잠금 해제. intro 자체는 항상 열림.
+    const introDone = (this.registry.get('completedCases') || []).includes('intro');
+    const isIntro = (c.id === 'intro');
+    const lockedByIntro = !isIntro && !introDone;
+    const available = (c.status === 'available') && !lockedByIntro;
+    // 잠금 종류 — 'tutorial' = 튜토리얼 미완료, 'soon' = 콘텐츠 준비중
+    const lockKind = lockedByIntro ? 'tutorial' : (!available ? 'soon' : null);
 
     const g = this.add.graphics();
     const drawCard = (hover) => {
@@ -2522,9 +2430,10 @@ class CaseSelectScene extends Phaser.Scene {
         fontFamily: FONT, fontSize: '11px', color: '#d7ffe0'
       }).setOrigin(0.5);
     } else {
-      bg2.fillStyle(0x4a3a22, 1); bg2.fillRect(badgeX - 64, badgeY, 64, 20);
-      bg2.lineStyle(1, 0xc9a36b, 1); bg2.strokeRect(badgeX - 64, badgeY, 64, 20);
-      this.add.text(badgeX - 32, badgeY + 10, '🔒  준비중', {
+      bg2.fillStyle(0x4a3a22, 1); bg2.fillRect(badgeX - 80, badgeY, 80, 20);
+      bg2.lineStyle(1, 0xc9a36b, 1); bg2.strokeRect(badgeX - 80, badgeY, 80, 20);
+      this.add.text(badgeX - 40, badgeY + 10,
+        lockKind === 'tutorial' ? '🔒  튜토리얼' : '🔒  준비중', {
         fontFamily: FONT, fontSize: '11px', color: '#ffe9b8'
       }).setOrigin(0.5);
     }
@@ -2552,19 +2461,23 @@ class CaseSelectScene extends Phaser.Scene {
       });
     }
 
-    // 상호작용 zone
+    // 상호작용 zone — 잠금이라도 클릭은 받아서 토스트 안내
     const zone = this.add.zone(x + w / 2, y + h / 2, w, h)
-      .setInteractive({ useHandCursor: available });
+      .setInteractive({ useHandCursor: true });
     zone.on('pointerover', () => {
       drawCard(true);
       if (available) titleText.setColor('#ffffff');
       // 우측 지도 마커 강조 + 하단 정보 갱신
       this.highlightMarker(c.id, true);
-      this.infoText.setText(
-        available
-          ? '▶  ' + c.title + '\n   ' + c.subtitle + '\n   지역: ' + c.region
-          : '🔒  ' + c.title + ' — 준비 중\n   ' + c.subtitle + '\n   다음 업데이트에서 만날 수 있어요.'
-      );
+      let info;
+      if (available) {
+        info = '▶  ' + c.title + '\n   ' + c.subtitle + '\n   지역: ' + c.region;
+      } else if (lockKind === 'tutorial') {
+        info = '🔒  ' + c.title + '\n   먼저 「튜토리얼 — UN 본부」를 마치세요.\n   디렉터 한센과 P.E.A.C.E. 5단계 체험.';
+      } else {
+        info = '🔒  ' + c.title + ' — 준비 중\n   ' + c.subtitle + '\n   다음 업데이트에서 만날 수 있어요.';
+      }
+      this.infoText.setText(info);
     });
     zone.on('pointerout', () => {
       drawCard(false);
@@ -2579,13 +2492,22 @@ class CaseSelectScene extends Phaser.Scene {
       // 이미 다른 카드 클릭으로 fadeOut 진행 중이면 무시 (다중 호출 방지)
       if (this.leaving) return;
       if (!available) {
-        this.flashToast('🔒  이 사건은 준비 중입니다 — 다음 업데이트에서 만나요!');
+        if (lockKind === 'tutorial') {
+          this.flashToast('🔒  먼저 「튜토리얼 — UN 본부」를 마치세요.');
+        } else {
+          this.flashToast('🔒  이 사건은 준비 중입니다 — 다음 업데이트에서 만나요!');
+        }
         return;
       }
       this.leaving = true;
-      // 사건 ID를 registry에 저장 + 데이터 파일의 활성 사건 전환
+      // 사건 ID를 registry에 저장. intro는 cases.js/dialogue.js의
+      // setCase/setCitizens는 호출 안 함 (해당 데이터가 없으므로 default 유지).
       this.registry.set('caseId', c.id);
-      try { setCase(c.id); setStory(c.id); setCitizens(c.id); } catch (e) { /* 데이터 없는 사건이면 default 유지 */ }
+      if (!isIntro) {
+        try { setCase(c.id); setStory(c.id); setCitizens(c.id); } catch (e) { /* 데이터 없는 사건이면 default 유지 */ }
+      } else {
+        try { setStory('intro'); } catch (e) {}
+      }
       this.registry.set('stage', 1);
       this.registry.set('enemyDefeated', false);
       this.registry.set('evidence', []);
@@ -2598,10 +2520,10 @@ class CaseSelectScene extends Phaser.Scene {
       this.registry.set('reflection', null);
       this.registry.set('evidenceTags', {});
       this.registry.set('learningReview', null);
-      // 페이드 아웃 후 BriefingScene으로 — 갑작스러운 전환 방지
+      // 페이드 아웃 후 — intro면 HQScene으로, 그 외는 BriefingScene으로
       this.cameras.main.fadeOut(380, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
-        this.scene.start('BriefingScene');
+        this.scene.start(isIntro ? 'HQScene' : 'BriefingScene');
       });
     });
 
@@ -4579,7 +4501,13 @@ class DialogueScene extends Phaser.Scene {
     this.inputLocked = true;
     this.time.delayedCall(350, () => { this.inputLocked = false; });
 
-    this.show('start');
+    // 시작 노드 — 보통 'start'지만 HQScene 등에서 특정 노드로 시작하고 싶을 때
+    // registry 'introDialogueStart'를 지정하면 그 노드로 진입 (1회용, 즉시 소비)
+    const startNode = this.registry.get('introDialogueStart') || 'start';
+    if (this.registry.get('introDialogueStart')) {
+      this.registry.set('introDialogueStart', null);
+    }
+    this.show(startNode);
 
     this.input.on('pointerdown', () => this.onClick());
     this.input.keyboard.on('keydown-SPACE', () => this.onClick());
@@ -4695,19 +4623,25 @@ class DialogueScene extends Phaser.Scene {
   }
 
   finish(node) {
-    if (node.befriend) {
+    // intro 챕터에서는 enemyDefeated 플래그를 켜지 않음
+    // (HQScene이 자체적으로 completedCases에 'intro' 추가로 완료 처리)
+    const caseId = this.registry.get('caseId') || 'aralsea';
+    if (node.befriend && caseId !== 'intro') {
       this.registry.set('enemyDefeated', true);
     }
-    // 오버레이 종료 후 월드 재개
+    // 오버레이 종료 후 부모 씬 재개 — intro면 HQScene, 그 외엔 WorldScene
+    const parent = (caseId === 'intro') ? 'HQScene' : 'WorldScene';
     this.scene.stop();
-    this.scene.resume('WorldScene');
+    this.scene.resume(parent);
   }
 
-  // 사용자가 대화 중간에 닫기 버튼 누름 — 상태 변경 없이 월드 복귀
+  // 사용자가 대화 중간에 닫기 버튼 누름 — 상태 변경 없이 부모 씬 복귀
   bailOut() {
     if (this.timer) this.timer.remove();
+    const caseId = this.registry.get('caseId') || 'aralsea';
+    const parent = (caseId === 'intro') ? 'HQScene' : 'WorldScene';
     this.scene.stop();
-    this.scene.resume('WorldScene');
+    this.scene.resume(parent);
   }
 }
 
@@ -6857,6 +6791,431 @@ class SpeechScene extends Phaser.Scene {
 
 // (BattleScene 제거됨 — 옛 dungeon RPG 잔재. P.E.A.C.E.는 비폭력 교육 게임)
 
+// ══════════════════════════════════════════════════════════════════
+//  HQScene — UN 본부 인트로 (튜토리얼)
+//  · 디렉터 한센 사무실 한 방. 학생이 P.E.A.C.E. 5단계를 직접 체험.
+//  · 흐름: 대화(P) → 책상·지도·서류함 클릭(E) → 한센 퀴즈(A)
+//          → 칠판 인과 사슬 시연(C) → 임무서(E) → CaseSelectScene 복귀
+//  · 끝나면 completedCases에 'intro' 추가 → CaseSelectScene 잠금 해제
+//  · STORY = STORIES.intro 가 활성화돼있어야 함 (CaseSelectScene에서 setStory)
+// ══════════════════════════════════════════════════════════════════
+class HQScene extends Phaser.Scene {
+  constructor() { super('HQScene'); }
+
+  create() {
+    setCfgBarVisible(false);
+    this.cameras.main.fadeIn(320, 0, 0, 0);
+    this.busy = false;            // 모달·대화 중일 때 중복 클릭 막기
+    this.stage = 'perceive';      // perceive→explore→analyze→connect→enact→finish
+    this.cluesFound = new Set();  // E단계: 책상·지도·서류함 3개 중 찾은 것
+
+    const W = GAME_W, H = GAME_H;
+
+    // ── 배경: UN 본부 38층 사무실 ────────────────────────────────
+    // 바닥 (나무 마룻바닥 톤) + 뒷벽 (UN 블루 톤) + 창
+    const bg = this.add.graphics().setDepth(0);
+    bg.fillStyle(0x1a3a5c, 1); bg.fillRect(0, 0, W, 360);          // 뒷벽
+    bg.fillStyle(0x4a3a22, 1); bg.fillRect(0, 360, W, H - 360);     // 마룻바닥
+    // 마룻바닥 결
+    bg.lineStyle(1, 0x2a200f, 0.6);
+    for (let i = 0; i < 8; i++) bg.lineBetween(0, 360 + i * 30, W, 360 + i * 30);
+
+    // 뒷벽 — 큰 창 두 짝 (맨해튼 야경)
+    [80, 720].forEach((wx) => {
+      bg.fillStyle(0x0a1828, 1); bg.fillRect(wx, 40, 160, 220);
+      bg.lineStyle(4, 0xc9a36b, 1); bg.strokeRect(wx, 40, 160, 220);
+      // 창틀 십자
+      bg.lineStyle(2, 0xc9a36b, 1);
+      bg.lineBetween(wx + 80, 40, wx + 80, 260);
+      bg.lineBetween(wx, 150, wx + 160, 150);
+      // 도시 실루엣
+      bg.fillStyle(0x122842, 1);
+      for (let i = 0; i < 14; i++) {
+        const sw = 6 + (i * 13) % 14;
+        const sh = 30 + (i * 37) % 80;
+        bg.fillRect(wx + 4 + i * 11, 260 - sh, sw, sh);
+      }
+      // 창문 불빛 (도시 점등)
+      bg.fillStyle(0xffe082, 0.7);
+      for (let i = 0; i < 22; i++) {
+        bg.fillRect(wx + 8 + (i * 17) % 150, 200 + (i * 23) % 50, 2, 2);
+      }
+    });
+
+    // 뒷벽 가운데 — 큰 UN 깃발 (파랑 + 흰 지구 마크)
+    bg.fillStyle(0xefefef, 1); bg.fillRect(380, 60, 200, 130);
+    bg.lineStyle(3, 0x1a3a5c, 1); bg.strokeRect(380, 60, 200, 130);
+    // 깃발 파랑 띠 (간단 UN 로고 자리)
+    bg.fillStyle(0x5b92e5, 1); bg.fillRect(395, 75, 170, 100);
+    bg.fillStyle(0xefefef, 1);
+    bg.fillCircle(480, 125, 36);     // 흰 원 (지구)
+    bg.lineStyle(2, 0x5b92e5, 1);
+    bg.strokeCircle(480, 125, 36);
+    // 깃대
+    bg.fillStyle(0x6a4f2a, 1); bg.fillRect(478, 50, 4, 240);
+
+    // ── 가구: 디렉터 책상 (가운데 아래) ─────────────────────────
+    // 책상
+    const desk = this.add.graphics().setDepth(2);
+    desk.fillStyle(0x6a4f2a, 1); desk.fillRect(360, 380, 240, 80);
+    desk.lineStyle(3, 0x3a2410, 1); desk.strokeRect(360, 380, 240, 80);
+    desk.fillStyle(0x4a3a22, 1); desk.fillRect(370, 450, 220, 10);
+    // 책상 위 노트북·서류·머그
+    desk.fillStyle(0x1a1a2e, 1); desk.fillRect(380, 388, 60, 36);  // 노트북
+    desk.fillStyle(0x5b92e5, 1); desk.fillRect(382, 390, 56, 32);  // 화면
+    desk.fillStyle(0xfff8d0, 1); desk.fillRect(470, 388, 70, 28);  // 서류 더미
+    desk.lineStyle(1, 0x3a2410, 1); desk.strokeRect(470, 388, 70, 28);
+    desk.fillStyle(0xa0282e, 1); desk.fillRect(560, 392, 22, 26);  // 빨간 머그
+    desk.fillStyle(0x6a4f2a, 1); desk.fillRect(582, 396, 6, 12);   // 머그 손잡이
+
+    // ── 좌측 — 세계지도 보드 (E단계 클릭 대상) ────────────────
+    const mapBoard = this.add.graphics().setDepth(2);
+    mapBoard.fillStyle(0xc9a36b, 1); mapBoard.fillRect(40, 380, 160, 100);
+    mapBoard.lineStyle(3, 0x3a2410, 1); mapBoard.strokeRect(40, 380, 160, 100);
+    mapBoard.fillStyle(0xefe6cc, 1); mapBoard.fillRect(48, 388, 144, 84);
+    // 세계지도 풍 점들 (대륙 추상화)
+    mapBoard.fillStyle(0x6a8a6a, 1);
+    mapBoard.fillRect(60, 405, 30, 14); mapBoard.fillRect(95, 400, 26, 24);
+    mapBoard.fillRect(125, 412, 18, 12); mapBoard.fillRect(150, 405, 30, 18);
+    mapBoard.fillRect(70, 430, 24, 20); mapBoard.fillRect(110, 435, 30, 18);
+    mapBoard.fillRect(150, 432, 22, 22);
+
+    // ── 우측 — 서류함 (캐비넷) ───────────────────────────────────
+    const cabinet = this.add.graphics().setDepth(2);
+    cabinet.fillStyle(0x3a4a5a, 1); cabinet.fillRect(760, 360, 130, 200);
+    cabinet.lineStyle(3, 0x1a2a3a, 1); cabinet.strokeRect(760, 360, 130, 200);
+    // 4단 서랍
+    for (let i = 0; i < 4; i++) {
+      const dy = 372 + i * 46;
+      cabinet.lineStyle(2, 0x1a2a3a, 1);
+      cabinet.strokeRect(770, dy, 110, 38);
+      cabinet.fillStyle(0xc9a36b, 1);
+      cabinet.fillCircle(825, dy + 19, 4);   // 손잡이
+    }
+
+    // ── 칠판 (뒷벽 우측, C단계용) ─────────────────────────────
+    const board = this.add.graphics().setDepth(1);
+    board.fillStyle(0x1a3a2a, 1); board.fillRect(680, 70, 230, 130);
+    board.lineStyle(4, 0x6a4f2a, 1); board.strokeRect(680, 70, 230, 130);
+    // 백분필 한 줄 (희미하게)
+    board.fillStyle(0xefe6cc, 0.7);
+    board.fillRect(696, 100, 32, 4);
+    board.fillRect(736, 100, 32, 4);
+    board.fillRect(776, 100, 32, 4);
+
+    // ── NPC: 디렉터 한센 (책상 뒤) ───────────────────────────
+    // 일러스트 PNG는 추후 제공 — 우선 도트 풍 + 라벨
+    // 자리 표시: hero_up_0 텍스처를 임시로 (회색 톤 오버레이 처리)
+    if (this.textures.exists('hero_up_0')) {
+      const src = this.textures.get('hero_up_0').getSourceImage();
+      this.hansenSprite = this.add.image(480, 350, 'hero_up_0')
+        .setOrigin(0.5, 1)
+        .setScale(src && src.height > 60 ? 90 / src.height : 3)
+        .setDepth(350);
+      // 한센은 노인 — 약간 흐릿하게
+      this.hansenSprite.setTint(0xdde3ec);
+    } else {
+      this.hansenSprite = this.add.rectangle(480, 320, 36, 56, 0x9bb0c4)
+        .setDepth(350);
+    }
+    // 머리 위 라벨 + ! 마커
+    this.add.text(480, 268, '디렉터 한센', {
+      fontFamily: FONT, fontSize: '12px', color: '#ffe9b8',
+      backgroundColor: '#000000aa', padding: { x: 6, y: 3 }
+    }).setOrigin(0.5).setDepth(2100);
+    this.hansenMarker = this.add.text(480, 244, '!', MARKER_STYLE_ACTIVE)
+      .setOrigin(0.5).setDepth(2100);
+    this.tweens.add({
+      targets: this.hansenMarker, y: 238, duration: 600,
+      yoyo: true, repeat: -1, ease: 'Sine.inOut'
+    });
+
+    // ── 상단 HUD: 단계 안내 칩 ─────────────────────────────────
+    panel(this, 480, 30, 880, 36, 0x1a2a3a, 0xc9a36b);
+    this.objText = this.add.text(480, 22, '', {
+      fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffe9b8', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(2200);
+    this.subText = this.add.text(480, 40, '', {
+      fontFamily: FONT, fontSize: '11px', color: '#cfe9ff'
+    }).setOrigin(0.5).setDepth(2200);
+
+    // ── 인터랙션 zone: 한센·책상·지도·서류함·칠판 ───────────────
+    this.makeZone(480, 320, 80, 90, () => this.onTalkHansen(), '한센');
+    this.makeZone(480, 420, 240, 80, () => this.onClueClick('desk'),    '책상');
+    this.makeZone(120, 430, 160, 100, () => this.onClueClick('map'),    '세계지도');
+    this.makeZone(825, 460, 130, 200, () => this.onClueClick('cabinet'),'서류함');
+    this.makeZone(795, 135, 230, 130, () => this.onConnectBoard(),       '칠판');
+
+    // 우상단 — CaseSelect로 즉시 복귀 (튜토리얼 중단)
+    fancyButton(this, 870, 30, 130, 30, '↩ 사건 선택',
+      () => this.bailOut(),
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+
+    // 시작 — 한센과 첫 대화 자동 호출
+    this.setStage('perceive');
+    this.time.delayedCall(500, () => this.startDialogue('start'));
+  }
+
+  // 인터랙션 영역 + hover 라벨
+  makeZone(cx, cy, w, h, cb, label) {
+    const z = this.add.zone(cx, cy, w, h)
+      .setInteractive({ useHandCursor: true }).setDepth(500);
+    const hint = this.add.text(cx, cy - h / 2 - 12, '👆 ' + label, {
+      fontFamily: FONT, fontSize: '11px', color: '#ffe9b8',
+      backgroundColor: '#000000bb', padding: { x: 5, y: 2 }
+    }).setOrigin(0.5).setDepth(2100).setVisible(false);
+    z.on('pointerover', () => hint.setVisible(true));
+    z.on('pointerout',  () => hint.setVisible(false));
+    z.on('pointerdown', () => { if (!this.busy) cb(); });
+  }
+
+  // 단계 전환 — HUD 텍스트 갱신
+  setStage(stage) {
+    this.stage = stage;
+    const map = {
+      perceive: { o: '🎯 P · 인식 — 디렉터 한센(!)에게 다가가 인사하세요',
+                  s: '머리 위의 !를 누르면 대화가 시작됩니다.' },
+      explore:  { o: '🎯 E · 탐색 — 책상·세계지도·서류함을 모두 클릭 (' + this.cluesFound.size + '/3)',
+                  s: '실제 현장에서도 이렇게 사물을 직접 클릭해 단서를 모읍니다.' },
+      analyze:  { o: '🎯 A · 분석 — 한센(!)이 한 가지 물을 거예요',
+                  s: '단서를 떠올려 객관식 한 문제에 답해 보세요.' },
+      connect:  { o: '🎯 C · 연결 — 뒷벽 칠판을 클릭해 인과 사슬을 보세요',
+                  s: '[원인 → 중간 → 결과] — 분쟁의 큰 그림을 잇는 단계.' },
+      enact:    { o: '🎯 E · 실천 — 마지막으로 한센(!)에게 다짐을 전하세요',
+                  s: '그리고 자네의 첫 임무를 골라 출발하게.' },
+      finish:   { o: '✓ 튜토리얼 완료!',
+                  s: '사건 선택 화면으로 돌아갑니다…' },
+    };
+    const m = map[stage] || map.perceive;
+    if (this.objText) this.objText.setText(m.o);
+    if (this.subText) this.subText.setText(m.s);
+  }
+
+  // ── 단계 1 — P 인식 (한센 첫 대화) ─────────────────────────
+  onTalkHansen() {
+    if (this.stage === 'perceive')      this.startDialogue('start');
+    else if (this.stage === 'analyze')  this.openMiniQuiz();
+    else if (this.stage === 'enact')    this.startDialogue('pledge');
+    else if (this.stage === 'explore')  this.flashToast('먼저 책상·지도·서류함을 모두 클릭해 단서 3개를 모으세요.');
+    else if (this.stage === 'connect')  this.flashToast('뒷벽 칠판을 클릭해 인과 사슬을 보세요.');
+  }
+
+  // ── 단계 2 — E 탐색 (책상·지도·서류함 클릭) ────────────────
+  onClueClick(key) {
+    if (this.stage !== 'explore') {
+      this.flashToast('지금은 한센(!)과 대화할 때입니다.');
+      return;
+    }
+    if (this.cluesFound.has(key)) {
+      this.flashToast('이미 본 곳입니다.');
+      return;
+    }
+    this.cluesFound.add(key);
+    const msg = {
+      desk:    '📋  「임무 명세서 — 분쟁 현장 3곳」 — 책상 위 종이에 적힌 첫 단서.',
+      map:     '🗺  「세계지도」 — 카라칼팍·키이우·예루살렘 세 곳에 표시가 있다.',
+      cabinet: '🗄  「과거 사건 파일」 — UN의 30년 평화 활동 기록이 보관됨.',
+    }[key];
+    this.openModal('단서 입수', msg, () => {
+      if (window.SFX) window.SFX.play('evidence');
+      this.setStage('explore');   // HUD 진행도 갱신
+      if (this.cluesFound.size >= 3) {
+        this.time.delayedCall(400, () => {
+          this.setStage('analyze');
+          this.startDialogue('afterExplore');  // → analyze 단계 안내
+        });
+      }
+    });
+  }
+
+  // ── 단계 3 — A 분석 (한센의 짧은 퀴즈) ─────────────────────
+  openMiniQuiz() {
+    if (this.busy) return;
+    this.busy = true;
+    this.openChoiceModal(
+      '디렉터 한센',
+      '"세계 시민으로서 우리가 멀리 있는 분쟁과\n연결되어 있다는 것을 가장 잘 보여주는 것은?"',
+      [
+        { text: '내가 입는 옷 한 벌의 원료가 멀리서 온다는 사실', correct: true },
+        { text: '뉴스에서 가끔 들리는 단어들', correct: false },
+        { text: '학교 시험에 가끔 나오는 주제',  correct: false },
+      ],
+      (correct) => {
+        this.busy = false;
+        this.setStage('connect');
+        this.startDialogue(correct ? 'afterAnalyzeCorrect' : 'afterAnalyzeWrong');
+      }
+    );
+  }
+
+  // ── 단계 4 — C 연결 (칠판에 인과 사슬 시연) ────────────────
+  onConnectBoard() {
+    if (this.stage !== 'connect') {
+      this.flashToast(this.stage === 'finish'
+        ? '튜토리얼이 끝났습니다.'
+        : '아직 칠판을 볼 시점이 아닙니다.');
+      return;
+    }
+    if (this.busy) return;
+    this.busy = true;
+    this.openModal(
+      '🪞 인과 사슬 시연',
+      '한센이 칠판에 분필로 세 단어를 잇는다.\n\n' +
+      '   [내가 입는 면 옷]\n' +
+      '         ↓\n' +
+      '   [중앙아시아의 강물 우회]\n' +
+      '         ↓\n' +
+      '   [사라진 바다 · 호흡기 질환]\n\n' +
+      '"이게 연결(Connect)일세. 자네가 실제 현장에서\n모은 단서로 직접 이렇게 잇게 될 거야."',
+      () => {
+        this.busy = false;
+        this.setStage('enact');
+        this.startDialogue('afterConnect');
+      }
+    );
+  }
+
+  // ── 대화 — DialogueScene 재활용 (오버레이) ─────────────────
+  startDialogue(node) {
+    if (this.busy) return;
+    this.busy = true;
+    this.registry.set('introDialogueStart', node);
+    // DialogueScene은 STORY.start부터 자동 진행하지만, intro는
+    // 특정 노드를 지정해서 시작해야 함 → registry 'introDialogueStart' 사용
+    // (DialogueScene 안에서 이 키가 있으면 그 노드부터 시작하도록 처리)
+    this.scene.pause();
+    this.scene.launch('DialogueScene');
+    // DialogueScene 종료 후 — 우리 onResume에서 다음 단계 분기
+    this.scene.get('DialogueScene').events.once('shutdown', () => this.onDialogueEnd(node));
+  }
+
+  // 대화 끝났을 때 — 다음 단계 분기
+  onDialogueEnd(fromNode) {
+    this.busy = false;
+    this.registry.set('introDialogueStart', null);
+    // 노드별 다음 단계
+    if (fromNode === 'start') {
+      // P 인식 대화 끝 → E 탐색 시작
+      this.setStage('explore');
+    } else if (fromNode === 'pledge') {
+      // E 실천 — pledge 끝나면 outro → 튜토리얼 완료
+      this.finishTutorial();
+    }
+    // afterExplore / afterAnalyze* / afterConnect 의 다음 단계 안내는
+    // 각 노드의 gotoStage 필드를 보고 위에서 onClueClick·openMiniQuiz·
+    // onConnectBoard 내에서 setStage 호출됨.
+  }
+
+  // ── 단계 5 — 튜토리얼 완료 처리 ─────────────────────────────
+  finishTutorial() {
+    if (this.stage === 'finish') return;
+    this.setStage('finish');
+    // completedCases에 'intro' 추가 → CaseSelectScene 잠금 해제
+    const done = this.registry.get('completedCases') || [];
+    if (!done.includes('intro')) {
+      done.push('intro');
+      this.registry.set('completedCases', done);
+    }
+    // 저장 (이어하기와 무관 — peace_intro_seen도 함께 표시)
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('peace_intro_seen', '1');
+      }
+    } catch (e) {}
+    // 외부 보고
+    try { reportProgress(this, { introDone: true }); } catch (e) {}
+
+    // 축하 메시지 → CaseSelectScene 복귀
+    this.openModal(
+      '✓ 튜토리얼 완료',
+      '훌륭합니다, 조사관!\n\n' +
+      'P.E.A.C.E. 다섯 단계를 모두 체험했습니다.\n' +
+      '이제 본 임무 — 아랄해·우크라이나·팔레스타인 —\n' +
+      '세 사건이 모두 잠금 해제되었습니다.\n\n' +
+      '"첫 사건을 골라 출발하게."',
+      () => {
+        this.cameras.main.fadeOut(420, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          this.scene.start('CaseSelectScene');
+        });
+      }
+    );
+  }
+
+  // ── 토스트 / 모달 / 선택 모달 — 작은 UI 유틸 ───────────────
+  flashToast(msg) {
+    if (this.toast && this.toast.active) this.toast.destroy();
+    this.toast = this.add.text(480, 480, msg, {
+      fontFamily: FONT, fontSize: '13px', color: '#ffdcdc',
+      backgroundColor: '#000000cc', padding: { x: 10, y: 6 },
+      align: 'center'
+    }).setOrigin(0.5).setDepth(5000);
+    this.time.delayedCall(2000, () => {
+      if (this.toast) { this.toast.destroy(); this.toast = null; }
+    });
+  }
+
+  openModal(title, body, onClose) {
+    this.busy = true;
+    const layer = this.add.container(0, 0).setDepth(9000);
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.78).setInteractive();
+    layer.add(dim);
+    const pw = 640, ph = 320, px = 160, py = 140;
+    const g = this.add.graphics();
+    g.fillStyle(0x1a2a3a, 0.97); g.fillRoundedRect(px, py, pw, ph, 12);
+    g.lineStyle(3, 0xffd96a, 1); g.strokeRoundedRect(px, py, pw, ph, 12);
+    layer.add(g);
+    layer.add(this.add.text(480, py + 36, title, {
+      fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8', fontStyle: 'bold'
+    }).setOrigin(0.5));
+    layer.add(this.add.text(480, py + 90, body, {
+      fontFamily: FONT, fontSize: '13px', color: '#dff1ff',
+      align: 'center', lineSpacing: 6, wordWrap: { width: pw - 60 }
+    }).setOrigin(0.5, 0));
+    const btn = fancyButton(this, 480, py + ph - 36, 180, 38, '✓  확인', () => {
+      layer.destroy(true);
+      this.busy = false;
+      if (typeof onClose === 'function') onClose();
+    }, { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+    layer.add(btn.g); layer.add(btn.zone); layer.add(btn.t);
+  }
+
+  openChoiceModal(speaker, body, choices, onPick) {
+    const layer = this.add.container(0, 0).setDepth(9000);
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.78).setInteractive();
+    layer.add(dim);
+    const pw = 720, ph = 380, px = 120, py = 110;
+    const g = this.add.graphics();
+    g.fillStyle(0x1a2a3a, 0.97); g.fillRoundedRect(px, py, pw, ph, 12);
+    g.lineStyle(3, 0xffd96a, 1); g.strokeRoundedRect(px, py, pw, ph, 12);
+    layer.add(g);
+    layer.add(this.add.text(480, py + 30, speaker, {
+      fontFamily: FONT_TITLE, fontSize: '16px', color: '#ffd96a', fontStyle: 'bold'
+    }).setOrigin(0.5));
+    layer.add(this.add.text(480, py + 70, body, {
+      fontFamily: FONT, fontSize: '14px', color: '#dff1ff',
+      align: 'center', lineSpacing: 6, wordWrap: { width: pw - 60 }
+    }).setOrigin(0.5, 0));
+    // 선택지 3개 세로
+    choices.forEach((ch, i) => {
+      const cy = py + 200 + i * 50;
+      const cb = fancyButton(this, 480, cy, 560, 40, ch.text, () => {
+        layer.destroy(true);
+        if (window.SFX) window.SFX.play(ch.correct ? 'success' : 'fail');
+        onPick(!!ch.correct);
+      }, { base: 0x2b3a52, hover: 0x3c5170, edge: 0xc9a36b, text: '#ffe9b8' });
+      layer.add(cb.g); layer.add(cb.zone); layer.add(cb.t);
+    });
+  }
+
+  bailOut() {
+    this.cameras.main.fadeOut(280, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('CaseSelectScene');
+    });
+  }
+}
+
 // 모바일/터치 환경 감지 (가상 D-Pad 표시 여부 등에 사용)
 // — pointer가 'coarse'면 손가락 입력 환경 (폰·태블릿)
 // — 너비가 800 미만이거나 세로형이면 모바일로 간주
@@ -6887,7 +7246,7 @@ const phaserConfig = {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false }
   },
-  scene: [BootScene, TitleScene, HelpScene, CreditsScene, TeacherGuideScene, CurriculumScene, CaseSelectScene, LearningTreeScene, BriefingScene, WorldScene, DialogueScene, InvestigationScene, QuizScene, ReflectionScene, LetterScene, SpeechScene]
+  scene: [BootScene, TitleScene, HelpScene, CreditsScene, TeacherGuideScene, CurriculumScene, CaseSelectScene, LearningTreeScene, BriefingScene, WorldScene, DialogueScene, InvestigationScene, QuizScene, ReflectionScene, LetterScene, SpeechScene, HQScene]
 };
 if (window.IS_MOBILE) {
   phaserConfig.scale = {
