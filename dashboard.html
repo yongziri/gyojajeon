@@ -100,6 +100,19 @@
     .card.s4 { border-color: #6fb7d6; }   /* 실천 — 파랑 */
     .card.done { border-color: #5fd35f; background: #16321f; }
     .card.offline { opacity: 0.45; }
+    /* 정체 학생 — 5분+ 같은 단계 머무름 */
+    .card.stuck { animation: stuckPulse 2s ease-in-out infinite; }
+    @keyframes stuckPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(230, 107, 107, 0.0); }
+      50%      { box-shadow: 0 0 16px 2px rgba(230, 107, 107, 0.6); }
+    }
+    .card.stuck::after {
+      content: '⏱ 정체 ' attr(data-stuck) '분';
+      position: absolute; top: 6px; right: 8px;
+      background: #5a2020; color: #ffb0b0; font-size: 10px;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .card { position: relative; }
     .card .name {
       font-size: 16px; font-weight: bold; color: #ffe9b8;
       display: flex; justify-content: space-between; align-items: center;
@@ -270,6 +283,29 @@
     <button id="clearBtn" class="gray">보드 초기화</button>
     <button id="printBtn" class="gray">🖨 학급 리포트</button>
     <button id="csvBtn" class="gray">📋 CSV 다운로드</button>
+    <div class="ctl"><label>🔎</label>
+      <input id="searchBox" placeholder="이름·번호 검색" style="width:140px" />
+    </div>
+    <div class="ctl"><label>정렬</label>
+      <select id="sortSel" style="background:#1a2430;color:#ffe9b8;border:1px solid #6a4f2a;padding:4px;font-size:13px">
+        <option value="name">이름순</option>
+        <option value="stage">진행도순</option>
+        <option value="peace">P.E.A.C.E. 점수순</option>
+        <option value="recent">최근 활동순</option>
+      </select>
+    </div>
+    <div class="ctl"><label>필터</label>
+      <select id="filterSel" style="background:#1a2430;color:#ffe9b8;border:1px solid #6a4f2a;padding:4px;font-size:13px">
+        <option value="all">전체</option>
+        <option value="online">접속 중만</option>
+        <option value="s1">1·인식</option>
+        <option value="s2">2·관찰</option>
+        <option value="s3">3·성찰</option>
+        <option value="s4">4·실천</option>
+        <option value="done">완료</option>
+        <option value="stuck">정체(5분+)</option>
+      </select>
+    </div>
     <div id="status"><span class="dot off"></span>연결 안 됨</div>
   </header>
 
@@ -352,8 +388,49 @@
     }
 
     function render() {
-      const list = Object.values(students)
-        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      // 정렬·필터·검색 적용
+      const sortBy = ($('sortSel') && $('sortSel').value) || 'name';
+      const filterBy = ($('filterSel') && $('filterSel').value) || 'all';
+      const searchQ = (($('searchBox') && $('searchBox').value) || '').trim().toLowerCase();
+      const now = Date.now();
+
+      // CCC-4: 학생별 stuck 판정용 timestamp 캐시
+      Object.values(students).forEach(d => {
+        if (!d._lastChangeAt) d._lastChangeAt = now;
+        const sig = (d.stage || 1) + ':' + (d.evidence || 0) + ':' + (d.cores || 0) +
+                    ':' + (d.reflectionDone ? 1 : 0) + ':' + (d.reportSent ? 1 : 0);
+        if (d._lastSig !== sig) {
+          d._lastSig = sig;
+          d._lastChangeAt = now;
+        }
+      });
+
+      let list = Object.values(students);
+      if (searchQ) {
+        list = list.filter(d =>
+          ((d.name || d.id || '') + '').toLowerCase().includes(searchQ));
+      }
+      if (filterBy !== 'all') {
+        list = list.filter(d => {
+          if (filterBy === 'online') return d.online;
+          if (filterBy === 'done')   return !!d.reportSent;
+          if (filterBy === 'stuck')  return !d.reportSent && (now - d._lastChangeAt) > 300000;
+          if (filterBy.startsWith('s')) {
+            const n = parseInt(filterBy.slice(1), 10);
+            return !d.reportSent && (d.stage || 1) === n;
+          }
+          return true;
+        });
+      }
+      list.sort((a, b) => {
+        if (sortBy === 'stage') return (b.stage || 0) - (a.stage || 0)
+          || (b.evidence || 0) - (a.evidence || 0);
+        if (sortBy === 'peace') return ((b.peace && b.peace.total) || 0) -
+          ((a.peace && a.peace.total) || 0);
+        if (sortBy === 'recent') return (b._lastChangeAt || 0) - (a._lastChangeAt || 0);
+        return (a.name || '').localeCompare(b.name || '');
+      });
+
       const grid = $('grid');
       const empty = $('empty');
 
@@ -496,6 +573,11 @@
       const hasSRL = !!(d.reflection || d.review ||
         (d.tagsCount && d.tagsCount > 0));
       if (hasSRL) cls.push('clickable');
+      // 정체 학생 판정 (보고서 미송부 + 5분+ 같은 상태)
+      const stuckMin = (!d.reportSent && d._lastChangeAt)
+        ? Math.floor((Date.now() - d._lastChangeAt) / 60000) : 0;
+      const isStuck = stuckMin >= 5;
+      if (isStuck) cls.push('stuck');
 
       // 자기주도성 요약 (있을 때만 표시)
       let srlBlock = '';
@@ -543,7 +625,9 @@
       }
 
       return '' +
-        '<div class="' + cls.join(' ') + '" data-id="' + esc(d.id) + '">' +
+        '<div class="' + cls.join(' ') + '"' +
+          ' data-id="' + esc(d.id) + '"' +
+          (isStuck ? ' data-stuck="' + stuckMin + '"' : '') + '>' +
           '<div class="name">' +
             '<span>' + esc(d.name || d.id) + '</span>' +
             '<span class="dot ' + (d.online ? 'on' : 'off') + '"></span>' +
@@ -702,6 +786,12 @@
     });
     $('printBtn').addEventListener('click', () => buildPrintPanel());
     $('csvBtn').addEventListener('click', () => downloadCSV());
+    // 검색·정렬·필터 — 입력 시 즉시 재렌더
+    $('searchBox').addEventListener('input', render);
+    $('sortSel').addEventListener('change', render);
+    $('filterSel').addEventListener('change', render);
+    // 정체 학생 자동 강조 위해 30초마다 재렌더 (필터·강조 갱신)
+    setInterval(() => render(), 30000);
 
     // CSV 다운로드 — 학급 전체 데이터를 표 형태로
     function downloadCSV() {
