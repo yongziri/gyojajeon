@@ -14,8 +14,15 @@
 
   let ctx = null;       // AudioContext (사용자 입력 후 초기화)
   let muted = false;    // 음소거 상태 (localStorage 동기화)
+  // localStorage 키 — 옛 'aral_muted'는 사라진바다 시절 이름. 'peace_muted'로 통일.
+  // 한 번 마이그레이션: 옛 키 값이 있으면 새 키로 옮기고 옛 키 제거.
   try {
-    muted = localStorage.getItem('aral_muted') === '1';
+    const oldVal = localStorage.getItem('aral_muted');
+    if (oldVal !== null && localStorage.getItem('peace_muted') === null) {
+      localStorage.setItem('peace_muted', oldVal);
+      localStorage.removeItem('aral_muted');
+    }
+    muted = localStorage.getItem('peace_muted') === '1';
   } catch (e) { /* ignored */ }
 
   // 사용자 인터랙션 후에야 AudioContext 생성 가능 (Chrome 정책)
@@ -149,7 +156,7 @@
     isMuted() { return muted; },
     setMuted(m) {
       muted = !!m;
-      try { localStorage.setItem('aral_muted', muted ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('peace_muted', muted ? '1' : '0'); } catch (e) {}
     },
     toggleMute() {
       this.setMuted(!muted);
