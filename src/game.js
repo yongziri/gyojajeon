@@ -3565,7 +3565,8 @@ class WorldScene extends Phaser.Scene {
       this.add.image(0, 0, isUkraine ? 'ground_concrete' : 'ground').setOrigin(0, 0);
     }
     this.walls = this.physics.add.staticGroup();
-    const wallKey = (isUkraine || isIntro) ? 'wall_kyiv' : 'wall';
+    // intro는 'wall' 사용 (마룻바닥 갈색과 어울리는 따뜻한 톤)
+    const wallKey = isUkraine ? 'wall_kyiv' : 'wall';
     const lastCol = MAP[0].length - 1;            // 옛 4:3 우측 끝(c=19)
     for (let r = 0; r < MAP.length; r++) {
       for (let c = 0; c < MAP[r].length; c++) {
