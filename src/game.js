@@ -3564,8 +3564,9 @@ class WorldScene extends Phaser.Scene {
         r * TILE + TILE/2, wallKey));
     }
 
-    // 플레이어 — intro(사무실)는 좌하단 입구 spawn (창문 위 spawn 방지)
-    const spawnX = isIntro ? 3 * TILE : 3 * TILE;
+    // 플레이어 — intro(사무실)는 사무실 가운데 입구 spawn
+    // (portal=4*TILE, mailbox=12*TILE이라 둘 사이 8*TILE에 두면 양쪽 trigger 안 됨)
+    const spawnX = isIntro ? 8 * TILE : 3 * TILE;
     const spawnY = isIntro ? 10 * TILE : 2 * TILE;
     this.player = this.physics.add.sprite(spawnX, spawnY, 'hero_down_0');
     // 일러스트 PNG라면(키>60px) 키 ~64px로 표시 + 발 부근 body 재계산
@@ -3657,11 +3658,26 @@ class WorldScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(2000);
     this.physics.add.overlap(this.player, this.portal, () => {
       if (this.entering || this.cooldown || this.cardOpen) return;
-      // 실제 조건으로 검사 — 아이졸리와 친구가 됐는가
+      // 실제 조건으로 검사 — 안내인과 친구가 됐는가
       if (!this.registry.get('enemyDefeated')) {
         this.showLockToast('먼저 ' + getGuideName(this.registry) + '와 만나 상황을 파악하세요\n(1단계 · 인식)');
         return;
       }
+      // 모든 단서를 이미 다 모았으면 InvestigationScene 재진입 방지
+      // (intro: 단서 3개 / 본 사건: 12개. 모든 spot이 evidence collected면 잠금)
+      try {
+        const collected = this.registry.get('evidence') || [];
+        const allSpots = [];
+        if (typeof CASE !== 'undefined' && CASE && CASE.locations) {
+          Object.values(CASE.locations).forEach(loc => {
+            (loc.spots || []).forEach(s => { if (s.evidence) allSpots.push(s.evidence.id); });
+          });
+        }
+        if (allSpots.length > 0 && allSpots.every(id => collected.find(c => c.id === id))) {
+          this.showLockToast('✓ 모든 단서를 이미 모았습니다.\n다음 단계로 진행하세요.');
+          return;
+        }
+      } catch (e) { /* fail-safe — 잠금 검사 실패해도 진입 허용 */ }
       this.entering = true;
       this.scene.start('InvestigationScene');
     });
