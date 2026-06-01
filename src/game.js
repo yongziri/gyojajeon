@@ -2271,7 +2271,7 @@ class CaseSelectScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // ── 좌측 패널: 사건 리스트 ─────────────────────────────────
-    const listX = 20, listY = 90, listW = 320, listH = 460;
+    const listX = 20, listY = 90, listW = 320, listH = 490;
     const lg = this.add.graphics();
     lg.fillStyle(0x0a1828, 0.92); lg.fillRect(listX, listY, listW, listH);
     lg.lineStyle(2, 0x2a5a82, 1); lg.strokeRect(listX, listY, listW, listH);
@@ -2291,7 +2291,8 @@ class CaseSelectScene extends Phaser.Scene {
     }).setOrigin(1, 0.5);
 
     // 각 사건 카드
-    const cardH = 110, gap = 12;
+    // 4개 카드(intro 포함) listH 안에 fit: 110*4 + 8*3 = 464. listH 480으로 확장.
+    const cardH = 110, gap = 8;
     this.cards = [];
     CASE_LIST.forEach((c, i) => {
       const cy = listY + 44 + i * (cardH + gap);
@@ -2760,11 +2761,12 @@ class LearningTreeScene extends Phaser.Scene {
     const reviews = this.registry.get('caseReviews') || {};
     const reflection = this.registry.get('reflection') || null;
 
-    // 사건별 카드 (3개 사건 모두 표시 — 미완료는 회색)
-    // cardH 162 (P.E.A.C.E. 종합 평가 한 줄 추가 공간 확보)
+    // 사건별 카드 (본 사건 3개만 표시 — 미완료는 회색)
+    // intro(튜토리얼)는 학습 트리에서 제외 (cardH 162 × 4 = 캔버스 600 초과)
     const cardH = 162, cardW = 880, gap = 8;
     const startY = 90;
-    CASE_LIST.forEach((c, i) => {
+    const treeCases = CASE_LIST.filter(c => c.id !== 'intro');
+    treeCases.forEach((c, i) => {
       const y = startY + i * (cardH + gap);
       const done = completed.includes(c.id);
       // 카드 배경
@@ -2962,7 +2964,8 @@ class LearningTreeScene extends Phaser.Scene {
 
     // 하단 종합 요약 — 완료 개수 + 평균 평가
     const ftY = 555;
-    const compCount = completed.length;
+    // intro(튜토리얼)는 학습 트리 카운트에서 제외 — 본 사건 완료만 표시
+    const compCount = completed.filter(id => id !== 'intro').length;
     const reviewVals = Object.values(reviews);
     let avgAll = '-';
     if (reviewVals.length) {
@@ -2970,8 +2973,10 @@ class LearningTreeScene extends Phaser.Scene {
         acc + r.goalMet + r.factConf + r.actionConf, 0);
       avgAll = (sum / (reviewVals.length * 3)).toFixed(1);
     }
+    // 본 사건 3개 기준 (intro 튜토리얼은 학습 트리 카운트에서 제외)
+    const tCases = CASE_LIST.filter(c => c.id !== 'intro');
     this.add.text(40, ftY,
-      '★ 완료 ' + compCount + ' / ' + CASE_LIST.length +
+      '★ 완료 ' + compCount + ' / ' + tCases.length +
       '     ·     📊 전체 자기 평가 평균 ' + avgAll + ' / 5.0', {
       fontFamily: FONT, fontSize: '12px', color: '#dfffdf'
     });
