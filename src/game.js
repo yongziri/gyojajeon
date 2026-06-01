@@ -3534,8 +3534,28 @@ class WorldScene extends Phaser.Scene {
     const isUkraine = (caseId === 'ukraine');
     const isPalestine = (caseId === 'palestine');
     const isIntro = (caseId === 'intro');
-    // intro(사무실)은 회색 콘크리트 + 우크라 wall 텍스처 재활용 (사무실 톤에 어울림)
-    this.add.image(0, 0, (isUkraine || isIntro) ? 'ground_concrete' : 'ground').setOrigin(0, 0);
+    if (isIntro) {
+      // 사무실 마룻바닥 — graphics로 직접 그림 (ground_concrete의 보도블록 격자가 사무실에 부적절)
+      const floorG = this.add.graphics().setDepth(0);
+      // 베이스 갈색 (오크 마루)
+      floorG.fillStyle(0x6a4a26, 1);
+      floorG.fillRect(0, 0, GAME_W, GAME_H);
+      // 마루 결 — 가로 줄무늬
+      floorG.lineStyle(2, 0x4a3018, 0.55);
+      for (let y = 40; y < GAME_H; y += 40) {
+        floorG.lineBetween(0, y, GAME_W, y);
+      }
+      // 마루판 짧은 세로 분리 (오프셋 격자)
+      floorG.lineStyle(1, 0x4a3018, 0.45);
+      for (let y = 0; y < GAME_H; y += 40) {
+        const off = (Math.floor(y / 40) % 2) * 80;
+        for (let x = off; x < GAME_W; x += 160) {
+          floorG.lineBetween(x, y, x, y + 40);
+        }
+      }
+    } else {
+      this.add.image(0, 0, isUkraine ? 'ground_concrete' : 'ground').setOrigin(0, 0);
+    }
     this.walls = this.physics.add.staticGroup();
     const wallKey = (isUkraine || isIntro) ? 'wall_kyiv' : 'wall';
     const lastCol = MAP[0].length - 1;            // 옛 4:3 우측 끝(c=19)
