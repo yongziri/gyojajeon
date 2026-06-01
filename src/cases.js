@@ -28,30 +28,30 @@ const CASES = {
         bg: 'bg_un_hq',         // InvestigationScene이 drawHQOfficeBg()로 폴백 렌더링
         spots: [
           {
-            // 한센 책상 (좌측, 사무실 그림과 일치)
-            x: 80, y: 220, w: 220, h: 120,
+            // 좌측 책상 (램프·노트북 GLOBAL AFFAIRS·트로피·빨간 머그)
+            x: 20, y: 190, w: 320, h: 240,
             name: '📋 책상 위 임무 명세서',
-            text: '디렉터 한센의 책상 위. 빨간 도장이 찍힌 봉인 서류 세 통.',
+            text: '디렉터 한센의 책상 위. "GLOBAL AFFAIRS" 노트북, 작은 황금 트로피, 빨간 머그, 종이 더미.',
             evidence: {
               id: 'mission_brief', name: '세 가지 임무', area: 'cognitive',
               desc: '아랄해(환경)·우크라이나(전쟁)·팔레스타인(평화) — 자네의 첫 임무 후보 세 가지.'
             }
           },
           {
-            // 세계지도 (가운데 보드)
-            x: 340, y: 220, w: 240, h: 130,
-            name: '🗺 벽에 걸린 세계지도',
-            text: '카라칼팍·키이우·예루살렘 세 곳에 빨간 핀이 꽂혀 있다.',
+            // 중앙 세계지도 (벽에 걸린 "CONFLICT MONITORING INITIATIVE" 지도)
+            x: 380, y: 30, w: 320, h: 210,
+            name: '🗺 분쟁 모니터링 지도',
+            text: '벽에 걸린 큰 세계지도. "CONFLICT MONITORING INITIATIVE" 빨간 핀이 중앙아시아·동유럽·중동에 꽂혀 있다.',
             evidence: {
               id: 'world_map', name: '세 분쟁 지점', area: 'cognitive',
               desc: '한 지도 위에 세 분쟁. 서로 다른 대륙·종교·역사지만 모두 "사람의 일"이다.'
             }
           },
           {
-            // 서류함 (우측 4단 캐비넷)
-            x: 620, y: 220, w: 220, h: 200,
+            // 우측 서류함 (4단 캐비넷, UN 깃발 옆)
+            x: 700, y: 200, w: 220, h: 230,
             name: '🗄 과거 사건 파일함',
-            text: 'UN의 30년 평화 활동 기록이 색인되어 있다.',
+            text: '4단 캐비넷에 라벨이 붙어 있다. UN의 30년 평화 활동 기록.',
             evidence: {
               id: 'past_records', name: '30년의 평화 활동', area: 'behavioral',
               desc: 'UN은 30년 동안 수많은 분쟁을 다뤘다. 작은 협력이 큰 변화를 만든다는 증거.'
