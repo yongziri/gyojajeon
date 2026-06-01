@@ -1229,6 +1229,8 @@ class BootScene extends Phaser.Scene {
     // 인트로(튜토리얼) 일러스트 — 추후 제공. 미존재 시 fallback 자동
     this.load.image('portrait_hansen',    'assets/portraits/hansen.png');
     this.load.image('portrait_james',     'assets/portraits/james.png');
+    // UN 깃발 아이콘 (CaseSelectScene intro 카드)
+    this.load.image('flag_un',            'assets/icons/flag_un.png');
     // 주인공 일러스트 (있으면 도트 generateTexture 대신 사용)
     this.load.image('hero_down_0', 'assets/character/hero_down_0.png');
     this.load.image('hero_down_1', 'assets/character/hero_down_1.png');
@@ -2576,18 +2578,17 @@ class CaseSelectScene extends Phaser.Scene {
 
   // 카드 아이콘 — 사건별 단순 도형
   drawCaseIcon(g, cx, cy, c) {
-    // intro(튜토리얼) — UN 깃발 (밝은 파랑 바탕 + 흰 가운데 띠 + 작은 흰 지구)
+    // intro(튜토리얼) — UN 깃발 이미지 (사용자 제공 PNG)
     if (c.id === 'intro') {
-      const w = 34, h = 22;
-      const x = cx - w / 2, y = cy - h / 2;
-      g.fillStyle(0x5b92e5, 1); g.fillRect(x, y, w, h);
-      // 가운데 흰 원 (지구)
-      g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, 7);
-      // 가는 가로선 (적도)
-      g.lineStyle(1, 0x5b92e5, 1);
-      g.lineBetween(cx - 7, cy, cx + 7, cy);
-      // 깃발 테두리
-      g.lineStyle(1, 0x000000, 0.5); g.strokeRect(x, y, w, h);
+      if (this.textures.exists('flag_un')) {
+        this.add.image(cx, cy, 'flag_un').setDisplaySize(34, 22).setDepth(g.depth + 1);
+      } else {
+        // fallback — 코드 그림
+        const w = 34, h = 22;
+        const x = cx - w / 2, y = cy - h / 2;
+        g.fillStyle(0x5b92e5, 1); g.fillRect(x, y, w, h);
+        g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, 7);
+      }
       return;
     }
     // 사건 발생국 국기 (단순화 픽셀 도트)
