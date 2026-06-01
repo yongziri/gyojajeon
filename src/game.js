@@ -1464,6 +1464,14 @@ class TitleScene extends Phaser.Scene {
       if (!save) { started = false; newGame(); return; }
       // registry 복원 후 곧장 WorldScene으로 진입 (BriefingScene 건너뜀)
       restoreRegistryFromSave(this.registry, save);
+      // 활성 사건 데이터 동기화 — caseId 기반으로 cases.js·dialogue.js·quizzes.js 재설정
+      // (이 호출이 빠지면 default 'aralsea' 데이터로 NPC·단서가 표시되는 버그 발생)
+      const cid = this.registry.get('caseId');
+      if (cid) {
+        try { setCase(cid); } catch (e) {}
+        try { setStory(cid); } catch (e) {}
+        try { setCitizens(cid); } catch (e) {}
+      }
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('WorldScene');
