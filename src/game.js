@@ -2576,6 +2576,20 @@ class CaseSelectScene extends Phaser.Scene {
 
   // 카드 아이콘 — 사건별 단순 도형
   drawCaseIcon(g, cx, cy, c) {
+    // intro(튜토리얼) — UN 깃발 (밝은 파랑 바탕 + 흰 가운데 띠 + 작은 흰 지구)
+    if (c.id === 'intro') {
+      const w = 34, h = 22;
+      const x = cx - w / 2, y = cy - h / 2;
+      g.fillStyle(0x5b92e5, 1); g.fillRect(x, y, w, h);
+      // 가운데 흰 원 (지구)
+      g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, 7);
+      // 가는 가로선 (적도)
+      g.lineStyle(1, 0x5b92e5, 1);
+      g.lineBetween(cx - 7, cy, cx + 7, cy);
+      // 깃발 테두리
+      g.lineStyle(1, 0x000000, 0.5); g.strokeRect(x, y, w, h);
+      return;
+    }
     // 사건 발생국 국기 (단순화 픽셀 도트)
     const w = 34, h = 22;
     const x = cx - w / 2, y = cy - h / 2;
