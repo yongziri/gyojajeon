@@ -1239,6 +1239,7 @@ class BootScene extends Phaser.Scene {
     // 타이틀 화면 배경 (UN 본부 픽셀 아트)
     this.load.image('title_bg', 'assets/maps/title_bg.png');
     // 아랄해 조사 장소 배경 사진 (Flow 픽셀 아트)
+    this.load.image('photo_un_hq',  'assets/photos/photo_un_hq.png');
     this.load.image('photo_port',   'assets/photos/photo_port.png');
     this.load.image('photo_strait', 'assets/photos/photo_strait.png');
     this.load.image('photo_market', 'assets/photos/photo_market.png');
@@ -4788,6 +4789,8 @@ class InvestigationScene extends Phaser.Scene {
     // 배경
     // 사진이 있으면 사진 사용, 없으면 코드로 그린 배경 사용
     const photoMap = {
+      // 인트로 (튜토리얼)
+      bg_un_hq:      'photo_un_hq',
       // 아랄해
       bg_port:       'photo_port',
       bg_strait:     'photo_strait',

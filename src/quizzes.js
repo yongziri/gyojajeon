@@ -34,8 +34,7 @@ const CITIZENS_BY_CASE = {
       name: '제임스 (동기)',
       sprite: 'tiny_dungeon',
       frame: 84,
-      // portrait_james 추후 제공 — 우선 의사(doctor) 일러스트로 fallback
-      portrait: 'portrait_doctor',
+      portrait: 'portrait_james',
       x: 280, y: 360,   // 회의 테이블 쪽 — 한센(책상 뒤)과 분리
       intro: [
         '어, 너도 오늘 새로 왔구나? 나 제임스. 너랑 동기야.',
