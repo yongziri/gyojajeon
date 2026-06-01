@@ -1475,13 +1475,18 @@ class TitleScene extends Phaser.Scene {
     const canResume = hasResumableSave();
     if (canResume) {
       const save = loadGameState();
-      const caseLabel = (typeof CASE_LIST !== 'undefined' && save)
-        ? ((CASE_LIST.find(c => c.id === save.caseId) || {}).title || '진행 중')
-        : '진행 중';
+      // 사건명 짧게 (긴 title 대신 region/intro 약칭)
+      const SHORT_TITLES = {
+        intro:     '튜토리얼',
+        aralsea:   '아랄해',
+        ukraine:   '우크라이나',
+        palestine: '팔레스타인',
+      };
+      const caseLabel = (save && SHORT_TITLES[save.caseId]) || '진행 중';
       const stageNum = (save && save.stage) || 1;
-      // 좌: 이어하기 (강조, 사건명·단계 표시)
-      fancyButton(this, 350, 525, 260, 44,
-        '▶  이어하기 (' + caseLabel + ' · ' + stageNum + '단계)',
+      // 좌: 이어하기 — 사건명 · N단계 (폭 360)
+      fancyButton(this, 310, 525, 360, 44,
+        '▶  이어하기 · ' + caseLabel + ' · ' + stageNum + '단계',
         resumeGame,
         { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
       // 우: 새 게임 (서브)
