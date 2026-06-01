@@ -2478,8 +2478,15 @@ class CaseSelectScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    // 하단 — 학습 영역 미니 배지 3개 (아랄해 진입 카드에만)
-    if (available) {
+    // 하단 — intro(튜토리얼)는 별도 배지, 본 사건은 학습 영역 3색(인지/정서/행동)
+    if (available && isIntro) {
+      const tg = this.add.graphics();
+      tg.fillStyle(0xffd96a, 0.85);
+      tg.fillRect(x + 78, y + 78, 174, 18);
+      this.add.text(x + 78 + 87, y + 87, '🎓 P.E.A.C.E. 5단계 체험', {
+        fontFamily: FONT, fontSize: '10px', color: '#3a2410', fontStyle: 'bold'
+      }).setOrigin(0.5);
+    } else if (available) {
       const tags = [
         { label: '인지', color: 0x6fb7d6 },
         { label: '정서', color: 0xe79a78 },
