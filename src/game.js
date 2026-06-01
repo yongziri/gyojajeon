@@ -2150,8 +2150,8 @@ const CASE_LIST = [
     // 사건 0 — 튜토리얼. CaseSelectScene 카드 맨 위.
     // 완료 전엔 다른 3사건 잠금. id='intro', completedCases에 'intro' 들어가면 잠금 해제.
     id: 'intro',
-    title: '신입 조사관 교육',
-    subtitle: '디렉터 한센과 첫 만남 · UN 본부',
+    title: '신입 교육',
+    subtitle: 'UN 본부 — 디렉터 한센',
     region: '북미 · 뉴욕 맨해튼',
     status: 'available',
     accent: 0xffd96a,
@@ -2334,7 +2334,7 @@ class CaseSelectScene extends Phaser.Scene {
          '· 「사라진 바다 — 아랄해」 환경 분쟁\n' +
          '· 「깨어진 평화」 러시아·우크라이나 전쟁\n' +
          '· 「오래된 갈등」 팔레스타인 — 평화·인도주의')
-      : ('🎓 먼저 「튜토리얼 — UN 본부」를 마쳐야\n' +
+      : ('🎓 먼저 「신입 교육 — UN 본부」를 마쳐야\n' +
          '본 임무 세 가지가 잠금 해제됩니다.\n\n' +
          '디렉터 한센과 만나 P.E.A.C.E. 5단계 —\n' +
          '인식 · 탐색 · 분석 · 연결 · 실천 — 을\n' +
@@ -2483,9 +2483,11 @@ class CaseSelectScene extends Phaser.Scene {
     // 하단 — intro(튜토리얼)는 별도 배지, 본 사건은 학습 영역 3색(인지/정서/행동)
     if (available && isIntro) {
       const tg = this.add.graphics();
-      tg.fillStyle(0xffd96a, 0.85);
-      tg.fillRect(x + 78, y + 78, 174, 18);
-      this.add.text(x + 78 + 87, y + 87, '🎓 P.E.A.C.E. 5단계 체험', {
+      tg.fillStyle(0xffd96a, 0.9);
+      tg.fillRect(x + 16, y + 80, w - 32, 20);
+      tg.lineStyle(1, 0xb88a3a, 1);
+      tg.strokeRect(x + 16, y + 80, w - 32, 20);
+      this.add.text(x + w / 2, y + 90, '🎓  P.E.A.C.E. 5단계 — 인식·탐색·분석·연결·실천', {
         fontFamily: FONT, fontSize: '10px', color: '#3a2410', fontStyle: 'bold'
       }).setOrigin(0.5);
     } else if (available) {
@@ -2522,7 +2524,7 @@ class CaseSelectScene extends Phaser.Scene {
       if (available) {
         info = '▶  ' + c.title + '\n   ' + c.subtitle + '\n   지역: ' + c.region;
       } else if (lockKind === 'tutorial') {
-        info = '🔒  ' + c.title + '\n   먼저 「튜토리얼 — UN 본부」를 마치세요.\n   디렉터 한센과 P.E.A.C.E. 5단계 체험.';
+        info = '🔒  ' + c.title + '\n   먼저 「신입 교육 — UN 본부」를 마치세요.\n   디렉터 한센과 P.E.A.C.E. 5단계 체험.';
       } else {
         info = '🔒  ' + c.title + ' — 준비 중\n   ' + c.subtitle + '\n   다음 업데이트에서 만날 수 있어요.';
       }
@@ -2542,7 +2544,7 @@ class CaseSelectScene extends Phaser.Scene {
       if (this.leaving) return;
       if (!available) {
         if (lockKind === 'tutorial') {
-          this.flashToast('🔒  먼저 「튜토리얼 — UN 본부」를 마치세요.');
+          this.flashToast('🔒  먼저 「신입 교육 — UN 본부」를 마치세요.');
         } else {
           this.flashToast('🔒  이 사건은 준비 중입니다 — 다음 업데이트에서 만나요!');
         }
