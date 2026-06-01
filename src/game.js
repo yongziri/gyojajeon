@@ -2148,8 +2148,8 @@ const CASE_LIST = [
     // 사건 0 — 튜토리얼. CaseSelectScene 카드 맨 위.
     // 완료 전엔 다른 3사건 잠금. id='intro', completedCases에 'intro' 들어가면 잠금 해제.
     id: 'intro',
-    title: '튜토리얼 — UN 본부',
-    subtitle: '디렉터 한센과 첫 만남',
+    title: '신입 조사관 교육',
+    subtitle: '디렉터 한센과 첫 만남 · UN 본부',
     region: '북미 · 뉴욕 맨해튼',
     status: 'available',
     accent: 0xffd96a,
