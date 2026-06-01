@@ -1425,6 +1425,35 @@ class TitleScene extends Phaser.Scene {
 
     // 타이틀 패널
     panel(this, 480, 150, 560, 150, 0x10202e, 0xe8b86a);
+
+    // UN 마크 — 타이틀 좌측 (파랑 원 + 흰 지구 도형)
+    const unMarkX = 250, unMarkY = 130, unR = 32;
+    const unG = this.add.graphics().setDepth(3);
+    // 외곽 흰 테두리
+    unG.fillStyle(0xffffff, 1); unG.fillCircle(unMarkX, unMarkY, unR + 3);
+    // 파랑 원
+    unG.fillStyle(0x5b92e5, 1); unG.fillCircle(unMarkX, unMarkY, unR);
+    // 내부 흰 지구 도형
+    unG.fillStyle(0xffffff, 1);
+    unG.fillCircle(unMarkX, unMarkY, unR - 8);
+    // 흰 위경도선 (가운데 가로·세로)
+    unG.lineStyle(2, 0x5b92e5, 1);
+    unG.beginPath();
+    unG.moveTo(unMarkX - (unR - 8), unMarkY);
+    unG.lineTo(unMarkX + (unR - 8), unMarkY);
+    unG.strokePath();
+    // 둘레 잎(loaurel) 추상 — 좌·우에 작은 곡선 점들
+    unG.fillStyle(0xffffff, 1);
+    [-1, 1].forEach(s => {
+      for (let i = 0; i < 5; i++) {
+        unG.fillCircle(unMarkX + s * (unR + 10 + i * 2), unMarkY - 14 + i * 6, 2);
+      }
+    });
+    // 'UN' 텍스트 라벨 (마크 아래)
+    this.add.text(unMarkX, unMarkY + unR + 16, 'UN', {
+      fontFamily: FONT_TITLE, fontSize: '14px', color: '#5b92e5', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(4);
+
     // 메인 타이틀 — 계획서 공식 제목 그대로 (P.E.A.C.E. 로 통하는 국제 분쟁 탐구)
     this.add.text(480, 118, 'P.E.A.C.E.', {
       fontFamily: FONT_TITLE, fontSize: '52px', color: '#ffe9b8', fontStyle: 'bold',
@@ -1433,6 +1462,27 @@ class TitleScene extends Phaser.Scene {
     this.add.text(480, 180, '— 통(通)하는 국제 분쟁 탐구하기 —', {
       fontFamily: FONT, fontSize: '20px', color: '#f0c98a'
     }).setOrigin(0.5);
+
+    // 우측에도 동일한 UN 마크 (대칭 균형)
+    const unMarkX2 = 710;
+    const unG2 = this.add.graphics().setDepth(3);
+    unG2.fillStyle(0xffffff, 1); unG2.fillCircle(unMarkX2, unMarkY, unR + 3);
+    unG2.fillStyle(0x5b92e5, 1); unG2.fillCircle(unMarkX2, unMarkY, unR);
+    unG2.fillStyle(0xffffff, 1); unG2.fillCircle(unMarkX2, unMarkY, unR - 8);
+    unG2.lineStyle(2, 0x5b92e5, 1);
+    unG2.beginPath();
+    unG2.moveTo(unMarkX2 - (unR - 8), unMarkY);
+    unG2.lineTo(unMarkX2 + (unR - 8), unMarkY);
+    unG2.strokePath();
+    unG2.fillStyle(0xffffff, 1);
+    [-1, 1].forEach(s => {
+      for (let i = 0; i < 5; i++) {
+        unG2.fillCircle(unMarkX2 + s * (unR + 10 + i * 2), unMarkY - 14 + i * 6, 2);
+      }
+    });
+    this.add.text(unMarkX2, unMarkY + unR + 16, 'UN', {
+      fontFamily: FONT_TITLE, fontSize: '14px', color: '#5b92e5', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(4);
 
     // (옛 라일라 도트 캐릭터는 새 UN 본부 배경과 톤이 달라 제거)
 
