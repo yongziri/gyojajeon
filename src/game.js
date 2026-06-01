@@ -2154,8 +2154,8 @@ const CASE_LIST = [
     status: 'available',
     accent: 0xffd96a,
     guide: { name: '한센' },
-    // 뉴욕 (40.7°N, -74.0°E) — 지도 좌표
-    mapX: 320, mapY: 220,
+    // 뉴욕 (40.7°N, -74.0°W) — equirectangular 변환으로 지도 패널 내 위치
+    mapX: 530, mapY: 173,
     mission: [
       '오늘은 자네의 첫 출근일.',
       'UN 본부 P.E.A.C.E. 에이전시에서',
