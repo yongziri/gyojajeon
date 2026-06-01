@@ -4568,11 +4568,13 @@ class DialogueScene extends Phaser.Scene {
     this.add.rectangle(480, 300, 960, 600, 0x000000, 0.45);
 
     // 좌측 큰 캐릭터 — 사건별 안내인 일러스트 (있으면 상반신 컷, 없으면 도트)
-    //  aralsea   → portrait_aijoli (zola)
-    //  ukraine   → portrait_kateryna (cate)
+    //  intro     → portrait_hansen
+    //  aralsea   → portrait_aijoli
+    //  ukraine   → portrait_kateryna
     //  palestine → portrait_karim
     const caseId = this.registry.get('caseId') || 'aralsea';
     const guidePortraitKey =
+      caseId === 'intro'     ? 'portrait_hansen'   :
       caseId === 'ukraine'   ? 'portrait_kateryna' :
       caseId === 'palestine' ? 'portrait_karim'    :
       'portrait_aijoli';
