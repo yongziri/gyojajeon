@@ -5843,7 +5843,7 @@ class LetterScene extends Phaser.Scene {
     // 3) 나의 다짐 (최대 3개)
     this.sectionLabel(40, 392, '3. 나의 다짐 (최대 3개 선택)');
     this.PLEDGES.forEach((p, i) => {
-      const y = 418 + i * 25;
+      const y = 418 + i * 22;
       this.checkRow(80, y, 820, p, this.pledgePicks.has(i), () => {
         if (this.pledgePicks.has(i)) this.pledgePicks.delete(i);
         else if (this.pledgePicks.size < 3) this.pledgePicks.add(i);
@@ -5858,8 +5858,8 @@ class LetterScene extends Phaser.Scene {
     const upLabel = () => this.userPledge
       ? '✍ 내 다짐: "' + this.userPledge.slice(0, 50) + (this.userPledge.length > 50 ? '…' : '') + '"  (수정)'
       : '✍ 내 다짐 한 줄 직접 적기 (선택)';
-    const upY = 418 + this.PLEDGES.length * 25 + 8;
-    this.userPledgeBtn = fancyButton(this, 480, upY, 820, 28, upLabel(),
+    const upY = 418 + this.PLEDGES.length * 22 + 8;
+    this.userPledgeBtn = fancyButton(this, 480, upY, 760, 28, upLabel(),
       () => {
         const cur = this.userPledge || '';
         const txt = window.prompt(
@@ -5874,16 +5874,16 @@ class LetterScene extends Phaser.Scene {
       },
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0xc9a36b, text: '#ffe9b8' });
 
-    // 하단 버튼 — 미리보기 위치 살짝 아래로
+    // 하단 버튼 — 좌·우 안쪽으로 배치 (가장자리 잘림·userPledgeBtn 겹침 방지)
     const ready = this.factPicks.size > 0 && this.pledgePicks.size > 0;
-    fancyButton(this, 280, 578, 200, 42,
+    fancyButton(this, 300, 578, 200, 42,
       ready ? '미리보기 →' : '단서·다짐 선택', () => {
         if (ready) this.buildPreview();
       },
       ready
         ? { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' }
         : { base: 0x555555, hover: 0x555555, edge: 0x999999, text: '#cccccc' });
-    fancyButton(this, 680, 578, 200, 42, "← 마을로 돌아가기",
+    fancyButton(this, 660, 578, 200, 42, "← 돌아가기",
       () => this.scene.start('WorldScene'),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
   }
