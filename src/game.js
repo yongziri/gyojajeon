@@ -3592,11 +3592,10 @@ class WorldScene extends Phaser.Scene {
       this.enemy.body.setSize(20, 16).setOffset(6, 14);
       this.enemy.setDepth(this.enemy.y);
       // 사건별 안내인 일러스트가 있으면 도트를 숨기고 일러스트로 시각화
-      // intro의 한센은 일러스트 미제공 → 임시로 어부 할아버지 일러스트(fisher) 재활용
       const guidePortraitKey =
         caseId === 'ukraine'   ? 'portrait_kateryna' :
         caseId === 'palestine' ? 'portrait_karim'    :
-        caseId === 'intro'     ? (this.textures.exists('portrait_hansen') ? 'portrait_hansen' : 'portrait_fisher') :
+        caseId === 'intro'     ? 'portrait_hansen'   :
         'portrait_aijoli';
       if (this.textures.exists(guidePortraitKey)) {
         this.enemy.setVisible(false);
