@@ -3726,7 +3726,9 @@ class WorldScene extends Phaser.Scene {
     // ── 🪞 성찰의 의자 (PEACE의 C단계) ───────────────────────────
     // 위치: 우하단 빈 자리 (포털·우편함·의자 3등분 배치, NPC와 거리 확보)
     //       시각적으로는 작은 갈색 원(의자) + 반짝이는 거울 아이콘 + 텍스트 라벨.
-    const chairX = 16 * TILE + 16, chairY = 11 * TILE + 8;
+    // intro(사무실)은 한센 책상(520~680)과 안 겹치게 더 우측 끝(21*TILE=840)으로
+    const chairX = isIntro ? 21 * TILE : 16 * TILE + 16;
+    const chairY = 11 * TILE + 8;
     const chairG = this.add.graphics().setDepth(chairY);
     // 의자 등판
     chairG.fillStyle(0x6a4a26, 1);
