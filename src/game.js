@@ -6209,8 +6209,8 @@ ${tmpl.signature}`;
     // 완성 보고서 패널 (넉넉히)
     panel(this, 480, 330, 920, 456, 0xfff8e7, 0x6a4f2a);
     this.add.text(44, 120, finalBody, {
-      fontFamily: FONT, fontSize: '12px', color: '#1a1a2e',
-      wordWrap: { width: 872 }, lineSpacing: 3
+      fontFamily: FONT, fontSize: '13px', color: '#0a0a14',
+      wordWrap: { width: 872 }, lineSpacing: 4, resolution: 2
     });
 
     // 게임 루프 마무리 — 4 버튼 (강조: 🖨 인쇄 + 다른 사건 선택) + fade
