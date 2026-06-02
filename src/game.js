@@ -4373,11 +4373,22 @@ class WorldScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(2001);
       this.stageChips.push({ g, t, x, y: 8, w: chipW, h: chipH, idx: i + 1 });
     });
+    // ── 반짝 효과 — 활성 칩 둘레 글로우 + 좌우 ✨ sparkle ──
+    this.stageGlow = this.add.graphics().setDepth(1999);
+    this.stageSparkleL = this.add.text(0, 0, '✨', {
+      fontFamily: FONT, fontSize: '14px', color: '#ffe082'
+    }).setOrigin(0.5).setDepth(2002).setAlpha(0);
+    this.stageSparkleR = this.add.text(0, 0, '✨', {
+      fontFamily: FONT, fontSize: '14px', color: '#ffe082'
+    }).setOrigin(0.5).setDepth(2002).setAlpha(0);
+    this.stageGlowTween = null;
+    this.stageSparkleTween = null;
     this.refreshStageHud();
   }
 
   refreshStageHud() {
     const stage = this.registry.get('stage') || 1;
+    let activeChip = null;
     this.stageChips.forEach(c => {
       c.g.clear();
       const active = c.idx === stage;
@@ -4392,7 +4403,49 @@ class WorldScene extends Phaser.Scene {
       c.g.fillRect(c.x, c.y, c.w, 2); c.g.fillRect(c.x, c.y + c.h - 2, c.w, 2);
       c.g.fillRect(c.x, c.y, 2, c.h); c.g.fillRect(c.x + c.w - 2, c.y, 2, c.h);
       c.t.setColor(active ? '#1a0e08' : (done ? '#dff1ff' : '#9aa6ad'));
+      if (active) activeChip = c;
     });
+
+    // ── 활성 칩 반짝 효과 ─────────────────────────────────────
+    if (!this.stageGlow) return;
+    if (activeChip) {
+      // 글로우 외곽 (밝은 노랑 stroke, 두 겹)
+      this.stageGlow.clear();
+      this.stageGlow.lineStyle(3, 0xffe082, 1);
+      this.stageGlow.strokeRect(activeChip.x - 3, activeChip.y - 3,
+                                activeChip.w + 6, activeChip.h + 6);
+      this.stageGlow.lineStyle(1, 0xffffff, 0.8);
+      this.stageGlow.strokeRect(activeChip.x - 1, activeChip.y - 1,
+                                activeChip.w + 2, activeChip.h + 2);
+      if (this.stageGlowTween) this.stageGlowTween.stop();
+      this.stageGlow.setAlpha(1);
+      this.stageGlowTween = this.tweens.add({
+        targets: this.stageGlow,
+        alpha: { from: 0.35, to: 1 },
+        duration: 700, yoyo: true, repeat: -1, ease: 'Sine.inOut'
+      });
+      // 좌우 ✨
+      this.stageSparkleL.setPosition(activeChip.x - 10,
+                                     activeChip.y + activeChip.h / 2);
+      this.stageSparkleR.setPosition(activeChip.x + activeChip.w + 10,
+                                     activeChip.y + activeChip.h / 2);
+      if (this.stageSparkleTween) this.stageSparkleTween.stop();
+      this.stageSparkleL.setAlpha(1).setScale(1);
+      this.stageSparkleR.setAlpha(1).setScale(1);
+      this.stageSparkleTween = this.tweens.add({
+        targets: [this.stageSparkleL, this.stageSparkleR],
+        alpha: { from: 0.3, to: 1 },
+        scale: { from: 0.7, to: 1.25 },
+        duration: 550, yoyo: true, repeat: -1, ease: 'Sine.inOut'
+      });
+    } else {
+      // 활성 칩 없음 (안전 폴백) — 효과 숨김
+      this.stageGlow.clear();
+      if (this.stageGlowTween) this.stageGlowTween.stop();
+      if (this.stageSparkleTween) this.stageSparkleTween.stop();
+      this.stageSparkleL.setAlpha(0);
+      this.stageSparkleR.setAlpha(0);
+    }
   }
 
   refreshObjective() {
