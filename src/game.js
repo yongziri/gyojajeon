@@ -1001,26 +1001,31 @@ function drawPortal(g) {
   pxMap(g, PORTAL_MAP, PORTAL_PAL, 2);
 }
 
-// ── 조사 커서 (40x40) — 빨간 조준점 ─────────────────────────────
-// 돋보기 대신 깔끔한 타겟 마커: 흰 외곽 + 반투명 빨간 원 + 흰 십자선
+// ── 조사 커서 (40x40) — 돋보기 ─────────────────────────────────
+// 렌즈(흰 외곽 + 갈색 테두리 + 옅은 유리 + 반사) + 우하향 갈색 손잡이
 function drawMagnifier(g) {
   g.clear();
-  const cx = 20, cy = 20;
-  // 외곽 흰 링 (어두운 배경에서 잘 보임)
-  g.lineStyle(2, 0xffffff, 1);
-  g.strokeCircle(cx, cy, 14);
-  // 반투명 빨간 본체
-  g.fillStyle(0xff3030, 0.45);
-  g.fillCircle(cx, cy, 13);
-  // 가운데 흰 점
-  g.fillStyle(0xffffff, 1);
-  g.fillCircle(cx, cy, 2.5);
-  // 십자선 (4방향 짧은 선)
-  g.lineStyle(2, 0xffffff, 1);
-  g.lineBetween(cx, cy - 18, cx, cy - 6);   // 위
-  g.lineBetween(cx, cy + 6,  cx, cy + 18);  // 아래
-  g.lineBetween(cx - 18, cy, cx - 6, cy);   // 좌
-  g.lineBetween(cx + 6,  cy, cx + 18, cy);  // 우
+  const cx = 16, cy = 16; // 렌즈 중심을 좌상단 쪽으로 — 손잡이 공간 확보
+  const r = 11;
+
+  // 손잡이 (우하향 대각선) — 흰 외곽 + 갈색 본체
+  g.lineStyle(5, 0xffffff, 1);
+  g.lineBetween(cx + r - 1, cy + r - 1, 35, 35);
+  g.lineStyle(3, 0x5a3a1a, 1);
+  g.lineBetween(cx + r - 1, cy + r - 1, 35, 35);
+
+  // 렌즈 외곽 흰 링 (어두운 배경에서도 잘 보임)
+  g.lineStyle(3, 0xffffff, 1);
+  g.strokeCircle(cx, cy, r + 1.5);
+  // 렌즈 테두리 갈색
+  g.lineStyle(2.5, 0x5a3a1a, 1);
+  g.strokeCircle(cx, cy, r);
+  // 렌즈 유리 (반투명 하늘색)
+  g.fillStyle(0xb8e0ff, 0.4);
+  g.fillCircle(cx, cy, r - 1);
+  // 반사 하이라이트 (상단 좌측)
+  g.fillStyle(0xffffff, 0.8);
+  g.fillCircle(cx - 4, cy - 4, 2.5);
 }
 
 // ── UN 우편함 (40x52) — 학생이 편지 쓰러 가는 입구 ─────────────
