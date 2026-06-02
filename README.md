@@ -91,7 +91,7 @@
    └ QuizScene — 객관식 → 정답이면 핵심 단서 획득
 
   [ C 성찰 ]   🪞 성찰의 의자
-   └ ReflectionScene — 인과 사슬 [원인→중간→결과] + 자기성찰 카드 + 본인 한 문장
+   └ ReflectionScene — 인과 사슬 [원인→과정→결과] + 자기성찰 카드 + 본인 한 문장
 
   [ E 실천 ]   📮 우편함
    └ LetterScene — UN 보고서 작성·송부

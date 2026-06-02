@@ -6453,7 +6453,7 @@ ${tmpl.signature}`;
 
 // ══════════════════════════════════════════════════════════════
 //  성찰 (ReflectionScene) — PEACE의 C(Connecting)
-//  · 인과 사슬: 단서 3개를 [원인]→[중간]→[결과] 슬롯에 배치
+//  · 인과 사슬: 단서 3개를 [원인]→[과정]→[결과] 슬롯에 배치
 //  · 자기성찰: 5개 카드 중 1개 선택 ("가장 마음에 남은 단서는?")
 //  · 두 활동 모두 마치면 reflectionDone=true → 4단계 잠금 해제
 // ══════════════════════════════════════════════════════════════
@@ -6504,9 +6504,9 @@ class ReflectionScene extends Phaser.Scene {
 
     // 사용 가능한 단서 — 현장 단서(evidence)
     this.allClues = this.registry.get('evidence') || [];
-    // 인과 사슬 3슬롯: 0=원인, 1=중간, 2=결과
+    // 인과 사슬 3슬롯: 0=원인, 1=과정, 2=결과
     this.slots = [null, null, null];
-    this.slotLabels = ['원인', '중간', '결과'];
+    this.slotLabels = ['원인', '과정', '결과'];
     this.activeSlot = null;       // 현재 단서를 채우려는 슬롯 인덱스
     this.statementId = null;      // 선택된 자기성찰 카드 id
     this.leaving = false;
@@ -6531,7 +6531,7 @@ class ReflectionScene extends Phaser.Scene {
       fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
       fontStyle: 'bold'
     });
-    this.add.text(40, 102, '아래에서 단서 3개를 골라  [원인 → 중간 → 결과]  순서로 배치하세요.', {
+    this.add.text(40, 102, '아래에서 단서 3개를 골라  [원인 → 과정 → 결과]  순서로 배치하세요.', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     });
 
