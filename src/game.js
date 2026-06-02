@@ -3870,47 +3870,16 @@ class WorldScene extends Phaser.Scene {
 
     if (isIntro) {
       // ─────────── 사건 0 — UN 본부 사무실 (간소화) ───────────
-      // 핵심만 — 뒷벽 UN 깃발 + 창문 2짝 + 칠판 + 좌측 세계지도 + 한센 책상
-      // 잡다한 가구(회의 테이블·의자·화분·명패·램프·책장) 제거.
+      // 핵심만 — 뒷벽 띠 + 칠판 + 좌측 세계지도 + 한센 책상
+      // 창문·UN 깃발 제거 (튜토리얼 화면 비우기).
 
-      // 뒷벽 띠 (UN 블루)
+      // 뒷벽 띠 (UN 블루) — 천장과 마룻바닥 사이 시각적 구분
       const wallBg = this.add.graphics().setDepth(0.5);
       wallBg.fillStyle(0x1a3a5c, 1);
       wallBg.fillRect(TILE, TILE, GAME_W - TILE * 2, TILE * 3);
       // 걸레받이
       wallBg.fillStyle(0x3a2410, 1);
       wallBg.fillRect(TILE, TILE * 4 - 4, GAME_W - TILE * 2, 6);
-
-      // 큰 창문 2짝 (좌·우, 맨해튼 야경)
-      const drawHQWindow = (x, y, w, h) => {
-        const g = this.add.graphics().setDepth(1);
-        g.fillStyle(0x0a1828, 1); g.fillRect(x, y, w, h);
-        g.lineStyle(4, 0xc9a36b, 1); g.strokeRect(x, y, w, h);
-        g.lineStyle(2, 0xc9a36b, 1);
-        g.lineBetween(x + w / 2, y, x + w / 2, y + h);
-        g.lineBetween(x, y + h / 2, x + w, y + h / 2);
-        g.fillStyle(0x122842, 1);
-        for (let i = 0; i < 10; i++) {
-          const sw = 6 + (i * 7) % 12, sh = 22 + (i * 19) % 60;
-          g.fillRect(x + 6 + i * (w - 12) / 10, y + h - sh, sw, sh);
-        }
-        g.fillStyle(0xffe082, 0.75);
-        for (let i = 0; i < 14; i++) {
-          g.fillRect(x + 8 + (i * 13) % (w - 16), y + 20 + (i * 17) % (h - 50), 2, 2);
-        }
-      };
-      drawHQWindow(80,  TILE + 8, 180, 110);
-      drawHQWindow(700, TILE + 8, 180, 110);
-
-      // UN 깃발 (가운데)
-      const flagG = this.add.graphics().setDepth(1);
-      flagG.fillStyle(0xefefef, 1); flagG.fillRect(380, TILE + 8, 200, 110);
-      flagG.lineStyle(3, 0x1a3a5c, 1); flagG.strokeRect(380, TILE + 8, 200, 110);
-      flagG.fillStyle(0x5b92e5, 1); flagG.fillRect(395, TILE + 22, 170, 84);
-      flagG.fillStyle(0xefefef, 1);
-      flagG.fillCircle(480, TILE + 64, 32);
-      flagG.lineStyle(2, 0x5b92e5, 1);
-      flagG.strokeCircle(480, TILE + 64, 32);
 
       // 칠판 (우측 뒷벽 아래 — 인과 사슬용)
       const boardG = this.add.graphics().setDepth(1);
