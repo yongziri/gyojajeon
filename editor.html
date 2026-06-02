@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>P.E.A.C.E. 대화 에디터</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; margin: 0; display: flex; height: 100vh;
+         background: #1a1a2e; color: #e8e8f0; overflow: hidden; }
+  #sidebar { width: 280px; background: #14202e; overflow-y: auto; padding: 12px;
+             box-sizing: border-box; border-right: 1px solid #2a3a4e; }
+  #sidebar h2 { margin: 4px 0 12px; color: #ffd96a; font-size: 17px; }
+  .menu-section { font-weight: bold; margin-top: 14px; color: #ffd96a; font-size: 13px; }
+  .menu-item { padding: 7px 10px; cursor: pointer; border-radius: 4px; font-size: 13px;
+               margin: 2px 0; }
+  .menu-item:hover { background: #243042; }
+  .menu-item.active { background: #3a5170; color: #fff; }
+  #right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #toolbar { padding: 10px 16px; background: #0a1828; display: flex; align-items: center;
+             gap: 10px; border-bottom: 1px solid #2a3a4e; flex-shrink: 0; flex-wrap: wrap; }
+  #toolbar .info { color: #a8c4dc; font-size: 12px; margin-left: 8px; }
+  #main { flex: 1; overflow-y: auto; padding: 16px 20px; }
+  #main h2 { color: #ffd96a; margin-top: 0; font-size: 18px; border-bottom: 1px solid #2a3a4e;
+             padding-bottom: 8px; }
+  .node-card { background: #20303f; padding: 12px 14px; margin-bottom: 14px; border-radius: 6px;
+               border-left: 3px solid #3a5170; }
+  .node-key { font-weight: bold; color: #7fd07f; font-family: monospace; }
+  label { display: block; margin: 10px 0 4px; color: #a8c4dc; font-size: 12px; }
+  textarea, input[type=text] { width: 100%; box-sizing: border-box; padding: 7px 9px;
+                               background: #14202e; color: #e8e8f0; border: 1px solid #3a5170;
+                               border-radius: 3px; font-family: inherit; font-size: 13px;
+                               line-height: 1.5; }
+  textarea { min-height: 50px; resize: vertical; }
+  textarea.dirty, input.dirty { border-color: #ffd96a; background: #1e2435; }
+  button { padding: 8px 14px; background: #2e6b58; color: white; border: none; border-radius: 4px;
+           cursor: pointer; font-size: 13px; }
+  button:hover { background: #3e8b78; }
+  button.warn { background: #a04a3a; }
+  button.warn:hover { background: #c0563e; }
+  .choice { background: #1a2838; padding: 8px; margin: 6px 0; border-radius: 4px;
+            border-left: 2px solid #2e6b58; }
+  .case-tag { display: inline-block; padding: 1px 6px; background: #2e6b58; color: white;
+              border-radius: 3px; font-size: 10px; margin-left: 4px; }
+  .case-tag.end { background: #6a4f2a; }
+  .case-tag.bf  { background: #2e6b58; }
+  .case-tag.correct { background: #5b8b3a; }
+  small.meta { color: #788; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h2>대화 에디터</h2>
+  <div id="menu"></div>
+  <hr style="border-color:#2a3a4e; margin-top:20px;">
+  <p style="color:#788; font-size:11px; line-height:1.5;">
+    사용법:<br>
+    1. 좌측 메뉴에서 항목 선택<br>
+    2. 우측에서 텍스트 수정<br>
+    3. 상단 "다운로드" 클릭<br>
+    4. 받은 파일을 <code>src/</code>에 덮어쓰기<br>
+    5. <code>git commit &amp; push</code>
+  </p>
+</div>
+
+<div id="right">
+  <div id="toolbar">
+    <button onclick="download('dialogue')">📥 dialogue.js</button>
+    <button onclick="download('quizzes')">📥 quizzes.js</button>
+    <button class="warn" onclick="resetOne()">↩ 현재 항목 초기화</button>
+    <span class="info" id="status">로드 중...</span>
+  </div>
+  <div id="main"></div>
+</div>
+
+<!-- 게임 데이터 로드 -->
+<script src="src/dialogue.js"></script>
+<script src="src/quizzes.js"></script>
+
+<script>
+'use strict';
+
+// ── 원본 백업 (resetOne용) ──────────────────────────────────────
+const ORIG_STORIES   = JSON.parse(JSON.stringify(STORIES));
+const ORIG_CITIZENS  = JSON.parse(JSON.stringify(CITIZENS_BY_CASE));
+
+// ── 사건 목록 + 라벨 ────────────────────────────────────────────
+const CASES = ['intro', 'aralsea', 'ukraine', 'palestine'];
+const CASE_LABELS = {
+  intro:     '신입 교육 (한센)',
+  aralsea:   '아랄해 (라일라)',
+  ukraine:   '우크라이나 (카테리나)',
+  palestine: '팔레스타인 (카림)',
+};
+
+let currentSection = null; // 'dialogue:intro' 또는 'quiz:intro'
+
+// ── 좌측 메뉴 빌드 ──────────────────────────────────────────────
+function buildMenu() {
+  const menu = document.getElementById('menu');
+  menu.innerHTML = '';
+
+  let sec = document.createElement('div');
+  sec.className = 'menu-section';
+  sec.textContent = '📖 안내인 대화 (dialogue.js)';
+  menu.appendChild(sec);
+  CASES.forEach(cid => {
+    if (!STORIES[cid]) return;
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.textContent = '— ' + CASE_LABELS[cid];
+    item.dataset.section = 'dialogue:' + cid;
+    item.onclick = () => show('dialogue:' + cid);
+    menu.appendChild(item);
+  });
+
+  sec = document.createElement('div');
+  sec.className = 'menu-section';
+  sec.textContent = '💬 시민 인터뷰 (quizzes.js)';
+  menu.appendChild(sec);
+  CASES.forEach(cid => {
+    if (!CITIZENS_BY_CASE[cid]) return;
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.textContent = '— ' + CASE_LABELS[cid];
+    item.dataset.section = 'quiz:' + cid;
+    item.onclick = () => show('quiz:' + cid);
+    menu.appendChild(item);
+  });
+}
+
+// ── 활성 섹션 표시 ──────────────────────────────────────────────
+function show(section) {
+  currentSection = section;
+  document.querySelectorAll('.menu-item').forEach(m => {
+    m.classList.toggle('active', m.dataset.section === section);
+  });
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  main.scrollTop = 0;
+
+  const [kind, cid] = section.split(':');
+  if (kind === 'dialogue') renderDialogue(cid, main);
+  else                     renderQuiz(cid, main);
+}
+
+// ── 대화 노드 렌더링 (dialogue.js) ──────────────────────────────
+function renderDialogue(cid, parent) {
+  const story = STORIES[cid];
+  const h = document.createElement('h2');
+  h.textContent = '📖 ' + CASE_LABELS[cid] + ' — 안내인 대화';
+  parent.appendChild(h);
+
+  Object.keys(story).forEach(nodeKey => {
+    const node = story[nodeKey];
+    const card = document.createElement('div');
+    card.className = 'node-card';
+
+    let head = '<span class="node-key">' + nodeKey + '</span>';
+    if (node.next)     head += ' <small class="meta">→ ' + node.next + '</small>';
+    if (node.end)      head += ' <span class="case-tag end">END</span>';
+    if (node.befriend) head += ' <span class="case-tag bf">친구가 됨</span>';
+    const hd = document.createElement('div');
+    hd.innerHTML = head;
+    card.appendChild(hd);
+
+    // speaker
+    if (node.speaker !== undefined) {
+      const lbl = document.createElement('label');
+      lbl.textContent = 'speaker (말하는 사람 — 빈 값은 나레이션)';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.value = node.speaker;
+      inp.oninput = () => { node.speaker = inp.value; inp.classList.add('dirty'); markStatus(); };
+      card.appendChild(lbl); card.appendChild(inp);
+    }
+    // text
+    if (node.text !== undefined) {
+      const lbl = document.createElement('label');
+      lbl.textContent = 'text (대사)';
+      const ta = document.createElement('textarea');
+      ta.value = node.text;
+      ta.oninput = () => { node.text = ta.value; ta.classList.add('dirty'); markStatus(); };
+      card.appendChild(lbl); card.appendChild(ta);
+    }
+    // choices
+    if (node.choices) {
+      const lbl = document.createElement('label');
+      lbl.textContent = 'choices (플레이어 선택지)';
+      card.appendChild(lbl);
+      node.choices.forEach((ch, i) => {
+        const cdiv = document.createElement('div');
+        cdiv.className = 'choice';
+        const metaParts = ['선택지 ' + (i + 1)];
+        if (ch.next !== undefined)  metaParts.push('→ ' + ch.next);
+        if (ch.love !== undefined)  metaParts.push('이해도 +' + ch.love);
+        cdiv.innerHTML = '<small class="meta">' + metaParts.join(' · ') + '</small>';
+        const inp = document.createElement('input');
+        inp.type = 'text'; inp.value = ch.label;
+        inp.oninput = () => { ch.label = inp.value; inp.classList.add('dirty'); markStatus(); };
+        cdiv.appendChild(inp);
+        card.appendChild(cdiv);
+      });
+    }
+
+    parent.appendChild(card);
+  });
+}
+
+// ── 시민 + 퀴즈 렌더링 (quizzes.js) ─────────────────────────────
+function renderQuiz(cid, parent) {
+  const citizens = CITIZENS_BY_CASE[cid];
+  const h = document.createElement('h2');
+  h.textContent = '💬 ' + CASE_LABELS[cid] + ' — 시민 인터뷰 & 퀴즈';
+  parent.appendChild(h);
+
+  citizens.forEach(cit => {
+    const card = document.createElement('div');
+    card.className = 'node-card';
+    const hd = document.createElement('div');
+    hd.innerHTML = '<span class="node-key">' + cit.id + '</span> ' +
+                   '<small class="meta">' + cit.name + '</small>';
+    card.appendChild(hd);
+
+    // name
+    const lblN = document.createElement('label');
+    lblN.textContent = 'name (이름)';
+    const inpN = document.createElement('input');
+    inpN.type = 'text'; inpN.value = cit.name;
+    inpN.oninput = () => { cit.name = inpN.value; inpN.classList.add('dirty'); markStatus(); };
+    card.appendChild(lblN); card.appendChild(inpN);
+
+    // intro (배열)
+    if (cit.intro) {
+      const lbl = document.createElement('label');
+      lbl.textContent = 'intro (NPC 첫 인사 — 한 줄에 한 대사씩)';
+      const ta = document.createElement('textarea');
+      ta.value = cit.intro.join('\n');
+      ta.style.minHeight = '90px';
+      ta.oninput = () => {
+        cit.intro = ta.value.split('\n').filter(l => l.trim().length > 0);
+        ta.classList.add('dirty'); markStatus();
+      };
+      card.appendChild(lbl); card.appendChild(ta);
+    }
+
+    // quiz
+    if (cit.quiz) {
+      const q = cit.quiz;
+
+      const lblQ = document.createElement('label');
+      lblQ.textContent = 'quiz.question (질문)';
+      const taQ = document.createElement('textarea');
+      taQ.value = q.question;
+      taQ.oninput = () => { q.question = taQ.value; taQ.classList.add('dirty'); markStatus(); };
+      card.appendChild(lblQ); card.appendChild(taQ);
+
+      const lblH = document.createElement('label');
+      lblH.textContent = 'quiz.hint (힌트)';
+      const inpH = document.createElement('input');
+      inpH.type = 'text'; inpH.value = q.hint || '';
+      inpH.oninput = () => { q.hint = inpH.value; inpH.classList.add('dirty'); markStatus(); };
+      card.appendChild(lblH); card.appendChild(inpH);
+
+      const lblC = document.createElement('label');
+      lblC.textContent = 'quiz.choices (3지선다 + 피드백)';
+      card.appendChild(lblC);
+      q.choices.forEach((ch, ci) => {
+        const cdiv = document.createElement('div');
+        cdiv.className = 'choice';
+        cdiv.innerHTML = '<small class="meta">선택지 ' + (ci + 1) +
+                         (ch.correct ? '<span class="case-tag correct">정답</span>' : '') +
+                         '</small>';
+        const inp = document.createElement('input');
+        inp.type = 'text'; inp.value = ch.text;
+        inp.oninput = () => { ch.text = inp.value; inp.classList.add('dirty'); markStatus(); };
+        cdiv.appendChild(inp);
+        if (ch.feedback !== undefined) {
+          const fl = document.createElement('label');
+          fl.textContent = 'feedback (선택 직후 피드백)';
+          fl.style.marginTop = '6px';
+          const ta = document.createElement('textarea');
+          ta.value = ch.feedback;
+          ta.oninput = () => { ch.feedback = ta.value; ta.classList.add('dirty'); markStatus(); };
+          cdiv.appendChild(fl); cdiv.appendChild(ta);
+        }
+        card.appendChild(cdiv);
+      });
+
+      // reward
+      if (q.reward) {
+        const r = q.reward;
+        const lblR = document.createElement('label');
+        lblR.textContent = 'reward (정답 시 획득할 핵심 단서)';
+        card.appendChild(lblR);
+        const rDiv = document.createElement('div');
+        rDiv.className = 'choice';
+        rDiv.innerHTML = '<small class="meta">id: ' + r.id +
+                         (r.area ? ' · 영역: ' + r.area : '') + '</small>';
+        ['name', 'desc'].forEach(k => {
+          const sub = document.createElement('label');
+          sub.textContent = 'reward.' + k;
+          const inp = (k === 'desc')
+            ? document.createElement('textarea')
+            : document.createElement('input');
+          if (inp.tagName === 'INPUT') inp.type = 'text';
+          inp.value = r[k] || '';
+          inp.oninput = () => { r[k] = inp.value; inp.classList.add('dirty'); markStatus(); };
+          rDiv.appendChild(sub); rDiv.appendChild(inp);
+        });
+        card.appendChild(rDiv);
+      }
+    }
+
+    parent.appendChild(card);
+  });
+}
+
+// ── 상단 상태 표시 ─────────────────────────────────────────────
+function markStatus() {
+  const n = document.querySelectorAll('.dirty').length;
+  document.getElementById('status').textContent =
+    n > 0 ? '✏️  ' + n + '곳 수정됨 — 다운로드 잊지 마세요' : '✓  변경 없음';
+}
+
+// ── 객체 → .js 코드 직렬화 ──────────────────────────────────────
+function serialize(obj) {
+  // JSON.stringify (모든 key가 따옴표) → JS object literal로 (영문 식별자 key 따옴표 제거)
+  let s = JSON.stringify(obj, null, 2);
+  s = s.replace(/^(\s*)"([a-zA-Z_$][a-zA-Z0-9_$]*)":/gm, '$1$2:');
+  return s;
+}
+
+// ── 다운로드 ───────────────────────────────────────────────────
+function download(which) {
+  let content;
+  let fname;
+
+  if (which === 'dialogue') {
+    fname = 'dialogue.js';
+    const header =
+      '// 사건별 현지 안내자(가이드)와의 첫 만남 대화\n' +
+      '// (대화 에디터 editor.html 로 갱신됨)\n' +
+      '//\n' +
+      '//   speaker : 말하는 사람 (\'\' 이면 나레이션)\n' +
+      '//   text    : 대사\n' +
+      '//   next    : 다음 칸\n' +
+      '//   choices : [{ label, love(이해도 증감), next }]\n' +
+      '//   end     : true 면 대화 끝\n' +
+      '//   befriend: true 면 친구가 되어 자리를 떠남\n\n';
+    const body = 'const STORIES = ' + serialize(STORIES) + ';\n\n';
+    const footer =
+      '// ── 활성 사건 (기본: 아랄해). CaseSelectScene 에서 setStory()로 전환. ──\n' +
+      'let STORY = STORIES.aralsea;\n' +
+      'function setStory(id) { STORY = STORIES[id] || STORIES.aralsea; }\n';
+    content = header + body + footer;
+  } else {
+    fname = 'quizzes.js';
+    const header =
+      '// 사건별 시민 NPC + 퀴즈 — P.E.A.C.E. 3·4단계 (분석·핵심 단서)\n' +
+      '// (대화 에디터 editor.html 로 갱신됨)\n\n';
+    const body = 'const CITIZENS_BY_CASE = ' + serialize(CITIZENS_BY_CASE) + ';\n\n';
+    const footer =
+      '// ── 활성 사건 (기본: 아랄해). CaseSelectScene 에서 setCitizens()로 전환. ──\n' +
+      'let CITIZENS = CITIZENS_BY_CASE.aralsea;\n' +
+      'let TOTAL_CITIZENS = CITIZENS.length;\n' +
+      'function setCitizens(id) {\n' +
+      '  CITIZENS = CITIZENS_BY_CASE[id] || CITIZENS_BY_CASE.aralsea;\n' +
+      '  TOTAL_CITIZENS = CITIZENS.length;\n' +
+      '}\n';
+    content = header + body + footer;
+  }
+
+  const blob = new Blob([content], { type: 'text/javascript;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ── 현재 항목 원본 복원 ─────────────────────────────────────────
+function resetOne() {
+  if (!currentSection) return;
+  if (!confirm('이 항목의 모든 변경을 원본으로 되돌릴까요?')) return;
+  const [kind, cid] = currentSection.split(':');
+  if (kind === 'dialogue') {
+    // 키 재할당 (속성 복사)
+    Object.keys(STORIES[cid]).forEach(k => delete STORIES[cid][k]);
+    Object.assign(STORIES[cid], JSON.parse(JSON.stringify(ORIG_STORIES[cid])));
+  } else {
+    CITIZENS_BY_CASE[cid].length = 0;
+    JSON.parse(JSON.stringify(ORIG_CITIZENS[cid])).forEach(c => CITIZENS_BY_CASE[cid].push(c));
+  }
+  show(currentSection);
+  markStatus();
+}
+
+// ── 초기화 ─────────────────────────────────────────────────────
+buildMenu();
+show('dialogue:intro');
+document.getElementById('status').textContent = '✓  로드 완료 — 수정해 보세요';
+</script>
+</body>
+</html>
