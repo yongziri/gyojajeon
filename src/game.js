@@ -5875,12 +5875,13 @@ class LetterScene extends Phaser.Scene {
       fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3);
 
-    // 단계 progress 표시 — 1.받는곳 → 2.단서 → 3.다짐 → 4.미리보기
+    // 단계 progress 표시 — 1.받는곳 → 2.단서 → 3.다짐 → 4.검토
+    // (이 4단계는 compose 화면 안의 작업 흐름. 4=검토 통과 시 다음 화면 진입)
     const stages = [
       { n: 1, label: '받는 곳', done: this.recipient !== undefined && this.recipient !== null },
-      { n: 2, label: '단서', done: this.factPicks.size > 0 },
-      { n: 3, label: '다짐', done: this.pledgePicks.size > 0 },
-      { n: 4, label: '미리보기', done: false },
+      { n: 2, label: '단서',    done: this.factPicks.size > 0 },
+      { n: 3, label: '다짐',    done: this.pledgePicks.size > 0 },
+      { n: 4, label: '검토',    done: false },
     ];
     const stepY = 84;
     stages.forEach((s, i) => {
@@ -6040,7 +6041,7 @@ class LetterScene extends Phaser.Scene {
     // 헤더 띠
     const hdr = this.add.graphics().setDepth(2);
     hdr.fillStyle(0x6a4f2a, 1); hdr.fillRect(20, 24, 920, 40);
-    this.add.text(480, 44, '📋  보고서 미리보기', {
+    this.add.text(480, 44, '👁  보고서 미리보기', {
       fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3);
 
@@ -6099,11 +6100,12 @@ ${tmpl.signature}`;
       wordWrap: { width: 876 }, lineSpacing: 4
     }).setDepth(3);
 
-    // 하단 버튼 — 송부 전 회고 루브릭을 거치도록 변경
-    fancyButton(this, 250, 566, 200, 42, '← 다시 고치기',
+    // 하단 버튼 — 송부 전 자기평가 루브릭을 거치도록 변경
+    // 통일된 표현: '← 작성으로' (뒤) / '자기평가 →' (다음)
+    fancyButton(this, 250, 566, 200, 42, '← 작성으로',
       () => this.buildCompose(),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
-    fancyButton(this, 550, 566, 200, 42, '→  임무 회고로',
+    fancyButton(this, 550, 566, 200, 42, '자기평가 →',
       () => this.buildReview(body),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
   }
@@ -6122,7 +6124,7 @@ ${tmpl.signature}`;
 
     // 타이틀
     panel(this, 480, 40, 920, 56, 0x1a2a3a, 0xc9a36b);
-    this.add.text(480, 28, '📋  임무 회고  ·  Self-Evaluation', {
+    this.add.text(480, 28, '📊  자기평가  ·  Self-Evaluation', {
       fontFamily: FONT_TITLE, fontSize: '18px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -6223,11 +6225,11 @@ ${tmpl.signature}`;
       wantBtns.push({ id: opt.id, draw });
     });
 
-    // 하단 버튼
-    fancyButton(this, 250, 566, 220, 42, '← 보고서로 돌아가기',
+    // 하단 버튼 — 통일된 표현: '← 미리보기로' (뒤) / '📤 송부하기' (최종 액션)
+    fancyButton(this, 250, 566, 220, 42, '← 미리보기로',
       () => this.buildPreview(),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
-    fancyButton(this, 550, 566, 220, 42, '📤  최종 송부',
+    fancyButton(this, 550, 566, 220, 42, '📤  송부하기',
       () => {
         // registry에 자기 평가 저장 (사건별 누적용으로 caseId 키와 함께)
         const review = {
