@@ -1828,7 +1828,12 @@ class TeacherGuideScene extends Phaser.Scene {
 ■ 평가 가능 학습 성과
   ☑ 환경 비극의 원인·결과 설명
   ☑ 멀리 떨어진 사회와의 연결 인식
-  ☑ 책임 있는 시민 행동 다짐 작성`;
+  ☑ 책임 있는 시민 행동 다짐 작성
+
+■ 채점 기준 — P.E.A.C.E. 5차원
+  · 5차원 × 0~3점 자동 산출 (15점)
+  · 공감 · 인지 · 연결 · 실천 · 협력
+  · S 13+   A 10+   B 7+   C 0~6`;
     this.add.text(548, 145, rightText, {
       fontFamily: FONT, fontSize: '13px', color: '#f3ece0',
       lineSpacing: 5
@@ -6674,6 +6679,18 @@ ${tmpl.signature}`;
               '<tr><td><strong>합계</strong></td>' +
                 '<td colspan="2"><strong>등급 [' + sc.grade + ']  ·  ' +
                 sc.total + ' / ' + sc.max + '</strong></td></tr>' +
+            '</table>' +
+            // 채점 기준표 — 학생·교사·평가단이 등급 의미를 즉시 확인
+            '<table class="grade-key" style="margin-top:8px; font-size:11px">' +
+              '<tr><th style="width:18%">등급</th><th style="width:22%">점수 범위</th><th>해석</th></tr>' +
+              '<tr><td><span class="peace-grade-badge peace-grade-S">S</span></td>' +
+                '<td>13 ~ 15</td><td>탁월 — 5차원 모두 깊이 있게 학습</td></tr>' +
+              '<tr><td><span class="peace-grade-badge peace-grade-A">A</span></td>' +
+                '<td>10 ~ 12</td><td>우수 — 핵심 학습 완성</td></tr>' +
+              '<tr><td><span class="peace-grade-badge peace-grade-B">B</span></td>' +
+                '<td>&nbsp;7 ~ &nbsp;9</td><td>보통 — 주요 활동 참여</td></tr>' +
+              '<tr><td><span class="peace-grade-badge peace-grade-C">C</span></td>' +
+                '<td>&nbsp;0 ~ &nbsp;6</td><td>시작 — 추가 활동 권장</td></tr>' +
             '</table>';
         })() +
 
