@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v138';
+const CACHE = 'vanished-sea-v139';
 const PRECACHE = [
   './',
   './index.html',
@@ -41,9 +41,16 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // portraits/* 및 photos/* — network-first (자주 교체되는 이미지 항상 최신 우선)
-  if (url.pathname.includes('/assets/portraits/') ||
-      url.pathname.includes('/assets/photos/')) {
+  const p = url.pathname;
+  // 코드·HTML·매니페스트 + 자주 교체되는 이미지 → network-first.
+  //   온라인이면 항상 최신을 받고(새로고침 1번이면 즉시 반영), 캐시도 갱신.
+  //   오프라인이면 캐시로 폴백 → 학교 오프라인 환경에서도 동작.
+  const isCode = req.mode === 'navigate' ||
+                 /\.(js|html)$/.test(p) || p.endsWith('/') ||
+                 p.endsWith('/manifest.webmanifest');
+  const isLiveImg = p.includes('/assets/portraits/') ||
+                    p.includes('/assets/photos/');
+  if (isCode || isLiveImg) {
     e.respondWith(
       fetch(req).then((resp) => {
         if (resp && resp.status === 200 && resp.type === 'basic') {
@@ -56,7 +63,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 나머지는 cache-first
+  // 폰트·아이콘·오디오 등 잘 안 바뀌는 자산 → cache-first (빠름)
   e.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
