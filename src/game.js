@@ -4527,8 +4527,13 @@ class WorldScene extends Phaser.Scene {
   }
 
   showStageTransition(stage) {
-    // 데이터는 src/stages.js의 STAGE_TRANSITIONS 객체에서 (editor.html로 편집)
-    const d = (typeof STAGE_TRANSITIONS !== 'undefined') ? STAGE_TRANSITIONS[stage] : null;
+    // 데이터는 src/stages.js의 STAGE_TRANSITIONS_BY_CASE에서 사건별 분기
+    // (editor.html에서 사건별로 편집). caseId 누락 시 aralsea 폴백.
+    const caseId = this.registry.get('caseId') || 'aralsea';
+    const byCase = (typeof STAGE_TRANSITIONS_BY_CASE !== 'undefined')
+      ? STAGE_TRANSITIONS_BY_CASE[caseId] : null;
+    const d = (byCase && byCase[stage])
+      || (typeof STAGE_TRANSITIONS !== 'undefined' ? STAGE_TRANSITIONS[stage] : null);
     if (!d) return;
     if (window.SFX) window.SFX.play('stage');   // 단계 전환 팡파레
 

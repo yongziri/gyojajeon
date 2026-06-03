@@ -84,7 +84,7 @@
 // ── 원본 백업 (resetOne용) ──────────────────────────────────────
 const ORIG_STORIES   = JSON.parse(JSON.stringify(STORIES));
 const ORIG_CITIZENS  = JSON.parse(JSON.stringify(CITIZENS_BY_CASE));
-const ORIG_STAGES    = JSON.parse(JSON.stringify(STAGE_TRANSITIONS));
+const ORIG_STAGES_BY_CASE = JSON.parse(JSON.stringify(STAGE_TRANSITIONS_BY_CASE));
 
 // ── 사건 목록 + 라벨 ────────────────────────────────────────────
 const CASES = ['intro', 'aralsea', 'ukraine', 'palestine'];
@@ -130,17 +130,20 @@ function buildMenu() {
     menu.appendChild(item);
   });
 
-  // 단계 전환 카드 (stages.js)
+  // 단계 전환 카드 (stages.js) — 사건별 분기
   sec = document.createElement('div');
   sec.className = 'menu-section';
   sec.textContent = '🎯 단계 전환 카드 (stages.js)';
   menu.appendChild(sec);
-  const stageItem = document.createElement('div');
-  stageItem.className = 'menu-item';
-  stageItem.textContent = '— P→E→C→E 전환 모달 (2·3·4단계)';
-  stageItem.dataset.section = 'stages:all';
-  stageItem.onclick = () => show('stages:all');
-  menu.appendChild(stageItem);
+  CASES.forEach(cid => {
+    if (!STAGE_TRANSITIONS_BY_CASE[cid]) return;
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.textContent = '— ' + CASE_LABELS[cid];
+    item.dataset.section = 'stages:' + cid;
+    item.onclick = () => show('stages:' + cid);
+    menu.appendChild(item);
+  });
 }
 
 // ── 활성 섹션 표시 ──────────────────────────────────────────────
@@ -156,24 +159,26 @@ function show(section) {
   const [kind, cid] = section.split(':');
   if      (kind === 'dialogue') renderDialogue(cid, main);
   else if (kind === 'quiz')     renderQuiz(cid, main);
-  else if (kind === 'stages')   renderStages(main);
+  else if (kind === 'stages')   renderStages(cid, main);
 }
 
-// ── 단계 전환 카드 렌더링 (stages.js) ───────────────────────────
-function renderStages(parent) {
+// ── 단계 전환 카드 렌더링 (stages.js) — 사건별 ───────────────────
+function renderStages(cid, parent) {
   const h = document.createElement('h2');
-  h.textContent = '🎯 단계 전환 카드 — P→E→C→E 자동 진행 시 모달';
+  h.textContent = '🎯 ' + CASE_LABELS[cid] + ' — 단계 전환 카드';
   parent.appendChild(h);
 
   const note = document.createElement('p');
   note.style.color = '#a8c4dc';
   note.style.fontSize = '12px';
   note.innerHTML = '학생이 한 단계를 마치고 다음 단계로 진입할 때 화면에 ' +
-                   '뜨는 4개 필드. <code>\\n</code>으로 줄바꿈 가능.';
+                   '뜨는 4개 필드. <code>\\n</code>으로 줄바꿈 가능. ' +
+                   '<b>사건별로 다른 텍스트</b>를 적을 수 있어요.';
   parent.appendChild(note);
 
-  Object.keys(STAGE_TRANSITIONS).forEach(stageKey => {
-    const st = STAGE_TRANSITIONS[stageKey];
+  const stages = STAGE_TRANSITIONS_BY_CASE[cid];
+  Object.keys(stages).forEach(stageKey => {
+    const st = stages[stageKey];
     const card = document.createElement('div');
     card.className = 'node-card';
 
@@ -432,18 +437,24 @@ function download(which) {
       '}\n';
     content = header + body + footer;
   } else {
-    // stages.js
+    // stages.js — 사건별 BY_CASE 구조
     fname = 'stages.js';
     const header =
       '// 단계 전환 카드 (P→E→A→C→E 자동 진행 시 화면에 뜨는 4모달)\n' +
       '// (대화 에디터 editor.html 로 갱신됨)\n' +
       '//\n' +
-      '//   key     : 단계 번호 (2, 3, 4) — 1은 초기 상태라 카드 없음\n' +
+      '// 4사건 × 3단계(2/3/4) 분기. 1단계는 초기 상태라 카드 없음.\n' +
+      '//\n' +
       '//   title   : 카드 헤더\n' +
       '//   sub     : 부제·설명 (여러 줄 — \\n)\n' +
       '//   hint    : 화면 하단 진행 힌트\n' +
-      '//   reflect : 학생이 잠시 생각해 보는 질문\n\n';
-    content = header + 'const STAGE_TRANSITIONS = ' + serialize(STAGE_TRANSITIONS) + ';\n';
+      '//   reflect : 학생이 잠시 생각해 보는 질문 (사건 맥락 반영)\n\n';
+    const body =
+      'const STAGE_TRANSITIONS_BY_CASE = ' + serialize(STAGE_TRANSITIONS_BY_CASE) + ';\n\n';
+    const footer =
+      '// 하위 호환 — 옛 game.js가 STAGE_TRANSITIONS 단독 참조 시 aralsea로 폴백\n' +
+      'const STAGE_TRANSITIONS = STAGE_TRANSITIONS_BY_CASE.aralsea;\n';
+    content = header + body + footer;
   }
 
   const blob = new Blob([content], { type: 'text/javascript;charset=utf-8' });
@@ -467,9 +478,10 @@ function resetOne() {
     CITIZENS_BY_CASE[cid].length = 0;
     JSON.parse(JSON.stringify(ORIG_CITIZENS[cid])).forEach(c => CITIZENS_BY_CASE[cid].push(c));
   } else if (kind === 'stages') {
-    // 모든 단계 키를 ORIG에서 복원
-    Object.keys(STAGE_TRANSITIONS).forEach(k => delete STAGE_TRANSITIONS[k]);
-    Object.assign(STAGE_TRANSITIONS, JSON.parse(JSON.stringify(ORIG_STAGES)));
+    // 사건의 모든 단계 키를 ORIG에서 복원
+    const target = STAGE_TRANSITIONS_BY_CASE[cid];
+    Object.keys(target).forEach(k => delete target[k]);
+    Object.assign(target, JSON.parse(JSON.stringify(ORIG_STAGES_BY_CASE[cid])));
   }
   show(currentSection);
   markStatus();
