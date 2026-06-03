@@ -1523,16 +1523,6 @@ class TitleScene extends Phaser.Scene {
         () => titleToast('저장된 게임이 없어요 — 먼저 새 게임을 시작하세요'),
         { base: 0x2a3138, hover: 0x353d45, edge: 0x55626c, text: '#8a96a0' });
     }
-    // 보조 버튼 3개는 아래쪽에
-    const openHelp = () => {
-      this.registry.set('helpFrom', 'TitleScene');
-      this.scene.start('HelpScene');
-    };
-    // 보조 버튼 — 도움말 (가운데 정렬)
-    fancyButton(this, 480, 578, 160, 36, '❓ 도움말',
-      openHelp,
-      { base: 0x2b3a52, hover: 0x3c5170, edge: 0xffd96a, text: '#ffe9b8' });
-
     // 사운드 토글 — 우상단 (클릭 시 음향 설정: 음소거 + BGM·효과음 음량)
     addMuteToggle(this, 936, 24);
 
@@ -3749,7 +3739,7 @@ function openSoundSettings(scene, onClose) {
     scene._soundPanelOpen = false;
     if (typeof onClose === 'function') onClose();
   };
-  dbtn(fancyButton(scene, 480, 442, 200, 42, '✓  닫기', close,
+  dbtn(fancyButton(scene, 480, 444, 132, 34, '✓ 닫기', close,
     { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' }));
   if (scene.input && scene.input.keyboard) {
     scene.input.keyboard.once('keydown-ESC', close);
