@@ -1485,12 +1485,24 @@ class TitleScene extends Phaser.Scene {
       });
     };
 
-    // 시작 버튼 — 세이브가 있으면 "이어하기 + 새 게임" 두 버튼,
-    // 없으면 단일 "시작하기" 버튼
+    // 시작 버튼 — 항상 "새 게임 / 이어하기" 두 버튼을 함께 표시.
+    // 세이브가 없으면 이어하기는 흐리게 + 클릭 시 안내 토스트.
     const canResume = hasResumableSave();
+    // 짧은 안내 토스트
+    const titleToast = (msg) => {
+      const tx = this.add.text(480, 470, msg, {
+        fontFamily: FONT, fontSize: '15px', color: '#ffe9b8',
+        backgroundColor: '#000000bb', padding: { x: 12, y: 7 }
+      }).setOrigin(0.5).setDepth(5000);
+      this.tweens.add({ targets: tx, alpha: 0, delay: 1200, duration: 600,
+        onComplete: () => tx.destroy() });
+    };
+    // 좌: 새 게임 (항상 활성)
+    fancyButton(this, 310, 525, 240, 44, '🔄  새 게임', newGame,
+      { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+    // 우: 이어하기 (세이브 있을 때만 활성)
     if (canResume) {
       const save = loadGameState();
-      // 사건명 짧게 (긴 title 대신 region/intro 약칭)
       const SHORT_TITLES = {
         intro:     '튜토리얼',
         aralsea:   '아랄해',
@@ -1499,34 +1511,25 @@ class TitleScene extends Phaser.Scene {
       };
       const caseLabel = (save && SHORT_TITLES[save.caseId]) || '진행 중';
       const stageNum = (save && save.stage) || 1;
-      // 좌: 이어하기 — 사건명 · N단계 (폭 360)
-      fancyButton(this, 310, 525, 360, 44,
+      fancyButton(this, 620, 525, 300, 44,
         '▶  이어하기 · ' + caseLabel + ' · ' + stageNum + '단계',
         resumeGame,
-        { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
-      // 우: 새 게임 (서브)
-      fancyButton(this, 620, 525, 180, 44, '🔄  새 게임', newGame,
-        { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+        { base: 0x3a5a7a, hover: 0x4c6f93, edge: 0x6fb7d6, text: '#dff1ff' });
     } else {
-      // 세이브 없음 — 단일 시작 버튼
-      fancyButton(this, 480, 525, 240, 44, '▶  시작하기', newGame,
-        { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+      // 세이브 없음 — 흐린 이어하기 (클릭 시 안내)
+      fancyButton(this, 620, 525, 300, 44, '▶  이어하기',
+        () => titleToast('저장된 게임이 없어요 — 먼저 새 게임을 시작하세요'),
+        { base: 0x2a3138, hover: 0x353d45, edge: 0x55626c, text: '#8a96a0' });
     }
     // 보조 버튼 3개는 아래쪽에
     const openHelp = () => {
       this.registry.set('helpFrom', 'TitleScene');
       this.scene.start('HelpScene');
     };
-    // 보조 3버튼 균등 분포 — 240 / 480 / 720 (가운데 480 기준 ±240 대칭)
-    fancyButton(this, 240, 578, 160, 36, '❓ 도움말',
+    // 보조 버튼 — 도움말 (가운데 정렬)
+    fancyButton(this, 480, 578, 160, 36, '❓ 도움말',
       openHelp,
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0xffd96a, text: '#ffe9b8' });
-    fancyButton(this, 480, 578, 200, 36, '🎓 교사용 가이드',
-      () => this.scene.start('TeacherGuideScene'),
-      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
-    fancyButton(this, 720, 578, 160, 36, '에셋·라이선스',
-      () => this.scene.start('CreditsScene'),
-      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
 
     // 사운드 토글 — 우상단 (학교 환경에서 음소거 필요할 수 있음)
     addMuteToggle(this, 936, 24);
