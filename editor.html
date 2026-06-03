@@ -66,6 +66,7 @@
   <div id="toolbar">
     <button onclick="download('dialogue')">📥 dialogue.js</button>
     <button onclick="download('quizzes')">📥 quizzes.js</button>
+    <button onclick="download('stages')">📥 stages.js</button>
     <button class="warn" onclick="resetOne()">↩ 현재 항목 초기화</button>
     <span class="info" id="status">로드 중...</span>
   </div>
@@ -75,6 +76,7 @@
 <!-- 게임 데이터 로드 -->
 <script src="src/dialogue.js"></script>
 <script src="src/quizzes.js"></script>
+<script src="src/stages.js"></script>
 
 <script>
 'use strict';
@@ -82,6 +84,7 @@
 // ── 원본 백업 (resetOne용) ──────────────────────────────────────
 const ORIG_STORIES   = JSON.parse(JSON.stringify(STORIES));
 const ORIG_CITIZENS  = JSON.parse(JSON.stringify(CITIZENS_BY_CASE));
+const ORIG_STAGES    = JSON.parse(JSON.stringify(STAGE_TRANSITIONS));
 
 // ── 사건 목록 + 라벨 ────────────────────────────────────────────
 const CASES = ['intro', 'aralsea', 'ukraine', 'palestine'];
@@ -126,6 +129,18 @@ function buildMenu() {
     item.onclick = () => show('quiz:' + cid);
     menu.appendChild(item);
   });
+
+  // 단계 전환 카드 (stages.js)
+  sec = document.createElement('div');
+  sec.className = 'menu-section';
+  sec.textContent = '🎯 단계 전환 카드 (stages.js)';
+  menu.appendChild(sec);
+  const stageItem = document.createElement('div');
+  stageItem.className = 'menu-item';
+  stageItem.textContent = '— P→E→C→E 전환 모달 (2·3·4단계)';
+  stageItem.dataset.section = 'stages:all';
+  stageItem.onclick = () => show('stages:all');
+  menu.appendChild(stageItem);
 }
 
 // ── 활성 섹션 표시 ──────────────────────────────────────────────
@@ -139,8 +154,57 @@ function show(section) {
   main.scrollTop = 0;
 
   const [kind, cid] = section.split(':');
-  if (kind === 'dialogue') renderDialogue(cid, main);
-  else                     renderQuiz(cid, main);
+  if      (kind === 'dialogue') renderDialogue(cid, main);
+  else if (kind === 'quiz')     renderQuiz(cid, main);
+  else if (kind === 'stages')   renderStages(main);
+}
+
+// ── 단계 전환 카드 렌더링 (stages.js) ───────────────────────────
+function renderStages(parent) {
+  const h = document.createElement('h2');
+  h.textContent = '🎯 단계 전환 카드 — P→E→C→E 자동 진행 시 모달';
+  parent.appendChild(h);
+
+  const note = document.createElement('p');
+  note.style.color = '#a8c4dc';
+  note.style.fontSize = '12px';
+  note.innerHTML = '학생이 한 단계를 마치고 다음 단계로 진입할 때 화면에 ' +
+                   '뜨는 4개 필드. <code>\\n</code>으로 줄바꿈 가능.';
+  parent.appendChild(note);
+
+  Object.keys(STAGE_TRANSITIONS).forEach(stageKey => {
+    const st = STAGE_TRANSITIONS[stageKey];
+    const card = document.createElement('div');
+    card.className = 'node-card';
+
+    const hd = document.createElement('div');
+    hd.innerHTML = '<span class="node-key">stage ' + stageKey + '</span> ' +
+                   '<small class="meta">전 단계 완료 시 자동 표시</small>';
+    card.appendChild(hd);
+
+    const fields = [
+      { key: 'title',   label: 'title (카드 헤더)',         type: 'input' },
+      { key: 'sub',     label: 'sub (부제·설명)',           type: 'textarea' },
+      { key: 'hint',    label: 'hint (화면 하단 진행 힌트)', type: 'input' },
+      { key: 'reflect', label: 'reflect (잠시 생각해 봐요)', type: 'textarea' },
+    ];
+
+    fields.forEach(f => {
+      const lbl = document.createElement('label');
+      lbl.textContent = f.label;
+      card.appendChild(lbl);
+      const el = (f.type === 'textarea')
+        ? document.createElement('textarea')
+        : document.createElement('input');
+      if (el.tagName === 'INPUT') el.type = 'text';
+      // 화면 표시는 실제 줄바꿈으로 (\n → 줄바꿈)
+      el.value = st[f.key] || '';
+      el.oninput = () => { st[f.key] = el.value; el.classList.add('dirty'); markStatus(); };
+      card.appendChild(el);
+    });
+
+    parent.appendChild(card);
+  });
 }
 
 // ── 대화 노드 렌더링 (dialogue.js) ──────────────────────────────
@@ -352,7 +416,7 @@ function download(which) {
       'let STORY = STORIES.aralsea;\n' +
       'function setStory(id) { STORY = STORIES[id] || STORIES.aralsea; }\n';
     content = header + body + footer;
-  } else {
+  } else if (which === 'quizzes') {
     fname = 'quizzes.js';
     const header =
       '// 사건별 시민 NPC + 퀴즈 — P.E.A.C.E. 3·4단계 (분석·핵심 단서)\n' +
@@ -367,6 +431,19 @@ function download(which) {
       '  TOTAL_CITIZENS = CITIZENS.length;\n' +
       '}\n';
     content = header + body + footer;
+  } else {
+    // stages.js
+    fname = 'stages.js';
+    const header =
+      '// 단계 전환 카드 (P→E→A→C→E 자동 진행 시 화면에 뜨는 4모달)\n' +
+      '// (대화 에디터 editor.html 로 갱신됨)\n' +
+      '//\n' +
+      '//   key     : 단계 번호 (2, 3, 4) — 1은 초기 상태라 카드 없음\n' +
+      '//   title   : 카드 헤더\n' +
+      '//   sub     : 부제·설명 (여러 줄 — \\n)\n' +
+      '//   hint    : 화면 하단 진행 힌트\n' +
+      '//   reflect : 학생이 잠시 생각해 보는 질문\n\n';
+    content = header + 'const STAGE_TRANSITIONS = ' + serialize(STAGE_TRANSITIONS) + ';\n';
   }
 
   const blob = new Blob([content], { type: 'text/javascript;charset=utf-8' });
@@ -386,9 +463,13 @@ function resetOne() {
     // 키 재할당 (속성 복사)
     Object.keys(STORIES[cid]).forEach(k => delete STORIES[cid][k]);
     Object.assign(STORIES[cid], JSON.parse(JSON.stringify(ORIG_STORIES[cid])));
-  } else {
+  } else if (kind === 'quiz') {
     CITIZENS_BY_CASE[cid].length = 0;
     JSON.parse(JSON.stringify(ORIG_CITIZENS[cid])).forEach(c => CITIZENS_BY_CASE[cid].push(c));
+  } else if (kind === 'stages') {
+    // 모든 단계 키를 ORIG에서 복원
+    Object.keys(STAGE_TRANSITIONS).forEach(k => delete STAGE_TRANSITIONS[k]);
+    Object.assign(STAGE_TRANSITIONS, JSON.parse(JSON.stringify(ORIG_STAGES)));
   }
   show(currentSection);
   markStatus();

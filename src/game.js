@@ -4527,27 +4527,8 @@ class WorldScene extends Phaser.Scene {
   }
 
   showStageTransition(stage) {
-    const data = {
-      2: {
-        title: '2단계 · 관찰 (E·A)',
-        sub: 'Exploring + Analyzing — 현장 조사로 단서를 모으고,\n시민을 인터뷰해 사실을 분석하세요.',
-        hint: '단서 3개 이상 + 핵심 단서 3개를 모두 모으세요',
-        reflect: '💭  잠시 생각해 봐요 — 라일라의 이야기에서\n   가장 마음에 남은 한 마디는 무엇인가요?'
-      },
-      3: {
-        title: '3단계 · 성찰 (C)',
-        sub: 'Connecting — 흩어진 사실들을 하나의 그림으로 잇습니다.',
-        hint: '🪞 성찰의 의자에 앉아 인과 사슬과 자기성찰을 마치세요',
-        reflect: '💭  잠시 생각해 봐요 — 내가 모은 단서 중\n   "왜 이렇게 됐을까?"를 가장 잘 설명하는 것은?'
-      },
-      4: {
-        title: '4단계 · 실천 (E)',
-        sub: 'Enacting — 배운 것을 행동으로 옮기는 마지막 단계.',
-        hint: '파란 우편함으로 가서 UN 조사 보고서를 송부하세요',
-        reflect: '💭  잠시 생각해 봐요 — 멀리 한국에 사는 내가\n   이 사람들을 위해 할 수 있는 일은 무엇일까요?'
-      },
-    };
-    const d = data[stage];
+    // 데이터는 src/stages.js의 STAGE_TRANSITIONS 객체에서 (editor.html로 편집)
+    const d = (typeof STAGE_TRANSITIONS !== 'undefined') ? STAGE_TRANSITIONS[stage] : null;
     if (!d) return;
     if (window.SFX) window.SFX.play('stage');   // 단계 전환 팡파레
 
