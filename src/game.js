@@ -6096,26 +6096,24 @@ class LetterScene extends Phaser.Scene {
           : { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
     });
 
-    // 2) 알게 된 사실 (수집한 단서 중 최대 3개) — 2단 컬럼
-    this.sectionLabel(40, 176, '2. 내가 알게 된 사실 (최대 3개 선택)');
+    // ── 단서·다짐 좌우 분할 (사건마다 단서 수 달라도 빈 공간 없음) ──
+    // 2) 알게 된 사실 — 좌측 칼럼 (40~460)
+    const FACT_X = 40, FACT_LIST_X = 70, FACT_W = 380, FACT_Y0 = 206, ROW_H = 26;
+    this.sectionLabel(FACT_X, 176, '2. 내가 알게 된 사실 (최대 3개 선택)');
     if (this.collected.length === 0) {
-      this.add.text(50, 206, '  먼저 조사를 통해 단서를 모아 주세요.', {
-        fontFamily: FONT, fontSize: '16px', color: '#7a3a3a'
+      this.add.text(FACT_LIST_X, FACT_Y0, '먼저 조사를 통해 단서를 모아 주세요.', {
+        fontFamily: FONT, fontSize: '13px', color: '#7a3a3a'
       }).setDepth(3);
     } else {
-      const perCol = Math.ceil(this.collected.length / 2);
       this.collected.forEach((ev, i) => {
-        const col = Math.floor(i / perCol);
-        const row = i % perCol;
-        const x = 80 + col * 420;
-        const y = 206 + row * 30;
+        const y = FACT_Y0 + i * ROW_H;
         // UNESCO 영역 색상 스트라이프 (체크박스 왼쪽)
         const ai = getArea(ev);
         if (ai) {
           const g = this.add.graphics().setDepth(3);
-          g.fillStyle(ai.color, 1); g.fillRect(x - 8, y, 4, 18);
+          g.fillStyle(ai.color, 1); g.fillRect(FACT_LIST_X - 12, y, 4, 18);
         }
-        this.checkRow(x, y, 340, ev.name,
+        this.checkRow(FACT_LIST_X, y, FACT_W, ev.name,
           this.factPicks.has(ev.id), () => {
             if (this.factPicks.has(ev.id)) this.factPicks.delete(ev.id);
             else if (this.factPicks.size < 3) this.factPicks.add(ev.id);
@@ -6124,11 +6122,17 @@ class LetterScene extends Phaser.Scene {
       });
     }
 
-    // 3) 나의 다짐 (최대 3개)
-    this.sectionLabel(40, 392, '3. 나의 다짐 (최대 3개 선택)');
+    // 좌우 사이 세로 구분선
+    const divider = this.add.graphics().setDepth(2);
+    divider.lineStyle(1, 0xc9a36b, 0.4);
+    divider.lineBetween(470, 180, 470, 540);
+
+    // 3) 나의 다짐 — 우측 칼럼 (480~920)
+    const PL_X = 480, PL_LIST_X = 510, PL_W = 410, PL_Y0 = 206;
+    this.sectionLabel(PL_X, 176, '3. 나의 다짐 (최대 3개 선택)');
     this.PLEDGES.forEach((p, i) => {
-      const y = 418 + i * 22;
-      this.checkRow(80, y, 820, p, this.pledgePicks.has(i), () => {
+      const y = PL_Y0 + i * ROW_H;
+      this.checkRow(PL_LIST_X, y, PL_W, p, this.pledgePicks.has(i), () => {
         if (this.pledgePicks.has(i)) this.pledgePicks.delete(i);
         else if (this.pledgePicks.size < 3) this.pledgePicks.add(i);
         this.buildCompose();
