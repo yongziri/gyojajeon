@@ -4174,6 +4174,59 @@ class WorldScene extends Phaser.Scene {
       this.checkStageAdvance();
       reportProgress(this);   // 교사 대시보드로 현재 진행도 발행
     });
+
+    // ── 🛠 DEBUG 모드 (?debug=1) — NPC/물체 좌표 시각화 ──────────
+    // 사용법: URL ?debug=1 추가 → 모든 NPC(안내인 도트+일러스트, 시민 도트+
+    //        일러스트), 포털, 우편함 위치를 노란 박스 + 좌표 라벨로 표시.
+    //        클릭 시 콘솔/하단에 좌표 출력. setVisible(false)된 도트도 박스로
+    //        시각화 → 숨김 작동 여부 검증 가능.
+    if (/[?&]debug=1\b/.test(location.search || '')) {
+      const dbg = this.add.graphics().setDepth(5000);
+
+      const labelObj = (obj, name, color = 0xffe082) => {
+        if (!obj || !obj.scene) return;
+        const x = obj.x, y = obj.y;
+        const w = obj.displayWidth  || 24;
+        const h = obj.displayHeight || 24;
+        // origin (0.5, 1) sprite는 발 좌표 → 위로 박스
+        const oy = (obj.originY !== undefined) ? obj.originY : 0.5;
+        const top = y - h * oy;
+        const visTag = (obj.visible === false) ? ' [hidden]' : '';
+        dbg.lineStyle(2, color, 1);
+        dbg.strokeRect(x - w / 2, top, w, h);
+        dbg.fillStyle(color, 1);
+        dbg.fillCircle(x, y, 3);
+        this.add.text(x, top - 4,
+          name + ' (' + Math.round(x) + ',' + Math.round(y) + ')' + visTag, {
+          fontFamily: FONT, fontSize: '10px', color: '#ffe082',
+          backgroundColor: '#000000cc', padding: { x: 3, y: 1 }
+        }).setOrigin(0.5, 1).setDepth(5001);
+      };
+
+      labelObj(this.enemy,     '안내인·도트', 0xff8080);
+      labelObj(this.enemyArt,  '안내인·일러스트', 0xffe082);
+      labelObj(this.portal,    '포털',  0x80ff80);
+      labelObj(this.mailbox,   '우편함', 0x80ff80);
+      if (this.citizenObjs) {
+        this.citizenObjs.forEach((co, i) => {
+          labelObj(co.npc,        '시민' + (i + 1) + '·도트',     0xff8080);
+          if (co.art) labelObj(co.art, '시민' + (i + 1) + '·일러스트', 0xffe082);
+        });
+      }
+
+      // 화면 좌측 하단 — 마지막 클릭 좌표
+      const dbgInfo = this.add.text(8, 596,
+        '🛠 DEBUG — 화면 클릭 시 좌표 출력', {
+        fontFamily: FONT, fontSize: '11px', color: '#ffe082',
+        backgroundColor: '#000000cc', padding: { x: 6, y: 3 }
+      }).setOrigin(0, 1).setDepth(5002);
+
+      this.input.on('pointerdown', (p) => {
+        const x = Math.round(p.worldX), y = Math.round(p.worldY);
+        console.log('[DEBUG][world] x:', x, '  y:', y);
+        dbgInfo.setText('🛠 DEBUG · last click: x=' + x + ', y=' + y);
+      });
+    }
   }
 
   update() {
