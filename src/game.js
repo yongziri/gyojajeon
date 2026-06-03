@@ -4198,6 +4198,17 @@ class WorldScene extends Phaser.Scene {
       }).setDepth(2000);
     }
 
+    // 좌상단 사건명 아래 — 사건 선택으로 돌아가기 (진행도 유지)
+    fancyButton(this, 75, 75, 130, 26, '🏠 사건 선택',
+      () => {
+        if (this.leaving) return;
+        this.leaving = true;
+        this.cameras.main.fadeOut(280, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete',
+          () => this.scene.start('CaseSelectScene'));
+      },
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+
     // 우상단 — 핵심 단서 카운터 (관찰 단계부터 의미)
     this.coreHud = this.add.text(950, 8, '', {
       fontFamily: FONT, fontSize: '13px', color: '#ffe082',
