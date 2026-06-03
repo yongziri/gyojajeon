@@ -2828,6 +2828,12 @@ class LearningTreeScene extends Phaser.Scene {
         this.add.text(cardW - 22, y + 25, '★  완료', {
           fontFamily: FONT, fontSize: '11px', color: '#ffd96a'
         }).setOrigin(0.5);
+        // ★ 완료 배지 좌측 — 안내인 대화 다시 보기 버튼
+        const replayBtn = fancyButton(this, cardW - 200, y + 25, 130, 24,
+          '💬 대화 다시 보기',
+          () => this.showDialogueReplay(c.id, c.title),
+          { base: 0x2b3a52, hover: 0x3c5170, edge: 0xc9a36b, text: '#ffe9b8' });
+        if (replayBtn.t) replayBtn.t.setFontSize(11);
       } else if (c.status === 'available') {
         this.add.text(cardW - 24, y + 25, '─ 미완료', {
           fontFamily: FONT, fontSize: '11px', color: '#7a8a98'
@@ -3023,6 +3029,90 @@ class LearningTreeScene extends Phaser.Scene {
           () => this.scene.start('CaseSelectScene'));
       },
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+  }
+
+  // 안내인 대화 다시 보기 — STORIES[cid] 노드를 start부터 순서대로 따라가며
+  // 모달에 표시. 선택지가 있는 노드는 모든 선택지를 함께 보여주되 흐름은
+  // 첫 번째 선택지를 따라가 outro/end까지.
+  showDialogueReplay(cid, caseTitle) {
+    if (this.replayOpen) return;
+    this.replayOpen = true;
+    const story = (typeof STORIES !== 'undefined') ? STORIES[cid] : null;
+    if (!story || !story.start) {
+      this.replayOpen = false;
+      return;
+    }
+
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.7)
+      .setDepth(4500).setInteractive().setAlpha(0);
+    this.tweens.add({ targets: dim, alpha: 0.7, duration: 180 });
+
+    const cx = 480, cy = 300, cw = 720, ch = 520;
+    const card = this.add.graphics().setDepth(4501);
+    card.fillStyle(0x000000, 0.6); card.fillRect(cx - cw / 2 + 8, cy - ch / 2 + 8, cw, ch);
+    card.fillStyle(0x10202e, 1); card.fillRect(cx - cw / 2, cy - ch / 2, cw, ch);
+    card.fillStyle(0xe8b86a, 1); card.fillRect(cx - cw / 2, cy - ch / 2, cw, 4);
+    card.fillStyle(0x000000, 1);
+    card.fillRect(cx - cw / 2, cy - ch / 2, cw, 3);
+    card.fillRect(cx - cw / 2, cy + ch / 2 - 3, cw, 3);
+    card.fillRect(cx - cw / 2, cy - ch / 2, 3, ch);
+    card.fillRect(cx + cw / 2 - 3, cy - ch / 2, 3, ch);
+
+    // 헤더
+    const head = this.add.text(cx, cy - ch / 2 + 22,
+      '💬  ' + caseTitle + ' — 안내인 대화 다시 보기', {
+      fontFamily: FONT_TITLE, fontSize: '16px', color: '#ffe082',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(4502);
+
+    // 대화 흐름 따라가기 — start → next → ... → end/befriend
+    const lines = [];
+    let nodeKey = 'start';
+    const visited = new Set();
+    while (nodeKey && !visited.has(nodeKey)) {
+      visited.add(nodeKey);
+      const node = story[nodeKey];
+      if (!node) break;
+      // 화자 + 대사
+      if (node.text) {
+        const speaker = node.speaker || '(나레이션)';
+        const prefix  = node.speaker ? speaker + ': ' : '';
+        lines.push(prefix + node.text);
+      }
+      // 선택지 (있다면 모두 표시 — 학생이 어떤 답변을 들었는지 다시 볼 수 있게)
+      if (node.choices && node.choices.length > 0) {
+        node.choices.forEach((ch, i) => {
+          lines.push('  └ [선택지 ' + (i + 1) + '] ' + ch.label);
+        });
+        nodeKey = node.choices[0].next;   // 첫 분기 따라감
+      } else {
+        nodeKey = node.next;
+      }
+      if (node.end || node.befriend) break;
+    }
+
+    const body = this.add.text(cx - cw / 2 + 22, cy - ch / 2 + 54,
+      lines.join('\n\n'), {
+      fontFamily: FONT, fontSize: '12px', color: '#dfefff',
+      wordWrap: { width: cw - 44 }, lineSpacing: 4
+    }).setDepth(4502);
+
+    // 닫기 버튼
+    const closeBtn = fancyButton(this, cx, cy + ch / 2 - 30, 140, 32, '← 닫기',
+      () => closeReplay(),
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    if (closeBtn.g)    closeBtn.g.setDepth(4503);
+    if (closeBtn.t)    closeBtn.t.setDepth(4504);
+    if (closeBtn.zone) closeBtn.zone.setDepth(4505);
+
+    const closeReplay = () => {
+      dim.destroy(); card.destroy(); head.destroy(); body.destroy();
+      if (closeBtn.g)    closeBtn.g.destroy();
+      if (closeBtn.t)    closeBtn.t.destroy();
+      if (closeBtn.zone) closeBtn.zone.destroy();
+      this.replayOpen = false;
+    };
+    dim.on('pointerdown', closeReplay);
   }
 }
 
