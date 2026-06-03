@@ -1528,6 +1528,9 @@ class TitleScene extends Phaser.Scene {
       () => this.scene.start('CreditsScene'),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
 
+    // 사운드 토글 — 우상단 (학교 환경에서 음소거 필요할 수 있음)
+    addMuteToggle(this, 936, 24);
+
     // Space/Enter 만 허용 — Shift/Caps 등 사고 방지
     this.input.keyboard.once('keydown-SPACE', newGame);
     this.input.keyboard.once('keydown-ENTER', newGame);
@@ -3505,6 +3508,44 @@ function panel(scene, cx, cy, w, h, fill, border) {
   return g;
 }
 
+// ── 공통: 사운드 토글 (음소거 버튼) ─────────────────────────────
+// 우상단·타이틀 등 어디서나 호출 가능. window.SFX.toggleMute() 연동
+// + localStorage 자동 저장 (audio.js 내부). 라벨: 🔊 (음 켜짐) / 🔇 (음소거)
+function addMuteToggle(scene, x, y, r) {
+  r = r || 14;
+  const bg = scene.add.graphics().setDepth(2000);
+  const label = scene.add.text(x, y, '', {
+    fontFamily: 'sans-serif', fontSize: '17px'
+  }).setOrigin(0.5).setDepth(2001);
+
+  const redraw = () => {
+    const m = (window.SFX && window.SFX.isMuted()) ? true : false;
+    bg.clear();
+    bg.fillStyle(0x000000, 0.55);
+    bg.fillCircle(x, y, r);
+    bg.lineStyle(1.5, m ? 0x886666 : 0xe8b86a, 1);
+    bg.strokeCircle(x, y, r);
+    label.setText(m ? '🔇' : '🔊');
+    label.setAlpha(m ? 0.7 : 1);
+  };
+  redraw();
+
+  const zone = scene.add.circle(x, y, r, 0, 0)
+    .setInteractive({ useHandCursor: true }).setDepth(2002);
+  zone.on('pointerover', () => label.setScale(1.12));
+  zone.on('pointerout',  () => label.setScale(1.0));
+  zone.on('pointerdown', () => {
+    if (!window.SFX) return;
+    const nowMuted = window.SFX.toggleMute();
+    redraw();
+    if (!nowMuted) window.SFX.play('click');
+    if (typeof scene.flashToast === 'function') {
+      scene.flashToast(nowMuted ? '🔇  음소거 ON' : '🔊  사운드 ON');
+    }
+  });
+  return { bg, label, zone, redraw };
+}
+
 // 공통: 픽셀 버튼 — 각진 모서리, 블록 그림자, 도트풍 베벨
 function fancyButton(scene, x, y, w, h, label, cb, theme) {
   theme = theme || { base: 0x2b3a52, hover: 0x3c5170, edge: 0xe8b86a, text: '#ffe9b8' };
@@ -4163,6 +4204,9 @@ class WorldScene extends Phaser.Scene {
       backgroundColor: '#00000088', padding: { x: 6, y: 3 }
     }).setOrigin(1, 0).setDepth(2000);
     this.refreshCoreHud();
+
+    // ── 사운드 토글 (음소거) — 핵심 단서 카운터 바로 아래 우상단 ──
+    addMuteToggle(this, 936, 46);
 
     // 상단 중앙 — 인식·관찰·실천 단계 칩
     this.buildStageHud();
