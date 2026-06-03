@@ -67,6 +67,7 @@
     <button onclick="download('dialogue')">📥 dialogue.js</button>
     <button onclick="download('quizzes')">📥 quizzes.js</button>
     <button onclick="download('stages')">📥 stages.js</button>
+    <button onclick="download('strings')">📥 strings.js</button>
     <button class="warn" onclick="resetOne()">↩ 현재 항목 초기화</button>
     <span class="info" id="status">로드 중...</span>
   </div>
@@ -77,6 +78,7 @@
 <script src="src/dialogue.js"></script>
 <script src="src/quizzes.js"></script>
 <script src="src/stages.js"></script>
+<script src="src/strings.js"></script>
 
 <script>
 'use strict';
@@ -85,6 +87,7 @@
 const ORIG_STORIES   = JSON.parse(JSON.stringify(STORIES));
 const ORIG_CITIZENS  = JSON.parse(JSON.stringify(CITIZENS_BY_CASE));
 const ORIG_STAGES_BY_CASE = JSON.parse(JSON.stringify(STAGE_TRANSITIONS_BY_CASE));
+const ORIG_STRINGS        = JSON.parse(JSON.stringify(STRINGS));
 
 // ── 사건 목록 + 라벨 ────────────────────────────────────────────
 const CASES = ['intro', 'aralsea', 'ukraine', 'palestine'];
@@ -144,6 +147,21 @@ function buildMenu() {
     item.onclick = () => show('stages:' + cid);
     menu.appendChild(item);
   });
+
+  // 토스트/안내문 (strings.js)
+  sec = document.createElement('div');
+  sec.className = 'menu-section';
+  sec.textContent = '🔔 토스트/안내문 (strings.js)';
+  menu.appendChild(sec);
+  Object.keys(STRINGS).forEach(group => {
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    const COUNT = Object.keys(STRINGS[group]).length;
+    item.textContent = '— ' + group + ' (' + COUNT + ')';
+    item.dataset.section = 'strings:' + group;
+    item.onclick = () => show('strings:' + group);
+    menu.appendChild(item);
+  });
 }
 
 // ── 활성 섹션 표시 ──────────────────────────────────────────────
@@ -160,6 +178,36 @@ function show(section) {
   if      (kind === 'dialogue') renderDialogue(cid, main);
   else if (kind === 'quiz')     renderQuiz(cid, main);
   else if (kind === 'stages')   renderStages(cid, main);
+  else if (kind === 'strings')  renderStrings(cid, main);
+}
+
+// ── 토스트/안내문 렌더링 (strings.js) ───────────────────────────
+function renderStrings(group, parent) {
+  const h = document.createElement('h2');
+  h.textContent = '🔔 strings.' + group;
+  parent.appendChild(h);
+
+  const note = document.createElement('p');
+  note.style.color = '#a8c4dc';
+  note.style.fontSize = '12px';
+  note.innerHTML = '게임 화면 안내문/토스트. <code>{guide}</code> ' +
+                   '<code>{place}</code> <code>{ev}</code> 같은 placeholder가 ' +
+                   '실행 시 실제 이름·숫자로 치환됩니다. <b>{}는 지우지 마세요.</b>';
+  parent.appendChild(note);
+
+  const block = STRINGS[group];
+  Object.keys(block).forEach(key => {
+    const card = document.createElement('div');
+    card.className = 'node-card';
+    card.innerHTML = '<div><span class="node-key">' + group + '.' + key + '</span></div>';
+    const lbl = document.createElement('label');
+    lbl.textContent = 'text';
+    const ta = document.createElement('textarea');
+    ta.value = block[key];
+    ta.oninput = () => { block[key] = ta.value; ta.classList.add('dirty'); markStatus(); };
+    card.appendChild(lbl); card.appendChild(ta);
+    parent.appendChild(card);
+  });
 }
 
 // ── 단계 전환 카드 렌더링 (stages.js) — 사건별 ───────────────────
@@ -436,6 +484,23 @@ function download(which) {
       '  TOTAL_CITIZENS = CITIZENS.length;\n' +
       '}\n';
     content = header + body + footer;
+  } else if (which === 'strings') {
+    fname = 'strings.js';
+    const header =
+      '// 게임 화면 안내문/토스트 — 자주 보이는 텍스트 점진적 외부화\n' +
+      '// (대화 에디터 editor.html 로 갱신됨)\n' +
+      '//\n' +
+      '// placeholder: {guide} {place} {ev} {co} {need} 등\n' +
+      '//   fmtString(STRINGS.foo, { guide:\'한센\', ev:2 }) 로 치환\n\n';
+    const body = 'const STRINGS = ' + serialize(STRINGS) + ';\n\n';
+    const footer =
+      '// ── 헬퍼 — {key} placeholder 치환 ──\n' +
+      'function fmtString(tmpl, vars) {\n' +
+      '  if (!tmpl) return \'\';\n' +
+      '  if (!vars) return tmpl;\n' +
+      '  return tmpl.replace(/\\{(\\w+)\\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));\n' +
+      '}\n';
+    content = header + body + footer;
   } else {
     // stages.js — 사건별 BY_CASE 구조
     fname = 'stages.js';
@@ -482,6 +547,11 @@ function resetOne() {
     const target = STAGE_TRANSITIONS_BY_CASE[cid];
     Object.keys(target).forEach(k => delete target[k]);
     Object.assign(target, JSON.parse(JSON.stringify(ORIG_STAGES_BY_CASE[cid])));
+  } else if (kind === 'strings') {
+    // strings 그룹 단위 복원
+    const target = STRINGS[cid];
+    Object.keys(target).forEach(k => delete target[k]);
+    Object.assign(target, JSON.parse(JSON.stringify(ORIG_STRINGS[cid])));
   }
   show(currentSection);
   markStatus();

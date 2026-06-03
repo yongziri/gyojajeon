@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v130';
+const CACHE = 'vanished-sea-v131';
 const PRECACHE = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const PRECACHE = [
   './src/cases.js',
   './src/quizzes.js',
   './src/stages.js',
+  './src/strings.js',
   './src/game.js',
   './manifest.webmanifest',
   './assets/icons/icon-192.png',

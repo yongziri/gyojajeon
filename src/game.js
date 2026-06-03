@@ -4091,13 +4091,21 @@ class WorldScene extends Phaser.Scene {
         const sv = this.registry.get('quizSolved') || {};
         if (sv[cz.id]) return;
         // 게이팅 검사는 즉시 (잠금 토스트는 그대로 자동)
+        // 텍스트는 src/strings.js의 STRINGS.lockToast (editor.html로 편집)
+        const LS = (typeof STRINGS !== 'undefined') ? STRINGS.lockToast : null;
         if (!this.registry.get('enemyDefeated')) {
-          this.showLockToast('먼저 ' + getGuideName(this.registry) + '와 만나 상황을 파악하세요\n(1단계 · 인식)');
+          const g = getGuideName(this.registry);
+          this.showLockToast(LS
+            ? fmtString(LS.needGuideFirst, { guide: g })
+            : '먼저 ' + g + '와 만나 상황을 파악하세요\n(1단계 · 인식)');
           return;
         }
         const ev = (this.registry.get('evidence') || []).length;
         if (ev < 3) {
-          this.showLockToast('먼저 ' + getFirstLocationName(this.registry) + '을(를) 조사해 단서를 모으세요\n(2단계 · 관찰 / 단서 ' + ev + '/3)');
+          const p = getFirstLocationName(this.registry);
+          this.showLockToast(LS
+            ? fmtString(LS.needCluesFirst, { place: p, ev })
+            : '먼저 ' + p + '을(를) 조사해 단서를 모으세요\n(2단계 · 관찰 / 단서 ' + ev + '/3)');
           return;
         }
         // 게이팅 통과 시에만 버튼 표시
@@ -4485,19 +4493,28 @@ class WorldScene extends Phaser.Scene {
     const need = (typeof TOTAL_CITIZENS !== 'undefined') ? TOTAL_CITIZENS : 3;
 
     // PEACE — 단계 안의 두 활동(E·A)을 evidence/coreClues 진행도로 분기
+    // 텍스트는 src/strings.js의 STRINGS.objective (editor.html로 편집)
+    const S = (typeof STRINGS !== 'undefined') ? STRINGS.objective : null;
+    const guide = getGuideName(this.registry);
+    const place = getFirstLocationName(this.registry);
     let text;
     if (stage === 1) {
-      text = '🎯 인식 (P) — 안내인 ' + getGuideName(this.registry) + '에게 다가가 상황을 파악하세요';
+      text = S ? fmtString(S.perceive, { guide })
+               : '🎯 인식 (P) — 안내인 ' + guide + '에게 다가가 상황을 파악하세요';
     } else if (stage === 2) {
       if (ev < 3) {
-        text = '🎯 관찰 (E·탐색) — 노란 표지판으로 ' + getFirstLocationName(this.registry) + '을(를) 조사해 단서 ' + ev + '/3 이상 모으세요';
+        text = S ? fmtString(S.exploreFirst, { place, ev })
+                 : '🎯 관찰 (E·탐색) — 노란 표지판으로 ' + place + '을(를) 조사해 단서 ' + ev + '/3 이상 모으세요';
       } else {
-        text = '🎯 관찰 (A·분석) — 시민(!)을 인터뷰해 핵심 단서 ' + co + '/' + need + '개를 얻으세요';
+        text = S ? fmtString(S.analyzeCitizens, { co, need })
+                 : '🎯 관찰 (A·분석) — 시민(!)을 인터뷰해 핵심 단서 ' + co + '/' + need + '개를 얻으세요';
       }
     } else if (stage === 3) {
-      text = '🎯 성찰 (C) — 🪞 성찰의 의자에 앉아 인과 사슬과 자기성찰을 마치세요';
+      text = S ? S.reflect
+               : '🎯 성찰 (C) — 🪞 성찰의 의자에 앉아 인과 사슬과 자기성찰을 마치세요';
     } else {
-      text = '🎯 실천 (E) — 파란 우편함으로 가서 UN 조사 보고서를 송부하세요';
+      text = S ? S.enact
+               : '🎯 실천 (E) — 파란 우편함으로 가서 UN 조사 보고서를 송부하세요';
     }
     this.objective.setText(text);
   }
