@@ -4487,7 +4487,11 @@ class WorldScene extends Phaser.Scene {
         fontFamily: FONT_TITLE, fontSize: '13px', color: '#9aa6ad',
         fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(2001);
-      this.stageChips.push({ g, t, x, y: 8, w: chipW, h: chipH, idx: i + 1 });
+      // 클릭 시 단계 설명 모달
+      const zone = this.add.rectangle(x + chipW / 2, 8 + chipH / 2, chipW, chipH, 0, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(2002);
+      zone.on('pointerdown', () => this.showStageInfoModal(i + 1));
+      this.stageChips.push({ g, t, zone, x, y: 8, w: chipW, h: chipH, idx: i + 1 });
     });
     // ── 반짝 효과 — 활성 칩 둘레 글로우 (별 표시 제거됨) ──
     this.stageGlow = this.add.graphics().setDepth(1999);
@@ -4596,6 +4600,106 @@ class WorldScene extends Phaser.Scene {
     this.refreshStageHud();
     this.refreshObjective();
     this.refreshChairMarker();   // ! 마커 등장/숨김 동기화
+  }
+
+  // 단계 칩 클릭 시 — 학생이 단계 의미를 잊었을 때 즉시 확인
+  showStageInfoModal(stage) {
+    if (this.stageInfoOpen) return;
+    this.stageInfoOpen = true;
+    // 학습 자료용 PEACE 단계 설명 (영문 약어 + 한글 + 활동)
+    const PEACE_INFO = {
+      1: { letter: 'P', en: 'Perceive',  ko: '인식',
+           desc: '사건을 만나고 안내인의 이야기를 듣습니다.',
+           act:  '안내인(!)에게 다가가 대화를 시작하세요.' },
+      2: { letter: 'E·A', en: 'Explore + Analyze', ko: '관찰',
+           desc: '현장의 단서를 모으고 시민을 인터뷰해 사실을 분석합니다.',
+           act:  '🔍 노란 표지판으로 현장 조사 + 시민(!) 인터뷰' },
+      3: { letter: 'C', en: 'Connect',   ko: '성찰',
+           desc: '흩어진 사실들을 인과 사슬로 잇고 자기성찰을 합니다.',
+           act:  '🪞 성찰의 의자에 앉아 [원인 → 과정 → 결과]를 만드세요.' },
+      4: { letter: 'E', en: 'Enact',     ko: '실천',
+           desc: '배운 것을 행동으로 옮기는 마지막 단계입니다.',
+           act:  '📮 파란 우편함에 UN 조사 보고서를 송부하세요.' },
+    };
+    const info = PEACE_INFO[stage];
+    if (!info) { this.stageInfoOpen = false; return; }
+    const layer = [];
+
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.55)
+      .setDepth(3500).setInteractive().setAlpha(0);
+    layer.push(dim);
+    this.tweens.add({ targets: dim, alpha: 0.55, duration: 180 });
+
+    const cx = 480, cy = 280, cw = 520, ch = 280;
+    const g = this.add.graphics().setDepth(3501);
+    g.fillStyle(0x000000, 0.6); g.fillRect(cx - cw / 2 + 6, cy - ch / 2 + 6, cw, ch);
+    g.fillStyle(0x10202e, 1); g.fillRect(cx - cw / 2, cy - ch / 2, cw, ch);
+    g.fillStyle(0xe8b86a, 1);
+    g.fillRect(cx - cw / 2, cy - ch / 2, cw, 4);
+    g.fillStyle(0x000000, 1);
+    g.fillRect(cx - cw / 2, cy - ch / 2, cw, 2);
+    g.fillRect(cx - cw / 2, cy + ch / 2 - 2, cw, 2);
+    g.fillRect(cx - cw / 2, cy - ch / 2, 2, ch);
+    g.fillRect(cx + cw / 2 - 2, cy - ch / 2, 2, ch);
+    layer.push(g);
+
+    // 상단 — 단계 큰 라벨
+    const head = this.add.text(cx, cy - 96,
+      stage + '단계  ·  ' + info.ko + ' (' + info.letter + ')', {
+      fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffe082',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(3502);
+    layer.push(head);
+
+    // 영문 부제
+    const sub = this.add.text(cx, cy - 65,
+      info.en, {
+      fontFamily: FONT, fontSize: '13px', color: '#a8c4dc',
+      fontStyle: 'italic'
+    }).setOrigin(0.5).setDepth(3502);
+    layer.push(sub);
+
+    // 설명
+    const desc = this.add.text(cx, cy - 25, info.desc, {
+      fontFamily: FONT, fontSize: '13px', color: '#dfefff',
+      wordWrap: { width: cw - 40 }, align: 'center', lineSpacing: 4
+    }).setOrigin(0.5).setDepth(3502);
+    layer.push(desc);
+
+    // 활동 안내 (강조)
+    const actBg = this.add.graphics().setDepth(3502);
+    actBg.fillStyle(0x1a3a2a, 1); actBg.fillRect(cx - cw / 2 + 20, cy + 12, cw - 40, 40);
+    actBg.lineStyle(1, 0x7fd07f, 1); actBg.strokeRect(cx - cw / 2 + 20, cy + 12, cw - 40, 40);
+    layer.push(actBg);
+    const act = this.add.text(cx, cy + 32, info.act, {
+      fontFamily: FONT, fontSize: '13px', color: '#dffce0',
+      wordWrap: { width: cw - 60 }, align: 'center'
+    }).setOrigin(0.5).setDepth(3503);
+    layer.push(act);
+
+    // 닫기 버튼
+    const closeBtn = fancyButton(this, cx, cy + 96, 140, 32, '← 닫기',
+      () => {
+        layer.forEach(o => { if (o && o.destroy) o.destroy(); });
+        // 버튼도 정리
+        if (closeBtn.g) closeBtn.g.destroy();
+        if (closeBtn.t) closeBtn.t.destroy();
+        if (closeBtn.zone) closeBtn.zone.destroy();
+        this.stageInfoOpen = false;
+      },
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    if (closeBtn.g)    closeBtn.g.setDepth(3503);
+    if (closeBtn.t)    closeBtn.t.setDepth(3504);
+    if (closeBtn.zone) closeBtn.zone.setDepth(3505);
+
+    // dim 클릭으로도 닫힘
+    dim.on('pointerdown', () => {
+      layer.forEach(o => { if (o && o.destroy) o.destroy(); });
+      if (closeBtn.g) closeBtn.g.destroy();
+      if (closeBtn.t) closeBtn.t.destroy();
+      if (closeBtn.zone) closeBtn.zone.destroy();
+      this.stageInfoOpen = false;
+    });
   }
 
   showStageTransition(stage) {
