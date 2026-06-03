@@ -4144,6 +4144,188 @@ class WorldScene extends Phaser.Scene {
         dbgInfo.setText('🛠 DEBUG · last click: x=' + x + ', y=' + y);
       });
     }
+
+    // ── 🛠 DEV 모드 (?dev=1) — 단계 건너뛰기 패널 ─────────────
+    // 사용법: URL ?dev=1 추가 → 우상단 🛠 버튼 → 액션 패널.
+    // 출품 빌드에선 ?dev=1 없으면 자동 숨김. 학생에게 노출 안 됨.
+    if (/[?&]dev=1\b/.test(location.search || '')) {
+      this.addDevPanel();
+    }
+  }
+
+  // ── 개발자 패널 — 단계 건너뛰기 (출품 시 ?dev=1 쿼리로만 진입) ──
+  addDevPanel() {
+    // 사운드 토글(936, 46) 바로 아래 정렬
+    const btnX = 936, btnY = 80, btnR = 14;
+    const bg = this.add.graphics().setDepth(2000);
+    bg.fillStyle(0x4a1a1a, 0.85);
+    bg.fillCircle(btnX, btnY, btnR);
+    bg.lineStyle(2, 0xff6a6a, 1);
+    bg.strokeCircle(btnX, btnY, btnR);
+    const label = this.add.text(btnX, btnY, '🛠', {
+      fontFamily: 'sans-serif', fontSize: '15px'
+    }).setOrigin(0.5).setDepth(2001);
+    const zone = this.add.circle(btnX, btnY, btnR, 0, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(2002);
+    zone.on('pointerover', () => label.setScale(1.15));
+    zone.on('pointerout',  () => label.setScale(1.0));
+    zone.on('pointerdown', () => this.openDevMenu());
+  }
+
+  openDevMenu() {
+    if (this.devMenuOpen) return;
+    this.devMenuOpen = true;
+    const layer = [];
+
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.7)
+      .setDepth(5000).setInteractive().setAlpha(0);
+    this.tweens.add({ targets: dim, alpha: 0.7, duration: 180 });
+    layer.push(dim);
+
+    const cx = 480, cy = 300, cw = 560, ch = 470;
+    const card = this.add.graphics().setDepth(5001);
+    card.fillStyle(0x000000, 0.6); card.fillRect(cx - cw / 2 + 8, cy - ch / 2 + 8, cw, ch);
+    card.fillStyle(0x10202e, 1); card.fillRect(cx - cw / 2, cy - ch / 2, cw, ch);
+    card.fillStyle(0xff6a6a, 1); card.fillRect(cx - cw / 2, cy - ch / 2, cw, 4);
+    card.fillStyle(0x000000, 1);
+    card.fillRect(cx - cw / 2, cy - ch / 2, cw, 3);
+    card.fillRect(cx - cw / 2, cy + ch / 2 - 3, cw, 3);
+    card.fillRect(cx - cw / 2, cy - ch / 2, 3, ch);
+    card.fillRect(cx + cw / 2 - 3, cy - ch / 2, 3, ch);
+    layer.push(card);
+
+    const head = this.add.text(cx, cy - ch / 2 + 22,
+      '🛠  개발자 패널  ·  단계 건너뛰기', {
+      fontFamily: FONT_TITLE, fontSize: '17px', color: '#ff8a8a',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(5002);
+    layer.push(head);
+
+    const sub = this.add.text(cx, cy - ch / 2 + 46,
+      '?dev=1 쿼리로만 진입 · 학생에겐 노출 안 됨', {
+      fontFamily: FONT, fontSize: '11px', color: '#a8c4dc'
+    }).setOrigin(0.5).setDepth(5002);
+    layer.push(sub);
+
+    // 액션 버튼 — 6개 (3열×2행)
+    const actions = [
+      { label: '⏭ 1→2 (P 통과)',  desc: '안내인 친구 + 단계 2',          run: () => this.devSkipToStage(2) },
+      { label: '⏭ 1→3 (+ E·A)',  desc: '단서·인터뷰 자동 + 단계 3',    run: () => this.devSkipToStage(3) },
+      { label: '⏭ 1→4 (+ C)',    desc: '성찰 더미 + 단계 4',           run: () => this.devSkipToStage(4) },
+      { label: '🏁 사건 완료',     desc: '보고서 송부 + 완료 처리',      run: () => this.devCompleteCase() },
+      { label: '🌳 학습 트리',     desc: '학습 트리 화면 즉시 진입',     run: () => this.devGoLearningTree() },
+      { label: '🖨 송부 화면',     desc: '인쇄 보고서 화면 즉시 진입',   run: () => this.devGoSent() },
+    ];
+
+    const closeAll = () => {
+      layer.forEach(o => { if (o && o.destroy) o.destroy(); });
+      this.devMenuOpen = false;
+    };
+
+    actions.forEach((a, i) => {
+      const col = i % 2, row = Math.floor(i / 2);
+      const bx = cx - 130 + col * 260;
+      const by = cy - 110 + row * 78;
+
+      const btn = fancyButton(this, bx, by, 240, 50, a.label,
+        () => { closeAll(); a.run(); },
+        { base: 0x4a2a2a, hover: 0x6a3e3e, edge: 0xff8a8a, text: '#ffe9e9' });
+      if (btn.g)    btn.g.setDepth(5003);
+      if (btn.t)    { btn.t.setDepth(5004); btn.t.setFontSize(14); }
+      if (btn.zone) btn.zone.setDepth(5005);
+      layer.push(btn.g, btn.t, btn.zone);
+
+      const descT = this.add.text(bx, by + 30, a.desc, {
+        fontFamily: FONT, fontSize: '10px', color: '#a8c4dc'
+      }).setOrigin(0.5).setDepth(5004);
+      layer.push(descT);
+    });
+
+    // 닫기
+    const closeBtn = fancyButton(this, cx, cy + ch / 2 - 32, 140, 32, '← 닫기',
+      closeAll,
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    if (closeBtn.g)    closeBtn.g.setDepth(5003);
+    if (closeBtn.t)    closeBtn.t.setDepth(5004);
+    if (closeBtn.zone) closeBtn.zone.setDepth(5005);
+    layer.push(closeBtn.g, closeBtn.t, closeBtn.zone);
+
+    dim.on('pointerdown', closeAll);
+  }
+
+  // 단계 N까지 통과 — 데이터 가득 채우고 checkStageAdvance() 호출
+  devSkipToStage(targetStage) {
+    const caseId = this.registry.get('caseId') || 'aralsea';
+
+    if (targetStage >= 2) {
+      // 1단계 통과 — 안내인 친구 (공감 만점)
+      this.registry.set('enemyDefeated', true);
+      this.registry.set('slimeLove', 8);
+    }
+
+    if (targetStage >= 3) {
+      // 2단계 통과 — 모든 현장 단서 + 핵심 단서 (시민 인터뷰 통과)
+      const allEv = [];
+      if (typeof CASE !== 'undefined' && CASE.locations) {
+        Object.values(CASE.locations).forEach(loc => {
+          (loc.spots || []).forEach(s => { if (s.evidence) allEv.push(s.evidence); });
+        });
+      }
+      this.registry.set('evidence', allEv);
+      const allCores = [];
+      const solved = {};
+      if (typeof CITIZENS !== 'undefined') {
+        CITIZENS.forEach(c => {
+          if (c.quiz && c.quiz.reward) allCores.push(c.quiz.reward);
+          solved[c.id] = true;
+        });
+      }
+      this.registry.set('coreClues', allCores);
+      this.registry.set('quizSolved', solved);
+    }
+
+    if (targetStage >= 4) {
+      // 3단계 통과 — 성찰 더미
+      const evs = this.registry.get('evidence') || [];
+      const chainNames = evs.slice(0, 3).map(e => e.name);
+      this.registry.set('reflection', {
+        chainNames,
+        statementText: '[개발자 모드] 자동 생성 자기성찰',
+      });
+      this.registry.set('reflectionDone', true);
+    }
+
+    // HUD·objective 갱신 + 즉시 단계 자동 산정
+    this.checkStageAdvance();
+    this.refreshCoreHud();
+    this.flashToast('🛠 DEV: 단계 ' + targetStage + '로 점프');
+  }
+
+  // 사건 완료 — 모든 단계 + 송부 처리
+  devCompleteCase() {
+    this.devSkipToStage(4);
+    const caseId = this.registry.get('caseId') || 'aralsea';
+    const completed = this.registry.get('completedCases') || [];
+    if (!completed.includes(caseId)) completed.push(caseId);
+    this.registry.set('completedCases', completed);
+    // 자기평가 더미
+    this.registry.set('learningReview', {
+      goalMet: 5, factConf: 5, actionConf: 5,
+      wantNext: null, wantNextLabel: ''
+    });
+    const allReviews = this.registry.get('caseReviews') || {};
+    allReviews[caseId] = this.registry.get('learningReview');
+    this.registry.set('caseReviews', allReviews);
+    this.flashToast('🛠 DEV: 사건 완료 처리됨');
+  }
+
+  devGoLearningTree() {
+    this.scene.start('LearningTreeScene');
+  }
+
+  devGoSent() {
+    this.devSkipToStage(4);
+    this.scene.start('LetterScene');
   }
 
   update() {
