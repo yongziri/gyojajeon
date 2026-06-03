@@ -13,7 +13,9 @@
   if (typeof window === 'undefined') return;
 
   let ctx = null;       // AudioContext (사용자 입력 후 초기화)
-  let muted = false;    // 음소거 상태 (localStorage 동기화)
+  let muted = false;    // 전체 음소거 (마스터) — localStorage 동기화
+  let bgmVol = 0.5;     // 배경음 음량 0~1
+  let sfxVol = 0.85;    // 효과음 음량 0~1
   // localStorage 키 — 옛 'aral_muted'는 사라진바다 시절 이름. 'peace_muted'로 통일.
   // 한 번 마이그레이션: 옛 키 값이 있으면 새 키로 옮기고 옛 키 제거.
   try {
@@ -23,6 +25,10 @@
       localStorage.removeItem('aral_muted');
     }
     muted = localStorage.getItem('peace_muted') === '1';
+    const bv = parseFloat(localStorage.getItem('peace_bgm_vol'));
+    if (!isNaN(bv)) bgmVol = Math.max(0, Math.min(1, bv));
+    const sv = parseFloat(localStorage.getItem('peace_sfx_vol'));
+    if (!isNaN(sv)) sfxVol = Math.max(0, Math.min(1, sv));
   } catch (e) { /* ignored */ }
 
   // 사용자 인터랙션 후에야 AudioContext 생성 가능 (Chrome 정책)
@@ -40,11 +46,11 @@
 
   // 단일 톤 — freq(Hz), dur(s), type(square/triangle/sawtooth/sine), vol(0~1)
   function tone(freq, dur, type, vol, delay) {
-    if (muted) return;
+    if (muted || sfxVol <= 0) return;
     const c = ensureCtx();
     if (!c) return;
     type = type || 'square';
-    vol  = vol  != null ? vol : 0.08;
+    vol  = (vol  != null ? vol : 0.08) * sfxVol;
     delay = delay || 0;
     const t0 = c.currentTime + delay;
     const o = c.createOscillator();
@@ -63,11 +69,11 @@
 
   // 주파수 스윕(피치 변화) 톤 — 단서 입수·송부 같은 동적 효과
   function sweep(freqStart, freqEnd, dur, type, vol, delay) {
-    if (muted) return;
+    if (muted || sfxVol <= 0) return;
     const c = ensureCtx();
     if (!c) return;
     type = type || 'square';
-    vol  = vol  != null ? vol : 0.08;
+    vol  = (vol  != null ? vol : 0.08) * sfxVol;
     delay = delay || 0;
     const t0 = c.currentTime + delay;
     const o = c.createOscillator();
@@ -85,10 +91,10 @@
 
   // 짧은 노이즈 버스트 (오답 같은 거친 효과음)
   function noise(dur, vol) {
-    if (muted) return;
+    if (muted || sfxVol <= 0) return;
     const c = ensureCtx();
     if (!c) return;
-    vol = vol != null ? vol : 0.05;
+    vol = (vol != null ? vol : 0.05) * sfxVol;
     const t0 = c.currentTime;
     const buf = c.createBuffer(1, Math.ceil(c.sampleRate * dur), c.sampleRate);
     const data = buf.getChannelData(0);
@@ -145,6 +151,44 @@
     },
   };
 
+  // ── BGM (배경음악, mp3) ────────────────────────────────────
+  //  HTMLAudioElement 기반 — 메인화면에서 루프 재생. SFX와 음량 분리.
+  let bgmEl = null;
+  let bgmSrc = null;
+  let bgmWant = false;   // 재생 의도 (자동재생 차단 시 제스처 후 재시도)
+
+  function _applyBgmVol() {
+    if (bgmEl) bgmEl.volume = muted ? 0 : bgmVol;
+  }
+  function _tryPlayBgm() {
+    if (!bgmEl || !bgmWant || muted) return;
+    const p = bgmEl.play();
+    if (p && p.catch) p.catch(() => { /* 자동재생 차단 — 제스처 후 재시도 */ });
+  }
+  function _startBGM(src) {
+    bgmWant = true;
+    if (!bgmEl) {
+      bgmEl = new Audio();
+      bgmEl.loop = true;
+      bgmEl.preload = 'auto';
+    }
+    if (src && bgmSrc !== src) { bgmEl.src = src; bgmSrc = src; }
+    _applyBgmVol();
+    _tryPlayBgm();
+  }
+  function _stopBGM() {
+    bgmWant = false;
+    if (bgmEl) { try { bgmEl.pause(); bgmEl.currentTime = 0; } catch (e) {} }
+  }
+
+  // 자동재생 차단 대비 — 첫 사용자 제스처에서 AudioContext resume + BGM 재시도
+  function _onGesture() {
+    if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    _tryPlayBgm();
+  }
+  ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
+    window.addEventListener(ev, _onGesture, { passive: true }));
+
   // 공개 API
   window.SFX = {
     play(key) {
@@ -153,14 +197,35 @@
         try { fn(); } catch (e) { /* ignored */ }
       }
     },
+    // ── 마스터 음소거 ──
     isMuted() { return muted; },
     setMuted(m) {
       muted = !!m;
       try { localStorage.setItem('peace_muted', muted ? '1' : '0'); } catch (e) {}
+      _applyBgmVol();
+      if (muted) { if (bgmEl) try { bgmEl.pause(); } catch (e) {} }
+      else { _tryPlayBgm(); }
     },
     toggleMute() {
       this.setMuted(!muted);
       return muted;
+    },
+    // ── 배경음(BGM) ──
+    playBGM(src) { _startBGM(src); },
+    stopBGM() { _stopBGM(); },
+    isBgmPlaying() { return !!(bgmEl && !bgmEl.paused); },
+    getBgmVolume() { return bgmVol; },
+    setBgmVolume(v) {
+      bgmVol = Math.max(0, Math.min(1, +v || 0));
+      try { localStorage.setItem('peace_bgm_vol', String(bgmVol)); } catch (e) {}
+      _applyBgmVol();
+      if (bgmWant && !muted) _tryPlayBgm();
+    },
+    // ── 효과음(SFX) 음량 ──
+    getSfxVolume() { return sfxVol; },
+    setSfxVolume(v) {
+      sfxVol = Math.max(0, Math.min(1, +v || 0));
+      try { localStorage.setItem('peace_sfx_vol', String(sfxVol)); } catch (e) {}
     },
   };
 })();

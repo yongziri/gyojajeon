@@ -258,7 +258,7 @@
     <span class="sep">|</span>
     <span>교실</span>
     <input id="cfgRoom" maxlength="16" value="aralsea-1" />
-    <button id="cfgMute" title="효과음 음소거 토글">🔊</button>
+    <button id="cfgMute" title="음향 설정 (음소거·BGM·효과음 음량)">🔊</button>
   </div>
 
   <!-- 인쇄용 보고서 컨테이너 — buildSent에서 동적으로 채움 -->
@@ -302,8 +302,14 @@
       }
       if (muteBtn) {
         muteBtn.addEventListener('click', function () {
-          if (window.SFX) window.SFX.toggleMute();
-          refreshMute();
+          // 음향 설정 패널(음소거 + BGM·효과음 음량) 열기.
+          // 게임이 아직 로드 전이면 단순 음소거 토글로 폴백.
+          if (window.PEACE && window.PEACE.openSound) {
+            window.PEACE.openSound(refreshMute);
+          } else if (window.SFX) {
+            window.SFX.toggleMute();
+            refreshMute();
+          }
         });
       }
       // audio.js 가 늦게 로드돼도 잘 보이도록 약간 지연 후 갱신

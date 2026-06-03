@@ -1457,6 +1457,7 @@ class TitleScene extends Phaser.Scene {
     const newGame = () => {
       if (started) return;
       started = true;
+      if (window.SFX) window.SFX.stopBGM();   // 메인화면 BGM 정지
       // 새 게임은 옛 세이브 삭제 — 사건 선택 시 새로운 진행 시작
       clearGameState();
       this.cameras.main.fadeOut(280, 0, 0, 0);
@@ -1467,6 +1468,7 @@ class TitleScene extends Phaser.Scene {
     const resumeGame = () => {
       if (started) return;
       started = true;
+      if (window.SFX) window.SFX.stopBGM();   // 메인화면 BGM 정지
       const save = loadGameState();
       if (!save) { started = false; newGame(); return; }
       // registry 복원 후 곧장 WorldScene으로 진입 (BriefingScene 건너뜀)
@@ -1531,8 +1533,11 @@ class TitleScene extends Phaser.Scene {
       openHelp,
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0xffd96a, text: '#ffe9b8' });
 
-    // 사운드 토글 — 우상단 (학교 환경에서 음소거 필요할 수 있음)
+    // 사운드 토글 — 우상단 (클릭 시 음향 설정: 음소거 + BGM·효과음 음량)
     addMuteToggle(this, 936, 24);
+
+    // 메인화면 배경음 (루프) — 자동재생 차단 시 첫 클릭/키 입력에서 시작
+    if (window.SFX) window.SFX.playBGM('assets/audio/Mandate_of_Peace.mp3');
 
     // Space/Enter 만 허용 — Shift/Caps 등 사고 방지
     this.input.keyboard.once('keydown-SPACE', newGame);
@@ -3632,16 +3637,123 @@ function addMuteToggle(scene, x, y, r) {
     .setInteractive({ useHandCursor: true }).setDepth(2002);
   zone.on('pointerover', () => label.setScale(1.12));
   zone.on('pointerout',  () => label.setScale(1.0));
+  // 클릭 → 음향 설정 패널 (전체 음소거 + BGM·효과음 음량 슬라이더)
   zone.on('pointerdown', () => {
     if (!window.SFX) return;
-    const nowMuted = window.SFX.toggleMute();
-    redraw();
-    if (!nowMuted) window.SFX.play('click');
-    if (typeof scene.flashToast === 'function') {
-      scene.flashToast(nowMuted ? '🔇  음소거 ON' : '🔊  사운드 ON');
-    }
+    openSoundSettings(scene, redraw);
   });
   return { bg, label, zone, redraw };
+}
+
+// ── 슬라이더 (0~1 값, 드래그 + 트랙 클릭) ───────────────────────
+function makeSlider(scene, cx, cy, w, init, depth, onChange) {
+  const h = 12, x0 = Math.round(cx - w / 2);
+  let val = Math.max(0, Math.min(1, init));
+  let dim = false;
+  const g = scene.add.graphics().setDepth(depth);
+  const knob = scene.add.circle(x0 + w * val, cy, 12, 0xffe9b8)
+    .setStrokeStyle(3, 0x1a0e08).setDepth(depth + 2);
+  const pct = scene.add.text(cx + w / 2 + 24, cy, Math.round(val * 100) + '%', {
+    fontFamily: FONT, fontSize: '15px', color: '#dff1ff'
+  }).setOrigin(0, 0.5).setDepth(depth + 1);
+  const draw = () => {
+    g.clear();
+    g.fillStyle(0x0d161f, 1); g.fillRect(x0, cy - h / 2, w, h);
+    g.fillStyle(dim ? 0x44505a : 0x3e8b73, 1);
+    g.fillRect(x0, cy - h / 2, Math.round(w * val), h);
+    g.lineStyle(2, 0x55626c, 1); g.strokeRect(x0, cy - h / 2, w, h);
+    knob.x = x0 + w * val;
+    knob.setFillStyle(dim ? 0x8a96a0 : 0xffe9b8);
+    pct.setText(Math.round(val * 100) + '%');
+    pct.setColor(dim ? '#8a96a0' : '#dff1ff');
+  };
+  draw();
+  const setFromX = (px) => {
+    val = Math.max(0, Math.min(1, (px - x0) / w));
+    draw(); if (onChange) onChange(val);
+  };
+  const track = scene.add.zone(cx, cy, w + 24, 42)
+    .setInteractive({ useHandCursor: true }).setDepth(depth + 1);
+  track.on('pointerdown', (p) => setFromX(p.x));
+  knob.setInteractive({ draggable: true, useHandCursor: true });
+  scene.input.setDraggable(knob);
+  knob.on('drag', (p, dragX) => setFromX(dragX));
+  return {
+    setDim(d) { dim = d; draw(); },
+    setValue(v) { val = Math.max(0, Math.min(1, v)); draw(); },
+    getValue() { return val; },
+    objects: [g, knob, pct, track],
+  };
+}
+
+// ── 음향 설정 모달 — 전체 음소거 + BGM·효과음 음량 슬라이더 ──────
+function openSoundSettings(scene, onClose) {
+  if (scene._soundPanelOpen) return;
+  scene._soundPanelOpen = true;
+  const D = 6000;
+  const items = [];
+  const reg = (o) => { items.push(o); return o; };
+  const sliders = [];
+  const dbtn = (b) => {
+    b.g.setDepth(D + 2); b.t.setDepth(D + 3); b.zone.setDepth(D + 3);
+    reg(b.g); reg(b.t); reg(b.zone); return b;
+  };
+
+  reg(scene.add.rectangle(480, 300, 960, 600, 0x000000, 0.62)
+    .setDepth(D).setInteractive());
+  reg(panel(scene, 480, 300, 470, 340, 0x14202c, 0xe8b86a).setDepth(D + 1));
+  reg(scene.add.text(480, 165, '🔊  음향 설정', {
+    fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffe9b8', fontStyle: 'bold'
+  }).setOrigin(0.5).setDepth(D + 3));
+
+  const isMuted = () => !!(window.SFX && window.SFX.isMuted());
+  const muteText = () => isMuted() ? '🔇  전체 음소거 : ON' : '🔊  전체 음소거 : OFF';
+  const applyDim = () => { const m = isMuted(); sliders.forEach((s) => s.setDim(m)); };
+
+  const muteBtn = dbtn(fancyButton(scene, 480, 222, 360, 42, muteText(), () => {
+    const m = window.SFX.toggleMute();
+    muteBtn.t.setText(muteText());
+    applyDim();
+    if (!m) window.SFX.play('click');
+    if (typeof onClose === 'function') onClose();   // 상단 아이콘 즉시 갱신
+  }, { base: 0x2b3a52, hover: 0x3c5170, edge: 0xffd96a, text: '#ffe9b8' }));
+
+  // 배경음 음량
+  reg(scene.add.text(288, 285, '🎵  배경음', {
+    fontFamily: FONT, fontSize: '16px', color: '#dff1ff'
+  }).setOrigin(0, 0.5).setDepth(D + 3));
+  const bgmS = makeSlider(scene, 505, 312, 270,
+    window.SFX ? window.SFX.getBgmVolume() : 0.5, D + 2,
+    (v) => { if (window.SFX) window.SFX.setBgmVolume(v); });
+  sliders.push(bgmS); bgmS.objects.forEach(reg);
+
+  // 효과음 음량 (조절 시 미리듣기 클릭음)
+  reg(scene.add.text(288, 360, '🔔  효과음', {
+    fontFamily: FONT, fontSize: '16px', color: '#dff1ff'
+  }).setOrigin(0, 0.5).setDepth(D + 3));
+  let sfxThrottle = 0;
+  const sfxS = makeSlider(scene, 505, 387, 270,
+    window.SFX ? window.SFX.getSfxVolume() : 0.85, D + 2,
+    (v) => {
+      if (!window.SFX) return;
+      window.SFX.setSfxVolume(v);
+      const now = Date.now();
+      if (now - sfxThrottle > 140) { sfxThrottle = now; window.SFX.play('click'); }
+    });
+  sliders.push(sfxS); sfxS.objects.forEach(reg);
+
+  applyDim();
+
+  const close = () => {
+    items.forEach((o) => { try { o.destroy(); } catch (e) {} });
+    scene._soundPanelOpen = false;
+    if (typeof onClose === 'function') onClose();
+  };
+  dbtn(fancyButton(scene, 480, 442, 200, 42, '✓  닫기', close,
+    { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' }));
+  if (scene.input && scene.input.keyboard) {
+    scene.input.keyboard.once('keydown-ESC', close);
+  }
 }
 
 // 공통: 픽셀 버튼 — 각진 모서리, 블록 그림자, 도트풍 베벨
@@ -7476,6 +7588,16 @@ if (window.IS_MOBILE) {
   };
 }
 const game = new Phaser.Game(phaserConfig);
+
+// HTML cfgBar의 🔊 버튼에서 음향 설정 패널(음소거+음량)을 열 수 있도록 전역 훅
+window.PEACE = window.PEACE || {};
+window.PEACE.openSound = function (onClose) {
+  try {
+    const actives = game.scene.getScenes(true);
+    const sc = actives[actives.length - 1];
+    if (sc) openSoundSettings(sc, onClose);
+  } catch (e) { /* 무시 */ }
+};
 
 // 모바일 — 가로/세로 회전·주소창 변동 시 캔버스 재계산
 if (window.IS_MOBILE) {

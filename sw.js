@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v137';
+const CACHE = 'vanished-sea-v138';
 const PRECACHE = [
   './',
   './index.html',
@@ -17,7 +17,8 @@ const PRECACHE = [
   './assets/icons/icon-512.png',
   './assets/fonts/MonaS12TextKR.woff2',
   './assets/fonts/MonaS12-Bold.woff2',
-  './assets/fonts/MonaS12.woff2'
+  './assets/fonts/MonaS12.woff2',
+  './assets/audio/Mandate_of_Peace.mp3'
 ];
 
 self.addEventListener('install', (e) => {
