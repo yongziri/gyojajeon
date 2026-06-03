@@ -5976,18 +5976,30 @@ class LetterScene extends Phaser.Scene {
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0xc9a36b, text: '#ffe9b8' });
 
     // 하단 버튼 — userPledgeBtn(가운데, 290~670) 좌·우로 배치
-    // 좌: 단서·다짐 선택(140, w=180 → 50~230), 우: 돌아가기(820, w=180 → 730~910)
+    // 좌: 돌아가기 (← 표준 UI: 뒤로는 왼쪽)
+    // 우: 미리보기 → (다음 단계 진행은 오른쪽)
     const ready = this.factPicks.size > 0 && this.pledgePicks.size > 0;
-    fancyButton(this, 140, 578, 180, 42,
-      ready ? '미리보기 →' : '단서·다짐 선택', () => {
-        if (ready) this.buildPreview();
+    fancyButton(this, 140, 578, 180, 42, "← 돌아가기",
+      () => this.scene.start('WorldScene'),
+      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+    fancyButton(this, 820, 578, 180, 42,
+      ready ? '미리보기 →' : '단서·다짐 먼저', () => {
+        if (ready) {
+          this.buildPreview();
+        } else {
+          // 비활성 안내 — 무엇이 부족한지 명확히
+          const needFact   = this.factPicks.size   === 0;
+          const needPledge = this.pledgePicks.size === 0;
+          let msg = '⚠ ';
+          if (needFact && needPledge) msg += '체크할 단서와 다짐을 먼저 선택하세요';
+          else if (needFact)          msg += '체크할 단서를 먼저 선택하세요';
+          else                        msg += '다짐을 먼저 선택하세요';
+          this.flashToast(msg);
+        }
       },
       ready
         ? { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' }
-        : { base: 0x555555, hover: 0x555555, edge: 0x999999, text: '#cccccc' });
-    fancyButton(this, 820, 578, 180, 42, "← 돌아가기",
-      () => this.scene.start('WorldScene'),
-      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+        : { base: 0x4a4a4a, hover: 0x5a5a5a, edge: 0x888888, text: '#bbbbbb' });
   }
 
   sectionLabel(x, y, txt) {
@@ -6052,8 +6064,20 @@ class LetterScene extends Phaser.Scene {
    → ${refl.chainNames[2]}
 
 [ 조사관의 자기성찰 ]
-  "${refl.statementText || ''}"\n`;
+  "${refl.statementText || ''}"`;
+      // ✍ 학생 본인이 쓴 한 문장 (선택 입력) — 인쇄 보고서/학습 트리와 동일 표시
+      const userStmt = (this.registry.get('userReflection') || '').trim();
+      if (userStmt) {
+        reflBlock += `\n\n[ ✍ 조사관의 한 문장 ]\n  "${userStmt}"`;
+      }
+      reflBlock += '\n';
     }
+
+    // ✍ 학생 본인이 쓴 다짐 (선택 입력) — 인쇄 보고서/학습 트리와 동일 표시
+    const userPledge = (this.userPledge || this.registry.get('userPledge') || '').trim();
+    const userPledgeBlock = userPledge
+      ? `\n\n[ ✍ 조사관의 다짐 ]\n  "${userPledge}"`
+      : '';
 
     const tmpl = this.tmpl || getLetterTemplate(this.registry);
     const body =
@@ -6064,7 +6088,7 @@ class LetterScene extends Phaser.Scene {
 ${facts.join('\n')}
 ${reflBlock}
 [ 권고와 시민의 다짐 ]
-${pledges.join('\n')}
+${pledges.join('\n')}${userPledgeBlock}
 
 ${tmpl.footer}
 
