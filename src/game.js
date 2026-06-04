@@ -6065,16 +6065,24 @@ class QuizScene extends Phaser.Scene {
           this.registry.set('reportSent', true);
           this.registry.set('stage', 4);
           if (typeof reportProgress === 'function') reportProgress(this);
-          this.time.delayedCall(2000, () => {
-            // WorldScene 정리 후 CaseSelectScene 진입
-            this.scene.stop();
-            const ws = this.scene.get('WorldScene');
-            if (ws && ws.cameras && ws.cameras.main) {
-              ws.cameras.main.fadeOut(280, 0, 0, 0);
-              ws.cameras.main.once('camerafadeoutcomplete',
-                () => ws.scene.start('CaseSelectScene'));
-            } else {
+          this.time.delayedCall(2200, () => {
+            // QuizScene 자체 camera로 fadeOut (활성 상태라 작동 확실)
+            // → fade 완료 후 WorldScene 정리 + CaseSelectScene 진입
+            const finish = () => {
+              try { this.scene.stop('WorldScene'); } catch (e) {}
               this.scene.start('CaseSelectScene');
+            };
+            if (this.cameras && this.cameras.main) {
+              this.cameras.main.fadeOut(320, 0, 0, 0);
+              this.cameras.main.once('camerafadeoutcomplete', finish);
+              // 안전 폴백 — fade 이벤트 못 받아도 600ms 후 강제 전환
+              this.time.delayedCall(600, () => {
+                if (this.scene && this.scene.isActive && this.scene.isActive('QuizScene')) {
+                  finish();
+                }
+              });
+            } else {
+              finish();
             }
           });
           return;
