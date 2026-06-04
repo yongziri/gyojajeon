@@ -6282,8 +6282,8 @@ ${tmpl.footer}
 ${tmpl.signature}`;
 
     this.add.text(42, 84, body, {
-      fontFamily: FONT, fontSize: '13px', color: '#1a1a2e',
-      wordWrap: { width: 876 }, lineSpacing: 4
+      fontFamily: FONT, fontSize: '14px', color: '#1a1a2e',
+      wordWrap: { width: 876 }, lineSpacing: 6
     }).setDepth(3);
 
     // 하단 버튼 — 송부 전 자기평가 루브릭을 거치도록 변경
@@ -6327,10 +6327,10 @@ ${tmpl.signature}`;
     ];
     sliderRows.forEach((row, i) => {
       const y = 110 + i * 86;
-      // 패널
+      // 패널 — 채움·외곽 폭 880 통일 (이전엔 외곽 720라 우측 160px가 떠있었음)
       const p = this.add.graphics();
       p.fillStyle(0x0a1828, 0.85); p.fillRect(40, y, 880, 74);
-      p.lineStyle(2, 0x2a5a82, 1); p.strokeRect(40, y, 720, 74);
+      p.lineStyle(2, 0x2a5a82, 1); p.strokeRect(40, y, 880, 74);
       // 라벨·설명
       this.add.text(54, y + 10, row.label, {
         fontFamily: FONT_TITLE, fontSize: '14px', color: '#ffd96a',
@@ -6470,7 +6470,7 @@ ${tmpl.signature}`;
       fontStyle: 'bold'
     }).setOrigin(0.5);
     this.add.text(480, 62,
-      '💡 이 화면을 캡처해 저장하면 보고서 결과물로 쓸 수 있어요', {
+      '💡 아래 🖨 버튼으로 인쇄·PDF 저장 가능 (또는 이 화면 캡처)', {
       fontFamily: FONT, fontSize: '13px', color: '#ffe082'
     }).setOrigin(0.5);
 
@@ -6493,8 +6493,8 @@ ${tmpl.signature}`;
     // 완성 보고서 패널 (넉넉히)
     panel(this, 480, 330, 920, 456, 0xfff8e7, 0x6a4f2a);
     this.add.text(44, 120, finalBody, {
-      fontFamily: FONT, fontSize: '13px', color: '#0a0a14',
-      wordWrap: { width: 872 }, lineSpacing: 4, resolution: 2
+      fontFamily: FONT, fontSize: '14px', color: '#0a0a14',
+      wordWrap: { width: 872 }, lineSpacing: 6, resolution: 2
     });
 
     // 게임 루프 마무리 — 4 버튼 (강조: 🖨 인쇄 + 다른 사건 선택) + fade
