@@ -4079,16 +4079,7 @@ class WorldScene extends Phaser.Scene {
       }).setDepth(2000);
     }
 
-    // 좌상단 사건명 아래 — 사건 선택으로 돌아가기 (진행도 유지)
-    fancyButton(this, 75, 75, 130, 26, '🏠 사건 선택',
-      () => {
-        if (this.leaving) return;
-        this.leaving = true;
-        this.cameras.main.fadeOut(280, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete',
-          () => this.scene.start('CaseSelectScene'));
-      },
-      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    // (좌상단 큰 사건 선택 버튼 제거 — 우상단 🏠 원형 아이콘으로 이동, 시선 분산 최소화)
 
     // 우상단 — 핵심 단서 카운터 (관찰 단계부터 의미)
     this.coreHud = this.add.text(950, 8, '', {
@@ -4099,6 +4090,33 @@ class WorldScene extends Phaser.Scene {
 
     // ── 사운드 토글 (음소거) — 핵심 단서 카운터 바로 아래 우상단 ──
     addMuteToggle(this, 936, 46);
+
+    // ── 사건 선택 돌아가기 — 사운드 토글 옆(좌측) 우상단 ──
+    // 작은 🏠 원형 아이콘 (학생 시선 분산 최소화). 진행도는 그대로 유지.
+    // 위치 가로 정렬: [🏠 사건선택] [🔊 사운드] -- y=46
+    {
+      const hX = 892, hY = 46, hR = 14;
+      const bg = this.add.graphics().setDepth(2000);
+      bg.fillStyle(0x000000, 0.55);
+      bg.fillCircle(hX, hY, hR);
+      bg.lineStyle(1.5, 0x6fb7d6, 1);
+      bg.strokeCircle(hX, hY, hR);
+      const lbl = this.add.text(hX, hY, '🏠', {
+        fontFamily: 'sans-serif', fontSize: '15px'
+      }).setOrigin(0.5).setDepth(2001);
+      const zone = this.add.circle(hX, hY, hR, 0, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(2002);
+      zone.on('pointerover', () => lbl.setScale(1.12));
+      zone.on('pointerout',  () => lbl.setScale(1.0));
+      zone.on('pointerdown', () => {
+        if (this.leaving) return;
+        this.leaving = true;
+        if (window.SFX) window.SFX.play('click');
+        this.cameras.main.fadeOut(280, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete',
+          () => this.scene.start('CaseSelectScene'));
+      });
+    }
 
     // 상단 중앙 — 인식·관찰·실천 단계 칩
     this.buildStageHud();
