@@ -2892,9 +2892,10 @@ class BriefingScene extends Phaser.Scene {
     // 사건별 라벨 (위치는 CASE_LIST.mapX/mapY 직접 사용 — CaseSelectScene과
     // 동일 좌표계라 사용자가 디버그 픽커로 보정한 정확 위치 자동 반영)
     const EVENT_LABELS = {
-      aralsea:   { label: 'Moynaq',           name: 'Aral Sea Region' },
+      intro:     { label: 'UN HQ · NYC',       name: 'North America'   },
+      aralsea:   { label: 'Moynaq',            name: 'Aral Sea Region' },
       ukraine:   { label: 'Kyiv',              name: 'Ukraine'         },
-      palestine: { label: 'Jerusalem / Gaza', name: 'Palestine'       },
+      palestine: { label: 'Jerusalem / Gaza',  name: 'Palestine'       },
     };
     const ev = EVENT_LABELS[c.id] || EVENT_LABELS.aralsea;
 
