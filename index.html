@@ -113,8 +113,9 @@
       position: absolute; left: -9999px; top: -9999px; visibility: hidden;
     }
 
-    /* 참가 설정 바 — 교사 대시보드 연동용 (상단 중앙) */
-    #cfgBar {
+    /* 참가 설정 바 — 시각 숨김 (새 게임 모달이 대체). DOM은 유지 (telemetry.js 호환) */
+    #cfgBar { display: none !important; }
+    #cfgBar_LEGACY_KEEP_BELOW {
       position: fixed; top: 6px;
       left: 50%; transform: translateX(-50%);
       z-index: 10000;
@@ -250,15 +251,55 @@
   <div id="vignette"></div>
   <div id="crt-overlay"></div>
 
-  <!-- 참가 설정 — 비워둬도 게임은 정상 동작 (교사 대시보드 연동 시에만 사용) -->
+  <!-- 참가 설정 (시각 숨김 — telemetry.js가 cfgName/cfgRoom DOM을 읽기 때문에 유지) -->
   <div id="cfgBar">
     <button id="cfgToggle" title="설정 펼치기/접기">⚙</button>
-    <span>참가번호</span>
+    <span>이름(학번)</span>
     <input id="cfgName" maxlength="14" placeholder="예: 3-12 홍길동" />
     <span class="sep">|</span>
     <span>교실</span>
     <input id="cfgRoom" maxlength="16" value="aralsea-1" />
-    <button id="cfgMute" title="음향 설정 (음소거·BGM·효과음 음량)">🔊</button>
+    <button id="cfgMute" title="음향 설정">🔊</button>
+  </div>
+
+  <!-- 새 게임 입력 모달 (TitleScene 새 게임 클릭 시 표시) -->
+  <div id="newGameModal" style="display:none; position:fixed; inset:0; z-index:20000;
+       background:rgba(0,0,0,0.78); align-items:center; justify-content:center;">
+    <div style="background:#10202e; border:2px solid #6fb7d6; box-shadow:0 8px 24px rgba(0,0,0,0.6);
+         padding:28px 32px; max-width:440px; width:90%; font-family:'MonaS',sans-serif;
+         color:#dff1ff;">
+      <h2 style="margin:0 0 4px; font-size:20px; color:#ffe082; font-weight:bold; text-align:center;">
+        🎓  새 게임 시작
+      </h2>
+      <p style="margin:6px 0 18px; font-size:12px; color:#a8c4dc; text-align:center; line-height:1.5;">
+        UN 조사관으로 활동할 정보를 입력하세요.<br>
+        <span style="color:#7aa6c8;">(교실 번호는 담당 선생님이 안내합니다)</span>
+      </p>
+      <label style="display:block; font-size:12px; color:#cfe9ff; margin-bottom:4px;">
+        이름(학번)
+      </label>
+      <input id="newGameName" type="text" maxlength="14"
+             placeholder="예: 3-12 홍길동"
+             style="width:100%; box-sizing:border-box; padding:8px 10px;
+                    background:#1a2430; border:1px solid #6a4f2a; color:#ffe9b8;
+                    font-family:'MonaS',sans-serif; font-size:14px; margin-bottom:14px;" />
+      <label style="display:block; font-size:12px; color:#cfe9ff; margin-bottom:4px;">
+        교실 번호
+      </label>
+      <input id="newGameRoom" type="text" maxlength="16"
+             placeholder="예: aralsea-1"
+             style="width:100%; box-sizing:border-box; padding:8px 10px;
+                    background:#1a2430; border:1px solid #6a4f2a; color:#ffe9b8;
+                    font-family:'MonaS',sans-serif; font-size:14px; margin-bottom:20px;" />
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button id="newGameCancel" style="padding:8px 18px; background:#4a3a22; color:#ffe9b8;
+                border:1px solid #c9a36b; cursor:pointer; font-family:'MonaS',sans-serif;
+                font-size:13px;">← 취소</button>
+        <button id="newGameStart" style="padding:8px 22px; background:#2e6b58; color:#fff;
+                border:1px solid #ffe9b8; cursor:pointer; font-family:'MonaS',sans-serif;
+                font-size:13px; font-weight:bold;">▶ 시작</button>
+      </div>
+    </div>
   </div>
 
   <!-- 인쇄용 보고서 컨테이너 — buildSent에서 동적으로 채움 -->
@@ -329,6 +370,64 @@
           cfgBar.classList.toggle('collapsed');
         });
       }
+    })();
+
+    // ── 새 게임 입력 모달 — window.PEACE.openNewGameModal(onConfirm) ──
+    // TitleScene 새 게임 버튼이 호출. 확인 시 onConfirm(name, room) 호출.
+    (function () {
+      window.PEACE = window.PEACE || {};
+      const modal = document.getElementById('newGameModal');
+      const nameInp = document.getElementById('newGameName');
+      const roomInp = document.getElementById('newGameRoom');
+      const startBtn = document.getElementById('newGameStart');
+      const cancelBtn = document.getElementById('newGameCancel');
+      if (!modal || !nameInp || !roomInp || !startBtn || !cancelBtn) return;
+
+      let pendingOnConfirm = null;
+
+      function show() { modal.style.display = 'flex'; }
+      function hide() { modal.style.display = 'none'; pendingOnConfirm = null; }
+
+      function confirm() {
+        const name = nameInp.value.trim();
+        const room = roomInp.value.trim() || 'aralsea-1';
+        // cfgName/cfgRoom DOM에 반영 (telemetry.js 호환)
+        const cfgN = document.getElementById('cfgName');
+        const cfgR = document.getElementById('cfgRoom');
+        if (cfgN) cfgN.value = name;
+        if (cfgR) cfgR.value = room;
+        try { localStorage.setItem('aral_name', name); } catch (e) {}
+        try { localStorage.setItem('aral_room', room); } catch (e) {}
+        const cb = pendingOnConfirm;
+        hide();
+        if (typeof cb === 'function') cb(name, room);
+      }
+
+      startBtn.addEventListener('click', confirm);
+      cancelBtn.addEventListener('click', hide);
+      nameInp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); roomInp.focus(); }
+        if (e.key === 'Escape') hide();
+      });
+      roomInp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+        if (e.key === 'Escape') hide();
+      });
+
+      window.PEACE.openNewGameModal = function (onConfirm) {
+        pendingOnConfirm = onConfirm;
+        // 이전 값 미리 채움
+        let prevName = '', prevRoom = '';
+        try {
+          prevName = localStorage.getItem('aral_name') || '';
+          prevRoom = localStorage.getItem('aral_room') || 'aralsea-1';
+        } catch (e) { prevRoom = 'aralsea-1'; }
+        nameInp.value = prevName;
+        roomInp.value = prevRoom;
+        show();
+        // 약간 지연 후 첫 입력 포커스
+        setTimeout(() => nameInp.focus(), 80);
+      };
     })();
   </script>
 

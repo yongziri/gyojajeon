@@ -1454,7 +1454,8 @@ class TitleScene extends Phaser.Scene {
 
     // 새 게임 / 이어하기 — localStorage 세이브 여부에 따라 분기
     let started = false;
-    const newGame = () => {
+    // 새 게임 본 흐름 — 입력 모달 확인 후 또는 폴백
+    const startNewGameFlow = () => {
       if (started) return;
       started = true;
       if (window.SFX) window.SFX.stopBGM();   // 메인화면 BGM 정지
@@ -1464,6 +1465,16 @@ class TitleScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('CaseSelectScene');
       });
+    };
+    const newGame = () => {
+      if (started) return;
+      // HTML 입력 모달 사용 (window.PEACE.openNewGameModal) — 학생 이름·교실 입력
+      if (window.PEACE && typeof window.PEACE.openNewGameModal === 'function') {
+        window.PEACE.openNewGameModal(() => startNewGameFlow());
+      } else {
+        // 폴백 — 모달 없으면 그냥 진행
+        startNewGameFlow();
+      }
     };
     const resumeGame = () => {
       if (started) return;
