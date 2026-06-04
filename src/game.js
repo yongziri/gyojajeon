@@ -4095,6 +4095,7 @@ class WorldScene extends Phaser.Scene {
     // ── 사건 선택 돌아가기 — 사운드 토글 옆(좌측) 우상단 ──
     // 작은 🏠 원형 아이콘 (학생 시선 분산 최소화). 진행도는 그대로 유지.
     // 위치 가로 정렬: [🏠 사건선택] [🔊 사운드] -- y=46
+    // 클릭 시 확인 모달 표시 (실수 방지)
     {
       const hX = 892, hY = 46, hR = 14;
       const bg = this.add.graphics().setDepth(2000);
@@ -4105,17 +4106,15 @@ class WorldScene extends Phaser.Scene {
       const lbl = this.add.text(hX, hY, '🏠', {
         fontFamily: 'sans-serif', fontSize: '15px'
       }).setOrigin(0.5).setDepth(2001);
-      const zone = this.add.circle(hX, hY, hR, 0, 0)
+      // 클릭 영역 확대 (40x40 rectangle zone) — 모바일 손가락·작은 영역 픽스
+      const zone = this.add.zone(hX, hY, 40, 40)
         .setInteractive({ useHandCursor: true }).setDepth(2002);
       zone.on('pointerover', () => lbl.setScale(1.12));
       zone.on('pointerout',  () => lbl.setScale(1.0));
       zone.on('pointerdown', () => {
-        if (this.leaving) return;
-        this.leaving = true;
+        if (this.leaving || this.exitConfirmOpen) return;
         if (window.SFX) window.SFX.play('click');
-        this.cameras.main.fadeOut(280, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete',
-          () => this.scene.start('CaseSelectScene'));
+        this.showExitConfirm();
       });
     }
 
@@ -4698,6 +4697,75 @@ class WorldScene extends Phaser.Scene {
   }
 
   // 단계 칩 클릭 시 — 학생이 단계 의미를 잊었을 때 즉시 확인
+  // 🏠 사건 선택 돌아가기 확인 모달 (실수 방지)
+  showExitConfirm() {
+    if (this.exitConfirmOpen) return;
+    this.exitConfirmOpen = true;
+    const layer = [];
+
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.7)
+      .setDepth(5500).setInteractive().setAlpha(0);
+    this.tweens.add({ targets: dim, alpha: 0.7, duration: 180 });
+    layer.push(dim);
+
+    const cx = 480, cy = 270, cw = 480, ch = 230;
+    const card = this.add.graphics().setDepth(5501);
+    card.fillStyle(0x000000, 0.6); card.fillRect(cx - cw / 2 + 8, cy - ch / 2 + 8, cw, ch);
+    card.fillStyle(0x10202e, 1); card.fillRect(cx - cw / 2, cy - ch / 2, cw, ch);
+    card.fillStyle(0x6fb7d6, 1); card.fillRect(cx - cw / 2, cy - ch / 2, cw, 4);
+    card.fillStyle(0x000000, 1);
+    card.fillRect(cx - cw / 2, cy - ch / 2, cw, 3);
+    card.fillRect(cx - cw / 2, cy + ch / 2 - 3, cw, 3);
+    card.fillRect(cx - cw / 2, cy - ch / 2, 3, ch);
+    card.fillRect(cx + cw / 2 - 3, cy - ch / 2, 3, ch);
+    layer.push(card);
+
+    const head = this.add.text(cx, cy - 55, '🏠  사건 선택으로 돌아가기', {
+      fontFamily: FONT_TITLE, fontSize: '19px', color: '#dff1ff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(5502);
+    layer.push(head);
+
+    const msg = this.add.text(cx, cy - 12,
+      '사건 선택 화면으로 돌아가시겠습니까?\n진행도는 그대로 저장됩니다.', {
+      fontFamily: FONT, fontSize: '13px', color: '#a8c4dc',
+      align: 'center', lineSpacing: 5
+    }).setOrigin(0.5).setDepth(5502);
+    layer.push(msg);
+
+    const collectBtn = (btn) => {
+      if (btn.g)    { btn.g.setDepth(5503);    layer.push(btn.g); }
+      if (btn.t)    { btn.t.setDepth(5504);    layer.push(btn.t); }
+      if (btn.zone) { btn.zone.setDepth(5505); layer.push(btn.zone); }
+    };
+
+    const closeAll = () => {
+      layer.forEach(o => { if (o && o.destroy) o.destroy(); });
+      this.exitConfirmOpen = false;
+    };
+
+    const noBtn = fancyButton(this, cx - 110, cy + 55, 180, 42, '← 계속 진행',
+      () => closeAll(),
+      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+    collectBtn(noBtn);
+
+    const yesBtn = fancyButton(this, cx + 110, cy + 55, 180, 42, '🏠  돌아가기',
+      () => {
+        closeAll();
+        if (this.leaving) return;
+        this.leaving = true;
+        if (window.SFX) window.SFX.play('click');
+        this.cameras.main.fadeOut(280, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete',
+          () => this.scene.start('CaseSelectScene'));
+      },
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    collectBtn(yesBtn);
+
+    // dim 클릭 시 취소
+    dim.on('pointerdown', closeAll);
+  }
+
   showStageInfoModal(stage) {
     if (this.stageInfoOpen) return;
     this.stageInfoOpen = true;
@@ -4907,6 +4975,7 @@ class WorldScene extends Phaser.Scene {
   onResume() {
     this.talking = false;
     this.entering = false;
+    this.leaving = false;     // 🏠 사건선택 모달 재사용 위해 리셋
     this.cooldown = true;
     this.time.delayedCall(700, () => { this.cooldown = false; });
 
