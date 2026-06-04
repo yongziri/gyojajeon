@@ -14,7 +14,7 @@
 
   let ctx = null;       // AudioContext (사용자 입력 후 초기화)
   let muted = false;    // 전체 음소거 (마스터) — localStorage 동기화
-  let bgmVol = 0.5;     // 배경음 음량 0~1
+  let bgmVol = 0.2;     // 배경음 음량 0~1 (기본 20% — 학습 방해 최소화)
   let sfxVol = 0.85;    // 효과음 음량 0~1
   // localStorage 키 — 옛 'aral_muted'는 사라진바다 시절 이름. 'peace_muted'로 통일.
   // 한 번 마이그레이션: 옛 키 값이 있으면 새 키로 옮기고 옛 키 제거.
