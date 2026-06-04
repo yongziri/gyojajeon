@@ -4015,8 +4015,10 @@ class WorldScene extends Phaser.Scene {
             : '먼저 ' + g + '와 만나 상황을 파악하세요\n(1단계 · 인식)');
           return;
         }
+        // intro(튜토리얼)는 단서 조사 단계 생략 — 한센 → 제임스 바로 인터뷰
+        const introCase = (this.registry.get('caseId') === 'intro');
         const ev = (this.registry.get('evidence') || []).length;
-        if (ev < 3) {
+        if (!introCase && ev < 3) {
           const p = getFirstLocationName(this.registry);
           this.showLockToast(LS
             ? fmtString(LS.needCluesFirst, { place: p, ev })
@@ -4619,14 +4621,18 @@ class WorldScene extends Phaser.Scene {
     const S = (typeof STRINGS !== 'undefined') ? STRINGS.objective : null;
     const guide = getGuideName(this.registry);
     const place = getFirstLocationName(this.registry);
+    const isIntroCase = (this.registry.get('caseId') === 'intro');
     let text;
     if (stage === 1) {
       text = S ? fmtString(S.perceive, { guide })
                : '🎯 인식 (P) — 안내인 ' + guide + '에게 다가가 상황을 파악하세요';
     } else if (stage === 2) {
-      if (ev < 3) {
+      // intro(튜토리얼)는 단서 조사 단계 생략 — 곧장 시민 인터뷰 안내
+      if (!isIntroCase && ev < 3) {
         text = S ? fmtString(S.exploreFirst, { place, ev })
                  : '🎯 관찰 (E·탐색) — 노란 표지판으로 ' + place + '을(를) 조사해 단서 ' + ev + '/3 이상 모으세요';
+      } else if (isIntroCase) {
+        text = '🎯 관찰 (A·분석) — 동기 제임스(!)에게 다가가 한 문제를 풀어보세요';
       } else {
         text = S ? fmtString(S.analyzeCitizens, { co, need })
                  : '🎯 관찰 (A·분석) — 시민(!)을 인터뷰해 핵심 단서 ' + co + '/' + need + '개를 얻으세요';
@@ -4653,8 +4659,10 @@ class WorldScene extends Phaser.Scene {
     const ev = (this.registry.get('evidence') || []).length;
     const co = (this.registry.get('coreClues') || []).length;
     const refl = !!this.registry.get('reflectionDone');
+    // intro(튜토리얼)는 단서 조사 단계 생략 — 한센 친구 → 제임스 정답으로 즉시 완료
+    const isIntroCase = (this.registry.get('caseId') === 'intro');
     if (stage === 1 && def) newStage = 2;
-    else if (stage === 2 && ev >= 3 && co >= TOTAL_CITIZENS) newStage = 3;
+    else if (stage === 2 && co >= TOTAL_CITIZENS && (isIntroCase || ev >= 3)) newStage = 3;
     else if (stage === 3 && refl) newStage = 4;
     if (newStage !== stage) {
       this.registry.set('stage', newStage);
