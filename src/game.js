@@ -1527,7 +1527,7 @@ class TitleScene extends Phaser.Scene {
     addMuteToggle(this, 936, 24);
 
     // 메인화면 배경음 (루프) — 자동재생 차단 시 첫 클릭/키 입력에서 시작
-    if (window.SFX) window.SFX.playBGM('assets/audio/Mandate_of_Peace.mp3');
+    if (window.SFX) window.SFX.playBGM(BGM_TITLE);
 
     // Space/Enter 만 허용 — Shift/Caps 등 사고 방지
     this.input.keyboard.once('keydown-SPACE', newGame);
@@ -1809,6 +1809,19 @@ function getLetterTemplate(registry) {
   const id = (registry && registry.get && registry.get('caseId')) || 'aralsea';
   return LETTER_TEMPLATES[id] || LETTER_TEMPLATES.aralsea;
 }
+
+// ── 게임 내부 BGM (사건별 4곡 + 조사 1곡) ──────────────────────
+// WorldScene 진입 시 caseId 기반 자동 재생. 대화·퀴즈 진입 시 pause,
+// 종료 시 resume (currentTime 유지로 이어듣기). InvestigationScene은
+// 맵 BGM pause → 조사 BGM 시작 → 종료 시 반대.
+const BGM_BY_CASE = {
+  intro:     'assets/audio/bgm_intro.mp3',
+  aralsea:   'assets/audio/bgm_aralsea.mp3',
+  ukraine:   'assets/audio/bgm_ukraine.mp3',
+  palestine: 'assets/audio/bgm_palestine.mp3',
+};
+const BGM_INVESTIGATION = 'assets/audio/bgm_investigation.mp3';
+const BGM_TITLE         = 'assets/audio/Mandate_of_Peace.mp3';
 
 const CASE_LIST = [
   {
@@ -4151,6 +4164,13 @@ class WorldScene extends Phaser.Scene {
     if (/[?&]dev=1\b/.test(location.search || '')) {
       this.addDevPanel();
     }
+
+    // ── 사건별 맵 BGM 시작 (대화·조사 진입 시 audio.js가 pause 처리) ──
+    if (window.SFX) {
+      const cid = caseId || 'aralsea';
+      const bgmSrc = BGM_BY_CASE[cid];
+      if (bgmSrc) window.SFX.playBGM(bgmSrc);
+    }
   }
 
   // ── 개발자 패널 — 단계 건너뛰기 (출품 시 ?dev=1 쿼리로만 진입) ──
@@ -4844,12 +4864,20 @@ class WorldScene extends Phaser.Scene {
     });
   }
 
-  // 오버레이(대화/퀴즈)가 닫힌 직후 호출됨
+  // 오버레이(대화/퀴즈/조사)가 닫힌 직후 호출됨
   onResume() {
     this.talking = false;
     this.entering = false;
     this.cooldown = true;
     this.time.delayedCall(700, () => { this.cooldown = false; });
+
+    // 맵 BGM 재개 — 대화·퀴즈는 pause로 멈춰있어 이어듣기,
+    // 조사 화면에서 복귀 시엔 조사 BGM이 재생 중이므로 src 전환 → 처음부터
+    if (window.SFX) {
+      const cid = this.registry.get('caseId') || 'aralsea';
+      const bgmSrc = BGM_BY_CASE[cid];
+      if (bgmSrc) window.SFX.playBGM(bgmSrc);
+    }
 
     // 안내인 친구 됨 처리 — 도트·일러스트·마커·라벨 모두 제거 (tween 먼저 정리)
     if (this.registry.get('enemyDefeated')) {
@@ -4897,7 +4925,10 @@ class DialogueScene extends Phaser.Scene {
 
   create() {
     this.love = this.registry.get('slimeLove') || 0;
-    if (window.SFX) window.SFX.play('talk');   // 대화 시작 신호음
+    if (window.SFX) {
+      window.SFX.play('talk');   // 대화 시작 신호음
+      window.SFX.pauseBGM();     // 맵 BGM 일시정지 (대화 후 이어듣기)
+    }
 
     // 배경 없음 — 월드 위에 오버레이. 살짝 어둡게 깔아 가독성↑
     this.add.rectangle(480, 300, 960, 600, 0x000000, 0.45);
@@ -5115,6 +5146,9 @@ class InvestigationScene extends Phaser.Scene {
   create() {
     setCfgBarVisible(false);
     this.cameras.main.fadeIn(220, 0, 0, 0);  // 부드러운 진입
+    // 조사 전용 BGM (모든 사건 공통) — 잔잔·집중. 종료 시 WorldScene
+    // onResume이 맵 BGM으로 자동 전환.
+    if (window.SFX) window.SFX.playBGM(BGM_INVESTIGATION);
     this.locId = this.registry.get('invLoc') || CASE.start;
     this.collected = this.registry.get('evidence') || [];
     this.examine = false;
@@ -5782,7 +5816,10 @@ class QuizScene extends Phaser.Scene {
   constructor() { super('QuizScene'); }
 
   create() {
-    if (window.SFX) window.SFX.play('talk');   // 시민 인터뷰 시작
+    if (window.SFX) {
+      window.SFX.play('talk');   // 시민 인터뷰 시작
+      window.SFX.pauseBGM();     // 맵 BGM 일시정지 (대화 후 이어듣기)
+    }
     const id = this.registry.get('quizCitizenId');
     this.citizen = CITIZENS.find(c => c.id === id);
     if (!this.citizen) {

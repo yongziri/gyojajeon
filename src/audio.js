@@ -213,6 +213,16 @@
     // ── 배경음(BGM) ──
     playBGM(src) { _startBGM(src); },
     stopBGM() { _stopBGM(); },
+    // 일시 정지/재개 — 대화·조사 진입 시 currentTime 유지하며 멈춤
+    // 종료 시 같은 위치에서 이어 재생 (stop+start면 처음부터)
+    pauseBGM() { if (bgmEl) { try { bgmEl.pause(); } catch (e) {} } },
+    resumeBGM() {
+      if (bgmEl && bgmSrc && !muted) {
+        bgmWant = true;
+        _tryPlayBgm();
+      }
+    },
+    getBgmSrc() { return bgmSrc; },
     isBgmPlaying() { return !!(bgmEl && !bgmEl.paused); },
     getBgmVolume() { return bgmVol; },
     setBgmVolume(v) {

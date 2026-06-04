@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v146';
+const CACHE = 'vanished-sea-v147';
 const PRECACHE = [
   './',
   './index.html',
@@ -18,7 +18,12 @@ const PRECACHE = [
   './assets/fonts/MonaS12TextKR.woff2',
   './assets/fonts/MonaS12-Bold.woff2',
   './assets/fonts/MonaS12.woff2',
-  './assets/audio/Mandate_of_Peace.mp3'
+  './assets/audio/Mandate_of_Peace.mp3',
+  './assets/audio/bgm_intro.mp3',
+  './assets/audio/bgm_aralsea.mp3',
+  './assets/audio/bgm_ukraine.mp3',
+  './assets/audio/bgm_palestine.mp3',
+  './assets/audio/bgm_investigation.mp3'
 ];
 
 self.addEventListener('install', (e) => {
