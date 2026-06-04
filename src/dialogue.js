@@ -29,77 +29,71 @@ const STORIES = {
 
     q1: {
       speaker: '한센',
-      text: '여기는 UN 본부 P.E.A.C.E. 에이전시. 30년 동안 분쟁 현장을 다닌 늙은이의 사무실이지.',
-      choices: [
-        { label: 'P.E.A.C.E.가 무슨 뜻인가요?', love: 1, next: 'meaning' },
-        { label: '어떤 일을 하나요?',             next: 'mission' },
-      ]
+      text: '여기는 UN 본부 P.E.A.C.E. 에이전시. 세계 곳곳의 분쟁 현장을 조사하고 평화의 길을 찾는 곳일세.',
+      next: 'meaning'
     },
 
     meaning: {
       speaker: '한센',
-      text: 'Perceive 인식 · Explore 탐색 · Analyze 분석 · Connect 연결 · Enact 실천. 분쟁을 풀기 위한 다섯 가지 사고 단계라네.',
+      text: '우리는 P.E.A.C.E. — 다섯 단계로 사고하지. 새 조사관이라면 한 번 들어볼 만하네.',
+      next: 'peace_p'
+    },
+
+    peace_p: {
+      speaker: '한센',
+      text: 'P — Perceive (인식). 사건의 안내인을 만나 상황을 듣는 단계일세. 사람의 얼굴부터 보는 일이지.',
+      next: 'peace_e'
+    },
+
+    peace_e: {
+      speaker: '한센',
+      text: 'E — Explore (탐색). 현장의 노란 표지판을 클릭해, 사진 속 단서들을 직접 찾는 단계라네.',
+      next: 'peace_a'
+    },
+
+    peace_a: {
+      speaker: '한센',
+      text: 'A — Analyze (분석). 머리 위에 (!)가 뜬 시민을 만나 인터뷰하며, 객관식 문제로 핵심 단서를 얻네.',
+      next: 'peace_c'
+    },
+
+    peace_c: {
+      speaker: '한센',
+      text: 'C — Connect (연결). 🪞 성찰의 의자에 앉아, 모은 단서들을 [원인 → 과정 → 결과] 인과 사슬로 잇는 단계일세.',
+      next: 'peace_e2'
+    },
+
+    peace_e2: {
+      speaker: '한센',
+      text: 'E — Enact (실천). 📮 파란 우편함에 UN 보고서를 송부해서, 배운 것을 행동으로 옮기는 마지막 단계라네.',
       next: 'mission'
     },
 
     mission: {
       speaker: '한센',
-      text: '자네 임무는 세 가지일세. 사라진 바다(아랄해), 깨어진 평화(우크라이나), 오래된 갈등(팔레스타인). 각 현장에서 사람을 만나고, 단서를 모으고, UN에 보고서를 가져오는 게야.',
-      next: 'training'
-    },
-
-    training: {
-      speaker: '한센',
-      text: '하지만 그 전에, 우리 방식을 짧게 체험해야겠네. 이 사무실 안의 책상·지도·서류함을 살펴보고, 동기 제임스와 한 가지 문제를 풀어 보게.',
-      next: 'q3'
-    },
-
-    q3: {
-      speaker: '한센',
-      text: '조사관, 한 가지 물어봐도 되겠나? 멀리 사는 우리가, 멀리 있는 사람들의 분쟁과 어떻게 연결될 수 있을까?',
+      text: '자네 임무는 세 가지일세 — ① 사라진 바다(아랄해), ② 깨어진 평화(우크라이나), ③ 오래된 갈등(팔레스타인). 각 현장에서 같은 P.E.A.C.E. 5단계를 적용하게.',
       choices: [
-        { label: '우리도 무관하지 않다',          love: 3, next: 'connect' },
-        { label: '잘 모르겠지만 배워보겠다',      love: 2, next: 'connect' },
+        { label: '네, 잘 알겠습니다',                 love: 3, next: 'james' },
+        { label: '한 사람이 뭘 바꿀 수 있을까요?',    love: 1, next: 'encourage' },
       ]
     },
 
-    connect: {
+    encourage: {
       speaker: '한센',
-      text: '좋은 답일세. 내가 입는 옷·먹는 음식·쓰는 물건 — 그 모든 것이 누군가의 분쟁과 닿아 있다네. 그게 바로 \"세계시민\"의 출발이야.',
-      next: 'q4'
+      text: '한 사람이 모든 걸 바꿀 순 없지. 하지만 한 사람의 관심이 시작이라네. 내가 입는 옷·먹는 음식이 누군가의 분쟁과 닿아 있다는 사실 — 그것이 세계시민의 출발이야.',
+      next: 'james'
     },
 
-    q4: {
+    james: {
       speaker: '한센',
-      text: '자네는 어떤 마음가짐으로 임무에 임할 텐가?',
-      choices: [
-        { label: '관심·연대·실천 — 셋 다 해보겠다',  love: 5, next: 'praise' },
-        { label: '한 사람이 뭘 바꿀 수 있을까',       next: 'forceEnd' },
-      ]
-    },
-
-    praise: {
-      speaker: '한센',
-      text: '훌륭하네. 그 세 가지면 충분해. 자, 이게 자네의 임무서일세. 첫 사건을 골라 출발하게.',
-      next: 'outro'
-    },
-
-    forceEnd: {
-      speaker: '한센',
-      text: '나도 30년 전에는 그렇게 생각했다네. 하지만 작은 관심이 모여 협정이 맺어지고, 작은 손길이 모여 학교가 다시 짓네. 한번 직접 해보면 알게 될 거야.',
-      next: 'outro'
-    },
-
-    outro: {
-      speaker: '',
-      text: '한센이 책상 서랍에서 봉인된 임무 서류 세 통을 꺼냈다. 아랄해, 우크라이나, 팔레스타인 — 자네의 첫 임무가 자네를 기다린다.',
+      text: '이제 동기 제임스가 자네에게 짧은 시험을 준비했네. 가서 한 문제를 풀어보게 — 그게 자네의 첫 단서가 될 걸세. 잘 부탁하네, 조사관.',
       end: true,
       befriend: true
     },
 
     flee: {
       speaker: '한센',
-      text: '천천히 둘러보게. 사무실은 자네의 첫 교실일세.',
+      text: '천천히 둘러보게. 동기 제임스가 자네를 기다리고 있을 걸세.',
       end: true
     }
   },

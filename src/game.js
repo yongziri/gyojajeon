@@ -3621,17 +3621,20 @@ class WorldScene extends Phaser.Scene {
     }
 
     // 옛 항구 조사 입구 (노란 표지판) — scale 고정 (꿈틀 제거)
-    this.portal = this.physics.add.staticImage(4 * TILE, 11 * TILE, 'portal');
+    // intro(튜토리얼)에선 조사 화면 사용 안 함 → 화면 밖으로 (학생이 닿을 수 없음)
+    const portalX = isIntro ? -500 : 4 * TILE;
+    const portalY = isIntro ? -500 : 11 * TILE;
+    this.portal = this.physics.add.staticImage(portalX, portalY, 'portal');
     this.portal.setDepth(this.portal.y);
-    const portalLabel = isIntro ? '🔍 사무실 둘러보기'
-                      : isUkraine ? '키이우 조사'
+    if (isIntro) this.portal.setVisible(false);
+    const portalLabel = isUkraine ? '키이우 조사'
                       : isPalestine ? '팔레스타인 조사'
                       : '아랄해 조사';
     // 라벨은 NPC 명찰과 동일하게 물체 아래에 표시 (시각 통일)
-    this.add.text(4 * TILE, 11 * TILE + 22, portalLabel, {
+    this.add.text(portalX, portalY + 22, portalLabel, {
       fontFamily: FONT, fontSize: '12px', color: '#ffe082',
       backgroundColor: '#00000088', padding: { x: 4, y: 2 }
-    }).setOrigin(0.5).setDepth(2000);
+    }).setOrigin(0.5).setDepth(2000).setVisible(!isIntro);
     this.physics.add.overlap(this.player, this.portal, () => {
       if (this.entering || this.cooldown || this.cardOpen) return;
       // 실제 조건으로 검사 — 안내인과 친구가 됐는가
@@ -3659,12 +3662,16 @@ class WorldScene extends Phaser.Scene {
     });
 
     // UN 우편함 (편지 쓰기 입구) — scale 고정 (꿈틀 제거)
-    this.mailbox = this.physics.add.staticImage(12 * TILE, 11 * TILE, 'mailbox');
+    // intro에선 보고서 송부 없음 (제임스 정답이 자동 완료) → 화면 밖
+    const mailX = isIntro ? -500 : 12 * TILE;
+    const mailY = isIntro ? -500 : 11 * TILE;
+    this.mailbox = this.physics.add.staticImage(mailX, mailY, 'mailbox');
     this.mailbox.setDepth(this.mailbox.y);
-    this.add.text(12 * TILE, 11 * TILE + 22, '보고서 송부', {
+    if (isIntro) this.mailbox.setVisible(false);
+    this.add.text(mailX, mailY + 22, '보고서 송부', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
       backgroundColor: '#00000088', padding: { x: 4, y: 2 }
-    }).setOrigin(0.5).setDepth(2000);
+    }).setOrigin(0.5).setDepth(2000).setVisible(!isIntro);
     this.physics.add.overlap(this.player, this.mailbox, () => {
       if (this.entering || this.cardOpen) return;
       // 실제 조건으로 검사 (stage 변수 지연과 무관하게 동작)
@@ -3697,9 +3704,9 @@ class WorldScene extends Phaser.Scene {
     // ── 🪞 성찰의 의자 (PEACE의 C단계) ───────────────────────────
     // 위치: 우하단 빈 자리 (포털·우편함·의자 3등분 배치, NPC와 거리 확보)
     //       시각적으로는 작은 갈색 원(의자) + 반짝이는 거울 아이콘 + 텍스트 라벨.
-    // intro(사무실)은 한센 책상(520~680)과 안 겹치게 더 우측 끝(21*TILE=840)으로
-    const chairX = isIntro ? 21 * TILE : 16 * TILE + 16;
-    const chairY = 11 * TILE + 8;
+    // intro에선 성찰 의자 사용 안 함 (대화 + 퀴즈로 완료) → 화면 밖
+    const chairX = isIntro ? -500 : 16 * TILE + 16;
+    const chairY = isIntro ? -500 : 11 * TILE + 8;
     const chairG = this.add.graphics().setDepth(chairY);
     // 의자 등판
     chairG.fillStyle(0x6a4a26, 1);
@@ -6022,11 +6029,44 @@ class QuizScene extends Phaser.Scene {
     });
 
     const have = (this.registry.get('coreClues') || []).length;
+    const caseId = this.registry.get('caseId') || 'aralsea';
+    const isIntroCase = (caseId === 'intro');
+
     // 타자기 완료 후 → 진행도 표시 → 잠시 후 마을 복귀
     this.typeText('【정답!】 ' + ch.feedback +
       '\n\n★ 핵심 단서 획득: ' + reward.name +
       '\n   "' + reward.desc + '"', () => {
       this.time.delayedCall(900, () => {
+        // intro(튜토리얼)는 단순화 흐름 — 제임스 정답 시 자동 완료
+        if (isIntroCase) {
+          this.bodyText.setText('🎓  신입 교육 완료!\n' +
+            '   P.E.A.C.E. 5단계를 모두 익혔습니다.\n' +
+            '   본 임무 세 가지가 잠금 해제되었어요.');
+          // 자동 완료 처리 — completedCases에 intro 추가
+          const completed = this.registry.get('completedCases') || [];
+          if (!completed.includes('intro')) {
+            completed.push('intro');
+            this.registry.set('completedCases', completed);
+          }
+          this.registry.set('reflectionDone', true);
+          this.registry.set('reportSent', true);
+          this.registry.set('stage', 4);
+          if (typeof reportProgress === 'function') reportProgress(this);
+          this.time.delayedCall(2000, () => {
+            // WorldScene 정리 후 CaseSelectScene 진입
+            this.scene.stop();
+            const ws = this.scene.get('WorldScene');
+            if (ws && ws.cameras && ws.cameras.main) {
+              ws.cameras.main.fadeOut(280, 0, 0, 0);
+              ws.cameras.main.once('camerafadeoutcomplete',
+                () => ws.scene.start('CaseSelectScene'));
+            } else {
+              this.scene.start('CaseSelectScene');
+            }
+          });
+          return;
+        }
+        // 본 사건 — 기존 흐름
         this.bodyText.setText('핵심 단서 ' + have + '/' + TOTAL_CITIZENS +
           (have >= TOTAL_CITIZENS ?
             '   모두 모았어요! 우편함으로 가보세요.' :
