@@ -3999,7 +3999,12 @@ class WorldScene extends Phaser.Scene {
       }).setOrigin(0.5, 0).setDepth(2100);
 
       // overlap — 자동 진입 대신 '💬 인터뷰' 버튼 표시 (학생이 직접 누름)
-      const trigger = this.add.rectangle(cz.x, cz.y - 16, 36, 36, 0, 0);
+      // intro(튜토리얼)에선 사무실 어디서든 제임스에 접근하면 인터뷰 가능
+      // (학생이 정확히 어디로 가야 할지 헤매지 않도록 trigger 영역 확대)
+      const introCase = (this.registry.get('caseId') === 'intro');
+      const trigW = introCase ? 240 : 36;
+      const trigH = introCase ? 240 : 36;
+      const trigger = this.add.rectangle(cz.x, cz.y - 16, trigW, trigH, 0, 0);
       this.physics.add.existing(trigger, true);
       this.physics.add.overlap(this.player, trigger, () => {
         if (this.entering || this.cooldown || this.cardOpen) return;
