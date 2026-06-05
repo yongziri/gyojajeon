@@ -2,14 +2,30 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>사라진 바다 — 교사용 실시간 대시보드</title>
+  <title>P.E.A.C.E. — 교사용 실시간 대시보드</title>
   <style>
+    /* MonaS 폰트 — 게임과 동일 (woff2 미리 캐시됨, SW PRECACHE 포함) */
+    @font-face {
+      font-family: 'MonaS';
+      src: url('assets/fonts/MonaS12.woff2') format('woff2');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'MonaS';
+      src: url('assets/fonts/MonaS12-Bold.woff2') format('woff2');
+      font-weight: 700; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'MonaS-Text';
+      src: url('assets/fonts/MonaS12TextKR.woff2') format('woff2');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0; padding: 0;
       background: #0e1626;
       color: #e8e2d4;
-      font-family: 'Malgun Gothic', sans-serif;
+      font-family: 'MonaS-Text', 'MonaS', 'Malgun Gothic', sans-serif;
     }
     header {
       background: #14202c;
@@ -225,7 +241,7 @@
     /* ─── 인쇄용 학급 리포트 (평소엔 숨김) ─────────────────── */
     #printPanel {
       display: none;
-      font-family: 'Malgun Gothic', sans-serif;
+      font-family: 'MonaS-Text', 'MonaS', 'Malgun Gothic', sans-serif;
       color: #1a1a1a; background: #fff;
       padding: 20px;
     }
@@ -272,7 +288,7 @@
 <body>
   <header>
     <div>
-      <h1>📋 사라진 바다 — 교사용 실시간 대시보드</h1>
+      <h1>📋 P.E.A.C.E. — 교사용 실시간 대시보드</h1>
       <div class="sub">학생들의 게임 진행도를 실시간으로 확인합니다</div>
     </div>
     <div class="ctl">
@@ -333,12 +349,10 @@
     const STAGE_NAME = {
       1: '1·인식', 2: '2·관찰', 3: '3·성찰', 4: '4·실천'
     };
-    // 감정 태그 표시명·색상 (game.js askThoughtTag 와 일치)
+    // 단서별 자유 입력 생각 — 학생이 직접 타이핑한 한 문장
+    // (이전 5지선다 감정 태그 — RRRRR-1에서 자유 입력으로 전환)
     const TAG_INFO = {
-      shock: { label: '충격적이다', color: '#e06b6b' },
-      sad:   { label: '안타깝다',   color: '#e79a78' },
-      wow:   { label: '인상적이다', color: '#6fb7d6' },
-      anger: { label: '화가 난다',  color: '#c96b96' },
+      custom: { label: '내 생각', color: '#c9a36b' },
     };
     const stars = (n) => '★'.repeat(n || 0) + '☆'.repeat(5 - (n || 0));
 
@@ -515,23 +529,32 @@
         ps.style.display = 'none';
       }
 
-      // 학급 감정 태그 분포 — 학생들이 단서마다 부착한 감정 합계
-      const tagAgg = { shock: 0, sad: 0, wow: 0, anger: 0 };
+      // 학급 자유 입력 생각 — 학생들이 단서마다 적은 한 문장 총합
+      // (이전엔 5종 감정 분포였으나 자유 타이핑이 되어 합계만 의미)
+      let totalTags = 0, withTagCount = 0;
       list.forEach(d => {
-        if (d.tagCount) {
-          Object.keys(tagAgg).forEach(k => {
-            if (d.tagCount[k]) tagAgg[k] += d.tagCount[k];
-          });
+        if (d.tagsCount) {
+          totalTags += d.tagsCount;
+          if (d.tagsCount > 0) withTagCount++;
         }
       });
-      const totalTags = tagAgg.shock + tagAgg.sad + tagAgg.wow + tagAgg.anger;
       const td = $('tagDist');
       if (totalTags > 0) {
         td.style.display = 'block';
+        td.innerHTML = '<h3>💭 학급 단서별 자유 입력 — 학생이 직접 쓴 생각</h3>' +
+          '<div class="tagBar"><div class="l">총 입력 개수</div>' +
+          '<div class="b"><div style="width:100%;background:#c9a36b"></div></div>' +
+          '<div class="n">' + totalTags + '</div></div>' +
+          '<p style="margin:6px 0 0;font-size:12px;color:#9aa6ad">' +
+            '참여 학생 ' + withTagCount + '명 · 단서마다 한 문장 자유 입력 (자기 모니터링)' +
+          '</p>';
+        // 폴백 — 옛 5종 분포는 더 이상 표시 안 함
+        return;
+      } else if (false) {
         td.innerHTML = '<h3>💭 학급 감정 태그 분포 (단서별 학생 반응)</h3>' +
           Object.keys(TAG_INFO).map(k => {
-            const n = tagAgg[k];
-            const pct = Math.round(n / totalTags * 100);
+            const n = totalTags;
+            const pct = 100;
             const ti = TAG_INFO[k];
             return '<div class="tagBar"><div class="l">' + ti.label +
               '</div><div class="b"><div style="width:' + pct +
@@ -616,8 +639,8 @@
             '<span class="val">★ ' + avg + ' / 5.0</span></div>');
         }
         if (d.tagsCount) {
-          parts.push('<div><span class="lbl">💭 감정 태그</span> ' +
-            '<span class="val">' + d.tagsCount + '개 부착</span></div>');
+          parts.push('<div><span class="lbl">💭 단서별 생각</span> ' +
+            '<span class="val">' + d.tagsCount + '개 작성</span></div>');
         }
         srlBlock = '<div class="srl">' + parts.join('') +
           '<div style="margin-top:4px;color:#7a8590;font-size:10px;">' +
@@ -736,20 +759,28 @@
         );
       }
 
-      // 3. 감정 태그 분포 (단서별 학생 반응)
-      if (d.tagCount && Object.keys(d.tagCount).length > 0) {
-        const tagItems = Object.keys(TAG_INFO).map(k => {
-          const n = d.tagCount[k] || 0;
-          if (n === 0) return '';
-          return '<span style="background:' + TAG_INFO[k].color + '33;' +
-            'border-color:' + TAG_INFO[k].color + '">' +
-            TAG_INFO[k].label + ' × ' + n + '</span>';
+      // 3. 단서별 자유 입력 — 학생이 직접 쓴 한 문장 모음
+      if (d.tags && Object.keys(d.tags).length > 0) {
+        const tagItems = Object.keys(d.tags).map(eid => {
+          const t = d.tags[eid];
+          const label = (t && t.label) ? t.label : '';
+          if (!label) return '';
+          return '<span style="background:#c9a36b22;border-color:#c9a36b;' +
+            'color:#fff8d0">' + esc(label) + '</span>';
         }).filter(x => x).join('');
         sections.push(
-          '<section><h4>💭 단서별 감정 태그 (Self-monitoring)</h4>' +
+          '<section><h4>💭 단서별 자유 입력 — 학생이 직접 쓴 생각 (Self-monitoring)</h4>' +
           '<div class="tagList">' + tagItems + '</div>' +
           '<p style="color:#7a8590;margin-top:6px">' +
-            '총 ' + (d.tagsCount || 0) + '개 단서에 감정 태그 부착' +
+            '총 ' + (d.tagsCount || 0) + '개 단서에 한 문장 작성' +
+          '</p></section>'
+        );
+      } else if (d.tagsCount > 0) {
+        // tags 객체가 없고 카운트만 있는 옛 페이로드
+        sections.push(
+          '<section><h4>💭 단서별 자유 입력 (Self-monitoring)</h4>' +
+          '<p style="color:#7a8590">' +
+            '총 ' + d.tagsCount + '개 단서에 한 문장 작성' +
           '</p></section>'
         );
       }
@@ -861,6 +892,7 @@
       let s1 = 0, s2 = 0, s3 = 0, s4 = 0, done = 0;
       let revN = 0, revSum = 0;
       const tagAgg = { shock: 0, sad: 0, wow: 0, anger: 0 };
+      let totalTags = 0;
       list.forEach(d => {
         if (d.reportSent) done++;
         else if (d.stage >= 4) s4++;
@@ -871,14 +903,9 @@
           revN++;
           revSum += (d.review.goalMet + d.review.factConf + d.review.actionConf) / 3;
         }
-        if (d.tagCount) {
-          Object.keys(tagAgg).forEach(k => {
-            if (d.tagCount[k]) tagAgg[k] += d.tagCount[k];
-          });
-        }
+        if (d.tagsCount) totalTags += d.tagsCount;
       });
       const avgReview = revN ? (revSum / revN).toFixed(1) : '-';
-      const totalTags = tagAgg.shock + tagAgg.sad + tagAgg.wow + tagAgg.anger;
 
       // 학생 행
       const rows = list.length === 0
@@ -903,17 +930,13 @@
             '</tr>';
           }).join('');
 
-      // 감정 분포 행
-      const tagRow = Object.keys(TAG_INFO).map(k => {
-        const n = tagAgg[k];
-        const pct = totalTags > 0 ? Math.round(n / totalTags * 100) : 0;
-        return '<tr><td>' + TAG_INFO[k].label + '</td>' +
-          '<td class="num">' + n + '</td>' +
-          '<td class="num">' + pct + '%</td></tr>';
-      }).join('');
+      // 자유 입력 합계 행 (RRRRR-1 — 5종 분포에서 단일 자유 입력으로)
+      const tagRow = '<tr><td>학생 단서별 한 문장 자유 입력</td>' +
+        '<td class="num">' + totalTags + '</td>' +
+        '<td class="num">100%</td></tr>';
 
       $('printPanel').innerHTML =
-        '<h1>📋 사라진 바다 — 학급 진행 리포트</h1>' +
+        '<h1>📋 P.E.A.C.E. — 학급 진행 리포트</h1>' +
         '<div class="meta">' +
           '교실: <strong>' + esc(room) + '</strong>  ·  ' +
           '출력 시각: ' + esc(date) + '  ·  ' +
@@ -930,21 +953,21 @@
             '<td class="num">★ ' + avgReview + ' / 5.0</td></tr>' +
         '</table>' +
 
-        '<h2>💭 학급 감정 태그 분포 (단서별 학생 반응)</h2>' +
+        '<h2>💭 학급 단서별 자유 입력 — 학생이 직접 쓴 생각</h2>' +
         '<table>' +
-          '<tr><th>감정</th><th>합계</th><th>비율</th></tr>' +
+          '<tr><th>항목</th><th>합계</th><th>비율</th></tr>' +
           tagRow +
         '</table>' +
 
         '<h2>👥 학생별 학습 흔적</h2>' +
         '<table>' +
-          '<tr><th>No</th><th>참가번호</th><th>단계</th><th>단서</th><th>핵심</th>' +
-            '<th>태그</th><th>자기평가</th><th>인과 사슬</th><th>자기성찰</th></tr>' +
+          '<tr><th>No</th><th>이름(학번)</th><th>단계</th><th>단서</th><th>핵심</th>' +
+            '<th>생각</th><th>자기평가</th><th>인과 사슬</th><th>자기성찰</th></tr>' +
           rows +
         '</table>' +
 
         '<p style="text-align:right;font-size:11px;color:#666;margin-top:14px">' +
-          '— 공도중학교 「사라진 바다」 교사 대시보드 자동 생성 —' +
+          '— 공도중학교 P.E.A.C.E. 교사 대시보드 자동 생성 —' +
         '</p>';
 
       // 인쇄 다이얼로그 호출
