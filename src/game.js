@@ -5723,75 +5723,58 @@ class InvestigationScene extends Phaser.Scene {
     }
   }
 
-  // 자기조절학습의 "자기 모니터링" — 단서별 학생 감정·생각 태그 부착
+  // 자기조절학습의 "자기 모니터링" — 단서별 학생 자유 입력 생각·소감
+  // (이전엔 5지선다 감정 태그였으나 학생이 자유롭게 타이핑하는 방식으로 전환)
   askThoughtTag(evidence) {
     if (this.thoughtOpen) return;
     this.thoughtOpen = true;
 
-    const TAGS = [
-      { id: 'shock',  label: '충격적이다',  color: 0xe06b6b },
-      { id: 'sad',    label: '안타깝다',    color: 0xe79a78 },
-      { id: 'wow',    label: '인상적이다',  color: 0x6fb7d6 },
-      { id: 'anger',  label: '화가 난다',   color: 0xc96b96 },
-      { id: 'skip',   label: '나중에…',      color: 0x7a8a98 },
-    ];
-
     const layer = [];
-    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.7)
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.65)
       .setDepth(3500).setInteractive();
     layer.push(dim);
 
-    // 16:10(960폭) 가운데 정렬: px = (960 - 600) / 2 = 180
-    const px = 180, py = 200, pw = 600, ph = 200;
+    const px = 180, py = 210, pw = 600, ph = 180;
     const pg = this.add.graphics().setDepth(3501);
     pg.fillStyle(0x10202e, 1); pg.fillRect(px, py, pw, ph);
     pg.lineStyle(3, 0xc9a36b, 1); pg.strokeRect(px, py, pw, ph);
     layer.push(pg);
 
-    layer.push(this.add.text(480, py + 22, '💭  잠깐 — 이 단서에 대한 내 생각은?', {
-      fontFamily: FONT_TITLE, fontSize: '16px', color: '#ffe9b8',
+    layer.push(this.add.text(480, py + 26, '💭  이 단서에 대한 내 생각', {
+      fontFamily: FONT_TITLE, fontSize: '17px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3502));
-    layer.push(this.add.text(480, py + 50, '【 ' + evidence.name + ' 】', {
+    layer.push(this.add.text(480, py + 60, '【 ' + evidence.name + ' 】', {
       fontFamily: FONT, fontSize: '13px', color: '#cfe9ff'
     }).setOrigin(0.5).setDepth(3502));
+    layer.push(this.add.text(480, py + 100,
+      '잠시 후 입력창이 뜹니다 —\n한 문장으로 자유롭게 적어주세요 (선택 입력)', {
+      fontFamily: FONT, fontSize: '12px', color: '#a8c4dc',
+      align: 'center', lineSpacing: 4
+    }).setOrigin(0.5).setDepth(3502));
 
-    // 5개 버튼 가로 배치 — 16:10 캔버스 가운데(480) 기준
-    const btnW = 100, btnH = 60, gap = 12;
-    const totalW = btnW * 5 + gap * 4;
-    const startX = 480 - totalW / 2;
-    TAGS.forEach((t, i) => {
-      const bx = startX + i * (btnW + gap);
-      const by = py + 100;
-      const g = this.add.graphics().setDepth(3502);
-      const draw = (hover) => {
-        g.clear();
-        g.fillStyle(hover ? 0x2e4a6e : 0x102238, 1);
-        g.fillRect(bx, by, btnW, btnH);
-        g.lineStyle(2, t.color, 1);
-        g.strokeRect(bx, by, btnW, btnH);
-        g.fillStyle(t.color, 1);
-        g.fillRect(bx, by, btnW, 4);
-      };
-      draw(false);
-      const txt = this.add.text(bx + btnW / 2, by + btnH / 2, t.label, {
-        fontFamily: FONT, fontSize: '12px', color: '#e6efff'
-      }).setOrigin(0.5).setDepth(3503);
-      const zone = this.add.zone(bx + btnW / 2, by + btnH / 2, btnW, btnH)
-        .setInteractive({ useHandCursor: true }).setDepth(3504);
-      zone.on('pointerover', () => draw(true));
-      zone.on('pointerout', () => draw(false));
-      zone.on('pointerdown', () => {
-        // 태그 저장 (skip이면 빈 값)
-        if (t.id !== 'skip') {
+    const close = () => {
+      layer.forEach(o => { if (o && o.destroy) o.destroy(); });
+      this.thoughtOpen = false;
+    };
+
+    // 약간의 안내 시간 후 prompt — 학생이 단서명을 인식할 시간 확보
+    this.time.delayedCall(450, () => {
+      const txt = window.prompt(
+        '💭 이 단서에 대한 내 생각을 적어주세요\n\n' +
+        '【 ' + evidence.name + ' 】\n\n' +
+        '한 문장으로 자유롭게 (최대 100자, 비우거나 취소하면 건너뜀)',
+        ''
+      );
+      if (txt !== null) {
+        const trimmed = txt.trim().slice(0, 100);
+        if (trimmed.length > 0) {
           const tags = this.registry.get('evidenceTags') || {};
-          tags[evidence.id] = { id: t.id, label: t.label };
+          tags[evidence.id] = { id: 'custom', label: trimmed };
           this.registry.set('evidenceTags', tags);
         }
-        layer.forEach(o => { if (o && o.destroy) o.destroy(); });
-        this.thoughtOpen = false;
-      });
-      layer.push(g, txt, zone);
+      }
+      close();
     });
   }
 
