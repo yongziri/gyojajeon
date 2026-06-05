@@ -541,14 +541,30 @@
       const td = $('tagDist');
       if (totalTags > 0) {
         td.style.display = 'block';
-        td.innerHTML = '<h3>💭 학급 단서별 자유 입력 — 학생이 직접 쓴 생각</h3>' +
-          '<div class="tagBar"><div class="l">총 입력 개수</div>' +
-          '<div class="b"><div style="width:100%;background:#c9a36b"></div></div>' +
-          '<div class="n">' + totalTags + '</div></div>' +
-          '<p style="margin:6px 0 0;font-size:12px;color:#9aa6ad">' +
+        // 학생별 자유 입력 카드 — 학생이 직접 쓴 한 문장 모음 (실제 본문 표시)
+        let liveTagCards = '';
+        list.forEach(d => {
+          if (!d.tags) return;
+          const items = Object.values(d.tags)
+            .map(t => (t && t.label) ? t.label : '')
+            .filter(x => x);
+          if (items.length === 0) return;
+          liveTagCards +=
+            '<div style="margin:8px 0;padding:10px 12px;border-left:3px solid #c9a36b;background:#1a2430">' +
+              '<div style="font-weight:bold;color:#ffe9b8;font-size:13px;margin-bottom:6px">' +
+                esc(d.name || d.id) + ' (' + items.length + '개)' +
+              '</div>' +
+              '<ul style="margin:0;padding-left:18px;color:#fff8d0;font-size:12px;line-height:1.7">' +
+                items.map(s => '<li>' + esc(s) + '</li>').join('') +
+              '</ul>' +
+            '</div>';
+        });
+        td.innerHTML =
+          '<h3>💭 학급 단서별 자유 입력 — 학생이 직접 쓴 생각 (총 ' + totalTags + '개)</h3>' +
+          '<p style="margin:0 0 8px;font-size:12px;color:#9aa6ad">' +
             '참여 학생 ' + withTagCount + '명 · 단서마다 한 문장 자유 입력 (자기 모니터링)' +
-          '</p>';
-        // 폴백 — 옛 5종 분포는 더 이상 표시 안 함
+          '</p>' +
+          (liveTagCards || '<p style="color:#7a8590;font-style:italic">아직 학생 입력 없음</p>');
         return;
       } else if (false) {
         td.innerHTML = '<h3>💭 학급 감정 태그 분포 (단서별 학생 반응)</h3>' +
@@ -936,10 +952,27 @@
             '</tr>';
           }).join('');
 
-      // 자유 입력 합계 행 (RRRRR-1 — 5종 분포에서 단일 자유 입력으로)
-      const tagRow = '<tr><td>학생 단서별 한 문장 자유 입력</td>' +
-        '<td class="num">' + totalTags + '</td>' +
-        '<td class="num">100%</td></tr>';
+      // 자유 입력 모음 — 학생별로 실제 쓴 문장 나열 (요약 숫자가 아닌 본문)
+      let tagItemsHtml = '';
+      list.forEach(d => {
+        if (!d.tags) return;
+        const items = Object.values(d.tags)
+          .map(t => (t && t.label) ? esc(t.label) : '')
+          .filter(x => x);
+        if (items.length === 0) return;
+        tagItemsHtml +=
+          '<div style="margin:8px 0;padding:8px 10px;border-left:3px solid #c9a36b;background:#fff8e7">' +
+            '<div style="font-weight:bold;color:#6a4f2a;font-size:12px;margin-bottom:4px">' +
+              esc(d.name || d.id) + ' (' + items.length + '개)' +
+            '</div>' +
+            '<ul style="margin:0;padding-left:18px;color:#3a2410;font-size:12px;line-height:1.6">' +
+              items.map(s => '<li>' + s + '</li>').join('') +
+            '</ul>' +
+          '</div>';
+      });
+      if (!tagItemsHtml) {
+        tagItemsHtml = '<p style="color:#999;font-style:italic">아직 학생 입력 없음</p>';
+      }
 
       $('printPanel').innerHTML =
         '<h1>📋 P.E.A.C.E. — 학급 진행 리포트</h1>' +
@@ -959,11 +992,8 @@
             '<td class="num">★ ' + avgReview + ' / 5.0</td></tr>' +
         '</table>' +
 
-        '<h2>💭 학급 단서별 자유 입력 — 학생이 직접 쓴 생각</h2>' +
-        '<table>' +
-          '<tr><th>항목</th><th>합계</th><th>비율</th></tr>' +
-          tagRow +
-        '</table>' +
+        '<h2>💭 학급 단서별 자유 입력 — 학생이 직접 쓴 생각 (총 ' + totalTags + '개)</h2>' +
+        tagItemsHtml +
 
         '<h2>👥 학생별 학습 흔적</h2>' +
         '<table>' +
