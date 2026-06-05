@@ -31,7 +31,7 @@ const CITIZENS_BY_CASE = {
   intro: [
     {
       id: 'james',
-      name: '제임스 (동기)',
+      name: '제임스',
       sprite: 'tiny_dungeon',
       frame: 84,
       portrait: 'portrait_james',
@@ -180,7 +180,7 @@ const CITIZENS_BY_CASE = {
     // ── 1) 선생님 이리나 — "교실 없는 미래" ──────────────
     {
       id: 'teacher',
-      name: '선생님 이리나',
+      name: '이리나',
       sprite: 'tiny_dungeon',
       frame: 84,
       portrait: 'portrait_teacher',
@@ -213,7 +213,7 @@ const CITIZENS_BY_CASE = {
     // ── 2) 농부 페트로 — "세계의 식탁" ───────────────────
     {
       id: 'farmer',
-      name: '농부 페트로',
+      name: '페트로',
       sprite: 'tiny_dungeon',
       frame: 96,
       portrait: 'portrait_farmer',
@@ -246,7 +246,7 @@ const CITIZENS_BY_CASE = {
     // ── 3) 자원봉사 마리아 — "보이지 않는 상처" ─────────
     {
       id: 'volunteer',
-      name: '자원봉사 마리아',
+      name: '마리아',
       sprite: 'tiny_dungeon',
       frame: 85,
       portrait: 'portrait_volunteer',
@@ -287,7 +287,7 @@ const CITIZENS_BY_CASE = {
     // ── 1) 압바스 할아버지 — "천 년의 뿌리" (무슬림 농부) ─────
     {
       id: 'farmer_abbas',
-      name: '압바스 할아버지',
+      name: '압바스',
       sprite: 'tiny_dungeon',
       frame: 96,
       portrait: 'portrait_abbas',
@@ -320,7 +320,7 @@ const CITIZENS_BY_CASE = {
     // ── 2) 레이첼 — "양쪽 아이들의 같은 그림" (유대인 사진기자) ─
     {
       id: 'photo_rachel',
-      name: '레이첼 (사진기자)',
+      name: '레이첼',
       sprite: 'tiny_dungeon',
       frame: 84,
       portrait: 'portrait_rachel',
@@ -353,7 +353,7 @@ const CITIZENS_BY_CASE = {
     // ── 3) 하나 — "한 알 약의 정치" (UN 의료 봉사자) ──────────
     {
       id: 'medic_hana',
-      name: '하나 (UN 의료봉사)',
+      name: '하나',
       sprite: 'tiny_dungeon',
       frame: 85,
       portrait: 'portrait_hana',
