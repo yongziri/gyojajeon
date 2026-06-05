@@ -302,6 +302,36 @@
     </div>
   </div>
 
+  <!-- 공통 텍스트 입력 모달 — 단서 자유 입력·다짐·자기성찰 (모바일 prompt() 대체) -->
+  <div id="textInputModal" style="display:none; position:fixed; inset:0; z-index:20000;
+       background:rgba(0,0,0,0.78); align-items:center; justify-content:center;">
+    <div style="background:#10202e; border:2px solid #c9a36b; box-shadow:0 8px 24px rgba(0,0,0,0.6);
+         padding:24px 26px; max-width:480px; width:92%; font-family:'MonaS',sans-serif;
+         color:#dff1ff;">
+      <h2 id="textInputTitle" style="margin:0 0 4px; font-size:18px; color:#ffe082;
+          font-weight:bold; text-align:center;">💭 입력</h2>
+      <p id="textInputSubtitle" style="margin:6px 0 16px; font-size:13px; color:#cfe9ff;
+         text-align:center; line-height:1.5;"></p>
+      <textarea id="textInputArea" maxlength="200" rows="3"
+        placeholder="여기에 입력하세요"
+        style="width:100%; box-sizing:border-box; padding:10px;
+               background:#1a2430; border:1px solid #6a4f2a; color:#ffe9b8;
+               font-family:'MonaS-Text','MonaS',sans-serif; font-size:14px;
+               resize:vertical; min-height:60px; margin-bottom:8px;"></textarea>
+      <div style="text-align:right; font-size:11px; color:#7aa6c8; margin-bottom:14px;">
+        <span id="textInputCount">0</span> / <span id="textInputMax">200</span> 자
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button id="textInputCancel" style="padding:8px 18px; background:#4a3a22; color:#ffe9b8;
+                border:1px solid #c9a36b; cursor:pointer; font-family:'MonaS',sans-serif;
+                font-size:13px;">← 건너뛰기</button>
+        <button id="textInputConfirm" style="padding:8px 24px; background:#2e6b58; color:#fff;
+                border:1px solid #ffe9b8; cursor:pointer; font-family:'MonaS',sans-serif;
+                font-size:13px; font-weight:bold;">✓ 저장</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 인쇄용 보고서 컨테이너 — buildSent에서 동적으로 채움 -->
   <div id="printReport"></div>
 
@@ -427,6 +457,63 @@
         show();
         // 약간 지연 후 첫 입력 포커스
         setTimeout(() => nameInp.focus(), 80);
+      };
+    })();
+
+    // ── 공통 텍스트 입력 모달 — window.PEACE.openTextInputModal(opts, onConfirm) ──
+    // 모바일 브라우저의 window.prompt() 차단·억제 문제 픽스용 (RRRRR-1, YY-1)
+    // opts: { title, subtitle, placeholder, maxLength, initial }
+    // onConfirm(text) — 사용자가 저장 시 호출. 취소하면 호출 안 함.
+    (function () {
+      window.PEACE = window.PEACE || {};
+      const modal = document.getElementById('textInputModal');
+      const titleEl = document.getElementById('textInputTitle');
+      const subtitleEl = document.getElementById('textInputSubtitle');
+      const area = document.getElementById('textInputArea');
+      const countEl = document.getElementById('textInputCount');
+      const maxEl = document.getElementById('textInputMax');
+      const confirmBtn = document.getElementById('textInputConfirm');
+      const cancelBtn = document.getElementById('textInputCancel');
+      if (!modal || !area || !confirmBtn || !cancelBtn) return;
+
+      let pendingOnConfirm = null;
+      let currentMax = 200;
+
+      function hide() { modal.style.display = 'none'; pendingOnConfirm = null; }
+      function updateCount() {
+        countEl.textContent = String((area.value || '').length);
+      }
+
+      area.addEventListener('input', updateCount);
+      // Enter — 줄바꿈 허용 (textarea), Ctrl+Enter로 확인
+      area.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); hide(); }
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault(); confirmBtn.click();
+        }
+      });
+
+      confirmBtn.addEventListener('click', () => {
+        const text = (area.value || '').trim().slice(0, currentMax);
+        const cb = pendingOnConfirm;
+        hide();
+        if (typeof cb === 'function') cb(text);
+      });
+      cancelBtn.addEventListener('click', hide);
+
+      window.PEACE.openTextInputModal = function (opts, onConfirm) {
+        opts = opts || {};
+        titleEl.textContent = opts.title || '💭 입력';
+        subtitleEl.innerHTML = opts.subtitle || '';
+        area.placeholder = opts.placeholder || '여기에 입력하세요';
+        currentMax = opts.maxLength || 200;
+        area.maxLength = currentMax;
+        maxEl.textContent = String(currentMax);
+        area.value = opts.initial || '';
+        updateCount();
+        pendingOnConfirm = onConfirm;
+        modal.style.display = 'flex';
+        setTimeout(() => area.focus(), 80);
       };
     })();
   </script>

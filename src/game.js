@@ -5764,23 +5764,29 @@ class InvestigationScene extends Phaser.Scene {
       this.thoughtOpen = false;
     };
 
-    // 약간의 안내 시간 후 prompt — 학생이 단서명을 인식할 시간 확보
-    this.time.delayedCall(450, () => {
-      const txt = window.prompt(
-        '💭 이 단서에 대한 내 생각을 적어주세요\n\n' +
-        '【 ' + evidence.name + ' 】\n\n' +
-        '한 문장으로 자유롭게 (최대 100자, 비우거나 취소하면 건너뜀)',
-        ''
-      );
-      if (txt !== null) {
-        const trimmed = txt.trim().slice(0, 100);
+    // 약간의 안내 시간 후 HTML 모달 — 모바일 prompt 차단 문제 회피
+    this.time.delayedCall(400, () => {
+      const proceed = (text) => {
+        const trimmed = (text || '').trim().slice(0, 100);
         if (trimmed.length > 0) {
           const tags = this.registry.get('evidenceTags') || {};
           tags[evidence.id] = { id: 'custom', label: trimmed };
           this.registry.set('evidenceTags', tags);
         }
+        close();
+      };
+      if (window.PEACE && typeof window.PEACE.openTextInputModal === 'function') {
+        window.PEACE.openTextInputModal({
+          title: '💭 이 단서에 대한 내 생각',
+          subtitle: '【 ' + evidence.name + ' 】<br>한 문장으로 자유롭게 (선택 입력)',
+          placeholder: '예: 충격적이다 — 면화 한 송이에 이렇게 많은 물이…',
+          maxLength: 100,
+          initial: ''
+        }, proceed);
+      } else {
+        // 폴백 — 모달 없으면 그냥 닫음 (멈춤 방지)
+        close();
       }
-      close();
     });
   }
 
@@ -6336,14 +6342,20 @@ class LetterScene extends Phaser.Scene {
     this.userPledgeBtn = fancyButton(this, 480, 578, 380, 42, upLabel(),
       () => {
         const cur = this.userPledge || '';
-        const txt = window.prompt(
-          'UN에 전할 내 다짐을 한 문장으로 적어주세요\n(최대 200자, 선택 입력)',
-          cur);
-        if (txt !== null) {
-          this.userPledge = txt.trim().slice(0, 200);
+        const apply = (text) => {
+          this.userPledge = (text || '').trim().slice(0, 200);
           this.registry.set('userPledge', this.userPledge);
           this.userPledgeBtn.t.setText(upLabel());
           this.buildCompose();
+        };
+        if (window.PEACE && typeof window.PEACE.openTextInputModal === 'function') {
+          window.PEACE.openTextInputModal({
+            title: '✍ UN에 전할 내 다짐',
+            subtitle: '한 문장으로 자유롭게 적어주세요 (선택 입력)',
+            placeholder: '예: 관심·연대·실천 — 셋 다 마음에 새기겠습니다',
+            maxLength: 200,
+            initial: cur
+          }, apply);
         }
       },
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0xc9a36b, text: '#ffe9b8' });
@@ -7085,12 +7097,28 @@ class ReflectionScene extends Phaser.Scene {
     this.userStmtBtn = fancyButton(this, 480, 510, 700, 30, userBtnLabel(),
       () => {
         const cur = this.userStmt || '';
+        const apply = (text) => {
+          this.userStmt = (text || '').trim().slice(0, 200);
+          // 입력 즉시 저장 — "닫기"로 나가도 본인 작성 보존
+          this.registry.set('userReflection', this.userStmt);
+          this.userStmtBtn.t.setText(userBtnLabel());
+        };
+        if (window.PEACE && typeof window.PEACE.openTextInputModal === 'function') {
+          window.PEACE.openTextInputModal({
+            title: '✍ 내 생각 한 문장',
+            subtitle: '가장 마음에 남은 단서나 생각을 한 문장으로 (선택 입력)',
+            placeholder: '예: 환경 문제는 결국 사람의 문제다',
+            maxLength: 200,
+            initial: cur
+          }, apply);
+          return;
+        }
+        // 폴백 — 모달 없으면 기존 prompt
         const txt = window.prompt(
           '가장 마음에 남은 단서나 생각을 한 문장으로 적어주세요\n(최대 200자, 선택 입력)',
           cur);
         if (txt !== null) {
           this.userStmt = txt.trim().slice(0, 200);
-          // 입력 즉시 저장 — "닫기"로 나가도 본인 작성 보존
           this.registry.set('userReflection', this.userStmt);
           this.userStmtBtn.t.setText(userBtnLabel());
         }
