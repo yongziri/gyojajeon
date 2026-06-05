@@ -3249,8 +3249,14 @@ function reportProgress(scene, extra) {
         actionConf: review.actionConf,
         wantNext:   review.wantNextLabel || '',
       } : null,
-      tagCount,                                     // { shock: N, sad: N, wow: N, anger: N }
+      tagCount,                                     // { custom: N } (RRRRR-1 자유 입력 후엔 의미 작음)
       tagsCount: Object.keys(tags).length,          // 부착된 태그 총 개수
+      // 학생이 단서마다 직접 쓴 한 문장 (자유 입력 — 대시보드에서 학습 흔적 표시)
+      tags: Object.fromEntries(
+        Object.entries(tags).map(([eid, t]) => [
+          eid, { label: (t && t.label) || '' }
+        ])
+      ),
       peace,                                        // { dims, total, max, grade }
     };
     if (extra) Object.assign(state, extra);

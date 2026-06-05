@@ -836,11 +836,12 @@
         return /[,"\n]/.test(t) ? '"' + t + '"' : t;
       };
       const header = [
-        '번호', '이름', '단계', '보고서송부',
-        '현장단서', '핵심단서', '감정태그수',
+        '번호', '이름(학번)', '단계', '보고서송부',
+        '현장단서', '핵심단서', '단서별생각수',
         'P.E.A.C.E.총점', '등급',
         '공감', '사실이해', '연결', '실천', '국제협력',
         '인과사슬', '자기성찰(카드)', '내 생각(자유)', '내 다짐(자유)',
+        '단서별 자유입력 모음',
         '자기평가평균',
       ];
       const rows = list.map((d, i) => {
@@ -851,6 +852,10 @@
         const avgRv = rv ? ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1) : '';
         const chain = (refl.chainNames && refl.chainNames.length === 3)
           ? refl.chainNames.join(' → ') : '';
+        // 단서별 자유 입력 모음 — 한 셀에 모든 학생 입력 합치기
+        const tagTexts = d.tags
+          ? Object.values(d.tags).map(t => (t && t.label) || '').filter(x => x).join(' / ')
+          : '';
         return [
           i + 1,
           d.name || d.id,
@@ -865,6 +870,7 @@
           refl.statement || '',
           refl.userStatement || '',
           d.userPledge || '',
+          tagTexts,
           avgRv,
         ].map(csvEsc).join(',');
       });
