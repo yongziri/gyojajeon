@@ -2462,23 +2462,39 @@ class LearningTreeScene extends Phaser.Scene {
     for (let x = 0; x < GAME_W; x += 40) bg.lineBetween(x, 0, x, GAME_H);
     for (let y = 0; y < GAME_H; y += 40) bg.lineBetween(0, y, GAME_W, y);
 
-    // 상단 타이틀
-    panel(this, 480, 40, 920, 56, 0x1a2a2a, 0x7fd07f);
-    this.add.text(480, 30, '🌳  나의 학습 트리  ·  Learning Portfolio', {
-      fontFamily: FONT_TITLE, fontSize: '18px', color: '#dfffdf',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    this.add.text(480, 54, '내가 거쳐온 사건들의 학습 흔적', {
-      fontFamily: FONT, fontSize: '12px', color: '#a8d4b0'
-    }).setOrigin(0.5);
-
+    // 상단 타이틀 — 도전 진행 카운트 추가
     const completed = this.registry.get('completedCases') || [];
     const reviews = this.registry.get('caseReviews') || {};
     const reflection = this.registry.get('reflection') || null;
+    const _treeCases = CASE_LIST.filter(c => c.id !== 'intro');
+    const _compCount = completed.filter(id => id !== 'intro').length;
+
+    panel(this, 480, 40, 920, 56, 0x1a2a2a, 0x7fd07f);
+    this.add.text(380, 30, '🏆  나의 학습 트리  ·  Learning Portfolio', {
+      fontFamily: FONT_TITLE, fontSize: '18px', color: '#dfffdf',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.add.text(380, 54, '내가 정복한 사건들의 학습 흔적', {
+      fontFamily: FONT, fontSize: '12px', color: '#a8d4b0'
+    }).setOrigin(0.5);
+    // 우상단 — 트로피 진열대 (도전 진행도)
+    const trophyBg = this.add.graphics();
+    trophyBg.fillStyle(0x2a2010, 0.85);
+    trophyBg.fillRect(680, 18, 240, 44);
+    trophyBg.lineStyle(2, 0xffd96a, 1);
+    trophyBg.strokeRect(680, 18, 240, 44);
+    this.add.text(800, 32, '🏆 정복 진행도', {
+      fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffd96a',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.add.text(800, 50, _compCount + ' / ' + _treeCases.length + '  사건', {
+      fontFamily: FONT, fontSize: '12px', color: '#fff8d0'
+    }).setOrigin(0.5);
 
     // 사건별 카드 (본 사건 3개만 표시 — 미완료는 회색)
-    // intro(튜토리얼)는 학습 트리에서 제외 (cardH 162 × 4 = 캔버스 600 초과)
-    const cardH = 162, cardW = 880, gap = 8;
+    // intro(튜토리얼)는 학습 트리에서 제외
+    // 새 layout: cardH=140, gap=6 → 3*146-6=432 (startY 90 ~ end 522, list 안 fit)
+    const cardH = 140, cardW = 880, gap = 6;
     const startY = 90;
     const treeCases = CASE_LIST.filter(c => c.id !== 'intro');
     treeCases.forEach((c, i) => {
@@ -2503,28 +2519,49 @@ class LearningTreeScene extends Phaser.Scene {
         fontFamily: FONT, fontSize: '12px',
         color: done ? '#cfe9ff' : '#6e7a86'
       });
-      // 우상단 상태
+      // 우상단 — 도전 상태 메달 (도전과제 느낌 강화)
       if (done) {
+        // 🥇 황금 메달 — 정복 완료
         const sg = this.add.graphics();
-        sg.fillStyle(0x3a2e10, 1); sg.fillRect(cardW - 60, y + 14, 76, 22);
-        sg.lineStyle(1, 0xffd96a, 1); sg.strokeRect(cardW - 60, y + 14, 76, 22);
-        this.add.text(cardW - 22, y + 25, '★  완료', {
-          fontFamily: FONT, fontSize: '11px', color: '#ffd96a'
+        sg.fillStyle(0x3a2e10, 1); sg.fillRect(cardW - 90, y + 14, 106, 28);
+        sg.lineStyle(2, 0xffd96a, 1); sg.strokeRect(cardW - 90, y + 14, 106, 28);
+        sg.fillStyle(0xffd96a, 0.2); sg.fillCircle(cardW - 76, y + 28, 9);
+        this.add.text(cardW - 76, y + 28, '🥇', {
+          fontFamily: 'sans-serif', fontSize: '15px'
         }).setOrigin(0.5);
-        // ★ 완료 배지 좌측 — 안내인 대화 다시 보기 버튼
-        const replayBtn = fancyButton(this, cardW - 200, y + 25, 130, 24,
+        this.add.text(cardW - 20, y + 28, '정복 완료', {
+          fontFamily: FONT, fontSize: '12px', color: '#ffd96a',
+          fontStyle: 'bold'
+        }).setOrigin(0.5);
+        // 메달 좌측 — 안내인 대화 다시 보기 버튼
+        const replayBtn = fancyButton(this, cardW - 230, y + 28, 130, 24,
           '💬 대화 다시 보기',
           () => this.showDialogueReplay(c.id, c.title),
           { base: 0x2b3a52, hover: 0x3c5170, edge: 0xc9a36b, text: '#ffe9b8' });
         if (replayBtn.t) replayBtn.t.setFontSize(11);
       } else if (c.status === 'available') {
-        this.add.text(cardW - 24, y + 25, '─ 미완료', {
-          fontFamily: FONT, fontSize: '11px', color: '#7a8a98'
-        }).setOrigin(1, 0.5);
+        // 🏅 도전 가능 — 미완료지만 해제됨
+        const sg = this.add.graphics();
+        sg.fillStyle(0x103a2a, 1); sg.fillRect(cardW - 90, y + 14, 106, 28);
+        sg.lineStyle(2, 0x7fd07f, 1); sg.strokeRect(cardW - 90, y + 14, 106, 28);
+        this.add.text(cardW - 76, y + 28, '🏅', {
+          fontFamily: 'sans-serif', fontSize: '15px'
+        }).setOrigin(0.5);
+        this.add.text(cardW - 20, y + 28, '도전 가능', {
+          fontFamily: FONT, fontSize: '12px', color: '#7fd07f',
+          fontStyle: 'bold'
+        }).setOrigin(0.5);
       } else {
-        this.add.text(cardW - 24, y + 25, '🔒 준비중', {
-          fontFamily: FONT, fontSize: '11px', color: '#7a8a98'
-        }).setOrigin(1, 0.5);
+        // 🔒 잠금
+        const sg = this.add.graphics();
+        sg.fillStyle(0x1a1a22, 1); sg.fillRect(cardW - 90, y + 14, 106, 28);
+        sg.lineStyle(1, 0x55626c, 1); sg.strokeRect(cardW - 90, y + 14, 106, 28);
+        this.add.text(cardW - 76, y + 28, '🔒', {
+          fontFamily: 'sans-serif', fontSize: '14px'
+        }).setOrigin(0.5);
+        this.add.text(cardW - 20, y + 28, '잠금', {
+          fontFamily: FONT, fontSize: '12px', color: '#7a8a98'
+        }).setOrigin(0.5);
       }
 
       // 학습 흔적 본문 (완료 사건만)
@@ -2671,20 +2708,29 @@ class LearningTreeScene extends Phaser.Scene {
           });
         }
       } else if (c.status === 'available') {
-        this.add.text(60, y + 96,
-          '— 이 사건을 마치면 학습 흔적이 여기 누적됩니다.', {
+        // 도전 보상 미리보기 — 학생 동기부여
+        this.add.text(60, y + 70, '🎯 도전 보상', {
+          fontFamily: FONT_TITLE, fontSize: '13px', color: '#7fd07f',
+          fontStyle: 'bold'
+        });
+        this.add.text(60, y + 92,
+          '  🥇 정복 메달   ·   📊 5차원 평가 점수   ·   🏆 트로피 진열대 +1', {
+          fontFamily: FONT, fontSize: '11px', color: '#a8d4b0'
+        });
+        this.add.text(60, y + 112,
+          '— 이 사건을 마치면 학습 흔적과 보상이 여기 누적됩니다.', {
           fontFamily: FONT, fontSize: '11px', color: '#5a6470', fontStyle: 'italic'
         });
       } else {
         this.add.text(60, y + 96,
-          '— 후속 업데이트 예정', {
+          '🔒 후속 업데이트 예정', {
           fontFamily: FONT, fontSize: '11px', color: '#5a6470', fontStyle: 'italic'
         });
       }
     });
 
-    // 하단 종합 요약 — 완료 개수 + 평균 평가
-    const ftY = 555;
+    // 하단 종합 요약 — 완료 개수 + 평균 평가 (카드 영역 끝 532 이후)
+    const ftY = 540;
     // intro(튜토리얼)는 학습 트리 카운트에서 제외 — 본 사건 완료만 표시
     const compCount = completed.filter(id => id !== 'intro').length;
     const reviewVals = Object.values(reviews);
