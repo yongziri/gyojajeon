@@ -6291,17 +6291,17 @@ class LetterScene extends Phaser.Scene {
       fontFamily: FONT_TITLE, fontSize: '24px', color: '#ffe9b8', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3);
 
-    // 단계 progress 표시 — 1.받는곳 → 2.단서 → 3.다짐 → 4.검토
-    // (이 4단계는 compose 화면 안의 작업 흐름. 4=검토 통과 시 다음 화면 진입)
+    // 단계 progress 표시 — 1.단서 → 2.다짐 → 3.검토 (3단계)
+    // (받는 곳 선택은 제거됨 — 사건별 기본 수신처 자동 사용)
     const stages = [
-      { n: 1, label: '받는 곳', done: this.recipient !== undefined && this.recipient !== null },
-      { n: 2, label: '단서',    done: this.factPicks.size > 0 },
-      { n: 3, label: '다짐',    done: this.pledgePicks.size > 0 },
-      { n: 4, label: '검토',    done: false },
+      { n: 1, label: '단서', done: this.factPicks.size > 0 },
+      { n: 2, label: '다짐', done: this.pledgePicks.size > 0 },
+      { n: 3, label: '검토', done: false },
     ];
     const stepY = 84;
+    // 3개 progress 가운데 정렬: 가운데 480, 간격 180 → 300, 480, 660
     stages.forEach((s, i) => {
-      const x = 200 + i * 180;
+      const x = 300 + i * 180;
       const colorBg = s.done ? 0x2e6b58 : 0x4a3a22;
       const colorText = s.done ? '#ffffff' : '#c9a36b';
       const cg = this.add.graphics().setDepth(3);
@@ -6319,21 +6319,10 @@ class LetterScene extends Phaser.Scene {
       }
     });
 
-    // 1) 받는 곳
-    this.sectionLabel(40, 110, '1. 누구에게 보낼까요?');
-    this.RECIPIENTS.forEach((r, i) => {
-      const x = 80 + i * 320, y = 132;
-      const btn = fancyButton(this, x + 110, y + 18, 220, 38, r.short,
-        () => { this.recipient = i; this.buildCompose(); },
-        i === this.recipient
-          ? { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' }
-          : { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
-    });
-
-    // ── 단서·다짐 좌우 분할 (사건마다 단서 수 달라도 빈 공간 없음) ──
-    // 2) 알게 된 사실 — 좌측 칼럼 (40~460)
-    const FACT_X = 40, FACT_LIST_X = 70, FACT_W = 380, FACT_Y0 = 206, ROW_H = 26;
-    this.sectionLabel(FACT_X, 176, '2. 내가 알게 된 사실 (최대 3개 선택)');
+    // ── 단서·다짐 좌우 분할 (받는 곳 섹션 제거로 위로 이동) ──
+    // 1) 알게 된 사실 — 좌측 칼럼 (40~460)
+    const FACT_X = 40, FACT_LIST_X = 70, FACT_W = 380, FACT_Y0 = 168, ROW_H = 26;
+    this.sectionLabel(FACT_X, 138, '1. 내가 알게 된 사실 (최대 3개 선택)');
     if (this.collected.length === 0) {
       this.add.text(FACT_LIST_X, FACT_Y0, '먼저 조사를 통해 단서를 모아 주세요.', {
         fontFamily: FONT, fontSize: '13px', color: '#7a3a3a'
@@ -6356,14 +6345,14 @@ class LetterScene extends Phaser.Scene {
       });
     }
 
-    // 좌우 사이 세로 구분선
+    // 좌우 사이 세로 구분선 (받는 곳 제거로 위로 이동)
     const divider = this.add.graphics().setDepth(2);
     divider.lineStyle(1, 0xc9a36b, 0.4);
-    divider.lineBetween(470, 180, 470, 540);
+    divider.lineBetween(470, 140, 470, 540);
 
-    // 3) 나의 다짐 — 우측 칼럼 (480~920)
-    const PL_X = 480, PL_LIST_X = 510, PL_W = 410, PL_Y0 = 206;
-    this.sectionLabel(PL_X, 176, '3. 나의 다짐 (최대 3개 선택)');
+    // 2) 나의 다짐 — 우측 칼럼 (480~920)
+    const PL_X = 480, PL_LIST_X = 510, PL_W = 410, PL_Y0 = 168;
+    this.sectionLabel(PL_X, 138, '2. 나의 다짐 (최대 3개 선택)');
     this.PLEDGES.forEach((p, i) => {
       const y = PL_Y0 + i * ROW_H;
       this.checkRow(PL_LIST_X, y, PL_W, p, this.pledgePicks.has(i), () => {
