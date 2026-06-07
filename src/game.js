@@ -6789,17 +6789,49 @@ ${tmpl.footer}
 
 ${tmpl.signature}`;
 
-    this.add.text(42, 84, body, {
-      fontFamily: FONT, fontSize: '14px', color: '#1a1a2e',
-      wordWrap: { width: 876 }, lineSpacing: 6
+    // 본문 — 미리보기 영역(버튼 위)으로 마스크 클립. 내용이 길면 스크롤
+    //  → 하단 버튼과 글씨가 겹치던 문제 해결 (이문호 교사 피드백)
+    const PV_TOP = 80, PV_BOTTOM = 544, PV_H = PV_BOTTOM - PV_TOP;
+    const bodyTxt = this.add.text(42, PV_TOP, body, {
+      fontFamily: FONT, fontSize: '13px', color: '#1a1a2e',
+      wordWrap: { width: 876 }, lineSpacing: 4
     }).setDepth(3);
+    const maskG = this.make.graphics({ add: false });
+    maskG.fillRect(20, PV_TOP - 4, 920, PV_H + 8);
+    bodyTxt.setMask(maskG.createGeometryMask());
+
+    const overflow = Math.max(0, Math.ceil(bodyTxt.height) - PV_H);
+    if (overflow > 0) {
+      this._pvScroll = 0;
+      const apply = () => {
+        this._pvScroll = Phaser.Math.Clamp(this._pvScroll, -overflow, 0);
+        bodyTxt.y = PV_TOP + this._pvScroll;
+      };
+      // 휠 스크롤 (preview 모드에서만, 중복 등록 방지)
+      this.input.off('wheel');
+      this.input.on('wheel', (p, go, dx, dy) => {
+        if (this.mode !== 'preview') return;
+        this._pvScroll -= dy * 0.4; apply();
+      });
+      // 드래그 스크롤 (터치) — 영역 위 투명 zone (오브젝트 스코프라 누수 없음)
+      const dz = this.add.zone(480, (PV_TOP + PV_BOTTOM) / 2, 920, PV_H)
+        .setInteractive({ draggable: true }).setDepth(2);
+      let dragBase = 0, dragFromY = 0;
+      dz.on('pointerdown', (p) => { dragBase = this._pvScroll; dragFromY = p.y; });
+      dz.on('drag', (p) => { this._pvScroll = dragBase + (p.y - dragFromY); apply(); });
+      // 스크롤 힌트
+      this.add.text(905, PV_BOTTOM - 2, '↕ 끌거나 휠로 스크롤', {
+        fontFamily: FONT, fontSize: '11px', color: '#8a6a3a',
+        backgroundColor: '#efe6cccc', padding: { x: 4, y: 1 }
+      }).setOrigin(1, 1).setDepth(5);
+    }
 
     // 하단 버튼 — 송부 전 자기평가 루브릭을 거치도록 변경
     // 통일된 표현: '← 작성으로' (뒤) / '자기평가 →' (다음)
-    fancyButton(this, 250, 566, 200, 42, '← 작성으로',
+    fancyButton(this, 250, 572, 200, 40, '← 작성으로',
       () => this.buildCompose(),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
-    fancyButton(this, 550, 566, 200, 42, '자기평가 →',
+    fancyButton(this, 550, 572, 200, 40, '자기평가 →',
       () => this.buildReview(body),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
   }
