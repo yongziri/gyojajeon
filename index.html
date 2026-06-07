@@ -304,24 +304,33 @@
 
   <!-- 공통 텍스트 입력 모달 — 단서 자유 입력·다짐·자기성찰 (모바일 prompt() 대체) -->
   <div id="textInputModal" style="display:none; position:fixed; inset:0; z-index:20000;
-       background:rgba(0,0,0,0.78); align-items:center; justify-content:center;">
-    <div style="background:#10202e; border:2px solid #c9a36b; box-shadow:0 8px 24px rgba(0,0,0,0.6);
-         padding:24px 26px; max-width:480px; width:92%; font-family:'MonaS',sans-serif;
-         color:#dff1ff;">
+       background:rgba(0,0,0,0.82); align-items:center; justify-content:center; padding:16px;">
+    <div id="textInputBox" style="background:#10202e; border:2px solid #c9a36b; box-shadow:0 8px 24px rgba(0,0,0,0.6);
+         padding:22px 24px; max-width:480px; width:94%; max-height:92vh; overflow:auto;
+         font-family:'MonaS',sans-serif; color:#dff1ff;">
       <h2 id="textInputTitle" style="margin:0 0 4px; font-size:18px; color:#ffe082;
           font-weight:bold; text-align:center;">💭 입력</h2>
-      <p id="textInputSubtitle" style="margin:6px 0 16px; font-size:13px; color:#cfe9ff;
+      <p id="textInputSubtitle" style="margin:6px 0 14px; font-size:13px; color:#cfe9ff;
          text-align:center; line-height:1.5;"></p>
-      <textarea id="textInputArea" maxlength="200" rows="3"
-        placeholder="여기에 입력하세요"
-        style="width:100%; box-sizing:border-box; padding:10px;
-               background:#1a2430; border:1px solid #6a4f2a; color:#ffe9b8;
-               font-family:'MonaS-Text','MonaS',sans-serif; font-size:14px;
-               resize:vertical; min-height:60px; margin-bottom:8px;"></textarea>
-      <div style="text-align:right; font-size:11px; color:#7aa6c8; margin-bottom:14px;">
-        <span id="textInputCount">0</span> / <span id="textInputMax">200</span> 자
+      <div id="textInputBody" style="display:flex; flex-wrap:wrap; gap:16px; align-items:stretch;">
+        <!-- 좌: 모아둔 단서 종이 (clues 전달 시에만 표시) -->
+        <div id="textInputClues" style="display:none; flex:1 1 280px; min-width:0;
+             max-height:320px; overflow-y:auto; background:#0c1622;
+             border:1px solid #6a4f2a; border-radius:6px; padding:12px 14px;"></div>
+        <!-- 우: 든 생각 메모 -->
+        <div style="flex:1 1 280px; min-width:0; display:flex; flex-direction:column;">
+          <textarea id="textInputArea" maxlength="200" rows="6"
+            placeholder="여기에 입력하세요"
+            style="width:100%; box-sizing:border-box; padding:10px;
+                   background:#1a2430; border:1px solid #6a4f2a; color:#ffe9b8;
+                   font-family:'MonaS-Text','MonaS',sans-serif; font-size:14px;
+                   resize:vertical; min-height:120px; flex:1; margin-bottom:8px;"></textarea>
+          <div style="text-align:right; font-size:11px; color:#7aa6c8;">
+            <span id="textInputCount">0</span> / <span id="textInputMax">200</span> 자
+          </div>
+        </div>
       </div>
-      <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
         <button id="textInputCancel" style="padding:8px 18px; background:#4a3a22; color:#ffe9b8;
                 border:1px solid #c9a36b; cursor:pointer; font-family:'MonaS',sans-serif;
                 font-size:13px;">← 건너뛰기</button>
@@ -477,9 +486,21 @@
       if (!modal || !area || !confirmBtn || !cancelBtn) return;
 
       let pendingOnConfirm = null;
+      let pendingOnCancel = null;
       let currentMax = 200;
+      const cluesEl = document.getElementById('textInputClues');
+      const boxEl = document.getElementById('textInputBox');
+      const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-      function hide() { modal.style.display = 'none'; pendingOnConfirm = null; }
+      function hide() {
+        modal.style.display = 'none';
+        pendingOnConfirm = null; pendingOnCancel = null;
+      }
+      function doCancel() {
+        const cb = pendingOnCancel; hide();
+        if (typeof cb === 'function') cb();
+      }
       function updateCount() {
         countEl.textContent = String((area.value || '').length);
       }
@@ -487,7 +508,7 @@
       area.addEventListener('input', updateCount);
       // Enter — 줄바꿈 허용 (textarea), Ctrl+Enter로 확인
       area.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { e.preventDefault(); hide(); }
+        if (e.key === 'Escape') { e.preventDefault(); doCancel(); }
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
           e.preventDefault(); confirmBtn.click();
         }
@@ -499,7 +520,7 @@
         hide();
         if (typeof cb === 'function') cb(text);
       });
-      cancelBtn.addEventListener('click', hide);
+      cancelBtn.addEventListener('click', doCancel);
 
       window.PEACE.openTextInputModal = function (opts, onConfirm) {
         opts = opts || {};
@@ -511,7 +532,32 @@
         maxEl.textContent = String(currentMax);
         area.value = opts.initial || '';
         updateCount();
+        // 노트형 — clues 배열이 있으면 좌측 "모아둔 단서 종이" 표시 + 모달 넓힘
+        if (cluesEl && boxEl) {
+          if (Array.isArray(opts.clues) && opts.clues.length) {
+            let html = '<div style="font-size:12px; color:#e8b86a; font-weight:bold; margin-bottom:10px;">📑 이 장소에서 모은 단서</div>';
+            opts.clues.forEach(function (c) {
+              const badge = c.areaLabel
+                ? '<span style="display:inline-block; font-size:10px; color:#0a1828; background:' +
+                  (c.areaColor || '#6fb7d6') + '; padding:1px 6px; border-radius:3px; margin-right:6px;">' +
+                  esc(c.areaLabel) + '</span>'
+                : '';
+              html += '<div style="margin-bottom:11px; line-height:1.5;">' +
+                '<div style="font-size:13px; color:#ffe9b8; font-weight:bold;">● ' + esc(c.name) + '</div>' +
+                '<div style="font-size:11px; color:#cfe9ff; margin-top:2px;">' + badge + esc(c.desc) + '</div>' +
+                '</div>';
+            });
+            cluesEl.innerHTML = html;
+            cluesEl.style.display = 'block';
+            boxEl.style.maxWidth = '760px';
+          } else {
+            cluesEl.style.display = 'none';
+            cluesEl.innerHTML = '';
+            boxEl.style.maxWidth = '480px';
+          }
+        }
         pendingOnConfirm = onConfirm;
+        pendingOnCancel = opts.onCancel || null;
         modal.style.display = 'flex';
         setTimeout(() => area.focus(), 80);
       };
