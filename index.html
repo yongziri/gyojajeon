@@ -535,7 +535,7 @@
         // 노트형 — clues 배열이 있으면 좌측 "모아둔 단서 종이" 표시 + 모달 넓힘
         if (cluesEl && boxEl) {
           if (Array.isArray(opts.clues) && opts.clues.length) {
-            let html = '<div style="font-size:12px; color:#e8b86a; font-weight:bold; margin-bottom:10px;">📑 이 장소에서 모은 단서</div>';
+            let html = '<div style="font-size:12px; color:#e8b86a; font-weight:bold; margin-bottom:10px;">' + esc(opts.cluesTitle || '📑 이 장소에서 모은 단서') + '</div>';
             opts.clues.forEach(function (c) {
               const badge = c.areaLabel
                 ? '<span style="display:inline-block; font-size:10px; color:#0a1828; background:' +

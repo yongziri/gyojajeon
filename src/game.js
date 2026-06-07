@@ -7446,12 +7446,23 @@ class ReflectionScene extends Phaser.Scene {
           this.userStmtBtn.t.setText(userBtnLabel());
         };
         if (window.PEACE && typeof window.PEACE.openTextInputModal === 'function') {
+          // 왼쪽 노트에 내가 만든 인과 사슬 + 고른 자기성찰을 띄움 (이문호 교사 피드백)
+          const chainTxt = this.slots
+            .map((s, i) => s ? (this.slotLabels[i] + ': ' + s.name) : null)
+            .filter(Boolean).join('  →  ');
+          const stmtText = ((this.stmtPool || REFLECTION_STATEMENTS)
+            .find(s => s.id === this.statementId) || {}).text || '';
+          const note = [];
+          if (chainTxt) note.push({ name: '🔗 내가 만든 인과 사슬', desc: chainTxt });
+          if (stmtText) note.push({ name: '💭 내가 고른 자기성찰', desc: stmtText });
           window.PEACE.openTextInputModal({
             title: '✍ 내 생각 한 문장',
-            subtitle: '가장 마음에 남은 단서나 생각을 한 문장으로 (선택 입력)',
+            subtitle: '왼쪽 내 성찰을 보고, 가장 마음에 남은 생각을 한 문장으로 (선택 입력)',
             placeholder: '예: 환경 문제는 결국 사람의 문제다',
             maxLength: 200,
-            initial: cur
+            initial: cur,
+            clues: note,
+            cluesTitle: '📒 내 성찰 기록'
           }, apply);
           return;
         }
