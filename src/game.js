@@ -2073,8 +2073,9 @@ class CaseSelectScene extends Phaser.Scene {
       });
     }
 
-    // 하단 좌측 — 타이틀 복귀 / 학습 트리 (fade 적용 + 다중 클릭 가드)
-    fancyButton(this, 90, 575, 140, 30, '← 타이틀',
+    // 하단 우측 — 타이틀 복귀 / 학습 트리 (브리핑 패널 아래)
+    // 좌측 카드 영역(x=20~340)을 침범하지 않도록 우측으로 이동
+    fancyButton(this, 580, 575, 140, 30, '← 타이틀',
       () => {
         if (this.leaving) return;
         this.leaving = true;
@@ -2083,7 +2084,7 @@ class CaseSelectScene extends Phaser.Scene {
           () => this.scene.start('TitleScene'));
       },
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
-    fancyButton(this, 248, 575, 170, 30, '🌳 학습 트리',
+    fancyButton(this, 770, 575, 170, 30, '🌳 학습 트리',
       () => {
         if (this.leaving) return;
         this.leaving = true;
