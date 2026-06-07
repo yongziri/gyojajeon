@@ -521,6 +521,32 @@ function drawWall(g) {
   pxMap(g, WALL_MAP, WALL_PAL, 2);
 }
 
+// ── intro(UN 본부 사무실) 전용 벽 — 책장(책 등이 꽂힌 목재 책장), 40x40 ──
+//   기존 'wall'(나무 블록)이 사무실 느낌이 아니라는 피드백 반영. intro에서만 사용.
+function drawWallOffice(g) {
+  g.clear();
+  // 짙은 목재 프레임 + 안쪽 칸
+  g.fillStyle(0x4a3318, 1); g.fillRect(0, 0, 40, 40);
+  g.fillStyle(0x6b4a28, 1); g.fillRect(3, 3, 34, 34);
+  g.fillStyle(0x83602f, 1); g.fillRect(3, 3, 34, 2);    // 윗면 하이라이트
+  g.fillStyle(0x2e2010, 1); g.fillRect(0, 38, 40, 2); g.fillRect(38, 0, 2, 40);  // 그림자
+  g.fillStyle(0x3a2812, 1); g.fillRect(3, 20, 34, 3);   // 가운데 선반(2단)
+  // 책 등 — 색색의 세로 책 (윗칸 y5~19, 아랫칸 y24~37). 결정적 패턴.
+  const COLORS = [0xb23a3a, 0x3a6ea5, 0xcaa23a, 0x4a8a5a, 0x8a4a8a, 0xc06a2a, 0x3a7a9a, 0xa86a2a];
+  const shelf = (bottom, top, seed) => {
+    let x = 5, i = seed;
+    while (x < 35) {
+      const w = 3 + (i % 2);
+      const h = (bottom - top) - (i % 3);
+      g.fillStyle(COLORS[i % COLORS.length], 1);
+      g.fillRect(x, bottom - h, w, h);
+      x += w + 1; i++;
+    }
+  };
+  shelf(19, 5, 0);
+  shelf(37, 24, 3);
+}
+
 // ── 외벽 (우크라이나): 회색 콘크리트 + 균열, 40x40 ────────────
 function drawWallKyiv(g) {
   g.clear();
@@ -1292,6 +1318,9 @@ class BootScene extends Phaser.Scene {
     g.generateTexture('ground_concrete', GAME_W, GAME_H);
     drawWall(g);
     g.generateTexture('wall', TILE, TILE);
+    // intro(UN 본부) 전용 책장 벽
+    drawWallOffice(g);
+    g.generateTexture('wall_office', TILE, TILE);
     // 우크라이나 사건용 외벽 (회색 콘크리트 + 균열)
     drawWallKyiv(g);
     g.generateTexture('wall_kyiv', TILE, TILE);
@@ -3582,8 +3611,8 @@ class WorldScene extends Phaser.Scene {
       this.add.image(0, 0, isUkraine ? 'ground_concrete' : 'ground').setOrigin(0, 0);
     }
     this.walls = this.physics.add.staticGroup();
-    // intro는 'wall' 사용 (마룻바닥 갈색과 어울리는 따뜻한 톤)
-    const wallKey = isUkraine ? 'wall_kyiv' : 'wall';
+    // intro는 'wall_office'(책장) — 사무실 느낌. 그 외는 'wall', 우크라는 콘크리트.
+    const wallKey = isUkraine ? 'wall_kyiv' : (isIntro ? 'wall_office' : 'wall');
     const lastCol = MAP[0].length - 1;            // 옛 4:3 우측 끝(c=19)
     for (let r = 0; r < MAP.length; r++) {
       for (let c = 0; c < MAP[r].length; c++) {
