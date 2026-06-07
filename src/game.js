@@ -243,7 +243,7 @@ function drawHero(g, dir, frame) {
   if (map) pxMap(g, map, HERO_PAL, 2);
 }
 
-// ── 라일라(아이) 픽셀 데이터 ────────────────────────────────────
+// ── 아이졸리(아이) 픽셀 데이터 ──────────────────────────────────
 const KID_PAL = {
   '.': null, ' ': null,
   H: 0x2f8a76, // 히잡
@@ -1441,7 +1441,7 @@ class TitleScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '20px', color: '#f0c98a'
     }).setOrigin(0.5);
 
-    // (옛 라일라 도트 캐릭터는 새 UN 본부 배경과 톤이 달라 제거)
+    // (옛 아이졸리 도트 캐릭터는 새 UN 본부 배경과 톤이 달라 제거)
 
     const start = this.add.text(480, 560, '▶  클릭하여 시작', {
       fontFamily: FONT, fontSize: '24px', color: '#ffffff',
@@ -4725,7 +4725,7 @@ class WorldScene extends Phaser.Scene {
   }
 
   // PEACE 4단계 자동 진입
-  //   1(P 인식)  → 2: 라일라와 친구 됨 (enemyDefeated)
+  //   1(P 인식)  → 2: 사건 안내인과 친구 됨 (enemyDefeated)
   //   2(E·A 관찰)→ 3: 현장 단서 ≥3  AND  핵심 단서 = 시민 수 (E·A 모두 완료)
   //   3(C 성찰)  → 4: reflectionDone === true (인과 사슬 + 자기성찰 마침)
   // 단계가 실제로 오른 경우에만 카드를 띄움. HUD는 매번 갱신.

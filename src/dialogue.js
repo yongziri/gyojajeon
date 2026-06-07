@@ -72,10 +72,7 @@ const STORIES = {
     mission: {
       speaker: '한센',
       text: '자네 임무는 세 가지일세 — ① 사라진 바다(아랄해), ② 깨어진 평화(우크라이나), ③ 오래된 갈등(팔레스타인). 각 현장에서 같은 P.E.A.C.E. 5단계를 적용하게.',
-      choices: [
-        { label: '네, 잘 알겠습니다',                 love: 3, next: 'james' },
-        { label: '한 사람이 뭘 바꿀 수 있을까요?',    love: 1, next: 'encourage' },
-      ]
+      next: 'encourage'
     },
 
     encourage: {
@@ -113,11 +110,7 @@ const STORIES = {
   q1: {
     speaker: '아이졸리',
     text: '여기는 한때 세계에서 네 번째로 큰 호수, 아랄해의 옛 항구예요. 지금은 90%가 사라졌어요.',
-    choices: [
-      { label: '왜 사라진 거지?',         love: 1, next: 'why' },
-      { label: '한때 얼마나 컸나요?',     next: 'narrow' },
-      { label: '(나중에 다시 오겠다)',    next: 'flee' }
-    ]
+    next: 'narrow'
   },
 
   narrow: {
@@ -209,11 +202,7 @@ const STORIES = {
     q1: {
       speaker: '카테리나',
       text: '평화는 어느 날 갑자기 끊겼어요. 학교 가던 길에 공습 경보가 울렸고, 그 후로 교실에는 못 돌아갔어요.',
-      choices: [
-        { label: '학교는 어떻게 됐나요?',          love: 1, next: 'school' },
-        { label: '식량은 충분한가요?',              next: 'food' },
-        { label: '(나중에 다시 오겠다)',           next: 'flee' }
-      ]
+      next: 'school'
     },
 
     school: {
@@ -306,11 +295,7 @@ const STORIES = {
     q1: {
       speaker: '카림',
       text: '여기 사람들은 오랫동안 폭격 소리와 함께 살아왔어요. 우리 학교도 작년에 무너졌고, 친구 몇 명은 다시 못 만났어요.',
-      choices: [
-        { label: '학교는 어떻게 됐나요?',         love: 1, next: 'school' },
-        { label: '누가 이런 갈등을 시작했나요?',   next: 'origin' },
-        { label: '(나중에 다시 오겠다)',          next: 'flee' }
-      ]
+      next: 'school'
     },
 
     school: {
