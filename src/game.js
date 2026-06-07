@@ -4096,6 +4096,8 @@ class WorldScene extends Phaser.Scene {
       });
       this.citizenObjs.push({ npc, art: citizenArt, marker, trigger, cz });
     });
+    // 초기 ▼ 배치 — 다음 차례 1명만 강조, 그 외 미해결은 마커 숨김
+    this.updateCitizenMarkers();
 
     this.physics.add.collider(this.player, this.solids);
 
@@ -5023,6 +5025,44 @@ class WorldScene extends Phaser.Scene {
     });
   }
 
+  // 시민 머리 위 마커를 "다음 차례" 안내용으로 한 곳에서 일괄 갱신.
+  //   • CITIZENS 배열의 첫 번째 미해결 시민 1명 → ▼ (떠다님)
+  //   • 그 외 미해결 시민 → 마커 숨김 (학생 시선 분산 방지)
+  //   • 풀이 완료 시민 → ✓ (고정)
+  // WorldScene create 끝, 그리고 매 onResume(QuizScene 종료 직후)마다 호출.
+  updateCitizenMarkers() {
+    if (!this.citizenObjs || this.citizenObjs.length === 0) return;
+    const solved = this.registry.get('quizSolved') || {};
+    // 다음에 가야 할 시민(배열 순서상 첫 미해결) 찾기
+    let nextIdx = -1;
+    for (let i = 0; i < this.citizenObjs.length; i++) {
+      if (!solved[this.citizenObjs[i].cz.id]) { nextIdx = i; break; }
+    }
+    this.citizenObjs.forEach((co, i) => {
+      if (!co.marker || !co.marker.scene) return;
+      const isSolved = !!solved[co.cz.id];
+      const hasArt = !!co.art;
+      const markerY0 = hasArt ? (co.cz.y - 80) : (co.cz.y - 50);
+      this.tweens.killTweensOf(co.marker);
+      if (isSolved) {
+        // 완료 — ✓ 고정
+        co.marker.setText('✓').setColor('#7fd07f').setFontSize(20);
+        co.marker.setY(markerY0).setVisible(true);
+      } else if (i === nextIdx) {
+        // 다음 차례 — ▼ 떠다님
+        co.marker.setText('▼').setColor('#ffe082').setFontSize(28);
+        co.marker.setY(markerY0).setVisible(true);
+        this.tweens.add({
+          targets: co.marker, y: markerY0 - 8, duration: 500,
+          yoyo: true, repeat: -1, ease: 'Sine.inOut'
+        });
+      } else {
+        // 그 외 미해결 — 시선 분산 방지 위해 숨김
+        co.marker.setVisible(false);
+      }
+    });
+  }
+
   // 오버레이(대화/퀴즈/조사)가 닫힌 직후 호출됨
   onResume() {
     this.talking = false;
@@ -5058,17 +5098,9 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // 시민 풀이 완료 마커 갱신 (! → ✓)
-    const solved = this.registry.get('quizSolved') || {};
-    if (this.citizenObjs) {
-      this.citizenObjs.forEach(co => {
-        if (solved[co.cz.id] && co.marker && co.marker.text === '!') {
-          co.marker.setText('✓').setFontSize(20).setColor('#7fd07f');
-          this.tweens.killTweensOf(co.marker);
-          co.marker.setY(co.cz.y - 50);
-        }
-      });
-    }
+    // 시민 마커 갱신 — 다음 차례 1명만 ▼, 그 외 미해결은 숨김, 풀이 완료는 ✓
+    //   (이문호 교사 피드백: "안내인 순서대로 가야할 안내인에게 마커가 찍혀야할거같아요")
+    this.updateCitizenMarkers();
 
     this.refreshCoreHud();
     this.refreshChairMarker();   // 성찰 의자 ! 마커도 즉시 갱신
