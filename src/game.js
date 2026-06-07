@@ -2736,16 +2736,33 @@ class LearningTreeScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '12px', color: '#dfffdf'
     });
 
-    // 사건 선택으로 돌아가기
-    fancyButton(this, 700, 575, 160, 30, '← 사건 선택',
-      () => {
-        if (this.leaving) return;
-        this.leaving = true;
-        this.cameras.main.fadeOut(260, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete',
-          () => this.scene.start('CaseSelectScene'));
-      },
-      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    // 하단 — (좌) UN 연설하기(통합·1회)  (우) 사건 선택
+    const goCaseSelect = () => {
+      if (this.leaving) return;
+      this.leaving = true;
+      this.cameras.main.fadeOut(260, 0, 0, 0);
+      this.cameras.main.once('camerafadeoutcomplete',
+        () => this.scene.start('CaseSelectScene'));
+    };
+    if (compCount >= 1) {
+      const sp = this.registry.get('speech');
+      const spDone = !!(sp && sp.fullText);
+      fancyButton(this, 470, 575, 240, 30,
+        spDone ? '🕊  UN 연설문 (작성됨 · 보기/수정)' : '🕊  UN 연설하기 (조사 마무리)',
+        () => {
+          if (this.leaving) return;
+          this.leaving = true;
+          this.cameras.main.fadeOut(260, 0, 0, 0);
+          this.cameras.main.once('camerafadeoutcomplete',
+            () => this.scene.start('SpeechScene'));
+        },
+        { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+      fancyButton(this, 750, 575, 150, 30, '← 사건 선택', goCaseSelect,
+        { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    } else {
+      fancyButton(this, 700, 575, 160, 30, '← 사건 선택', goCaseSelect,
+        { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    }
   }
 
   // 안내인 대화 다시 보기 — STORIES[cid] 노드를 start부터 순서대로 따라가며
@@ -7046,9 +7063,9 @@ ${tmpl.signature}`;
     fancyButton(this, 130, 578, 180, 40, '🖨  보고서 인쇄',
       () => this.printReport(),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xffd96a, text: '#ffe9b8' });
-    // PEACE 마지막 단계 E(Enacting) — UN 연설문 작성으로 진입
-    fancyButton(this, 320, 578, 180, 40, '🕊  UN 연설하기',
-      () => leaveTo('SpeechScene'),
+    // UN 연설은 사건마다 하지 않고 학습 트리에서 마지막에 한 번 (이문호 교사 피드백)
+    fancyButton(this, 320, 578, 180, 40, '🌳  나의 조사 기록',
+      () => leaveTo('LearningTreeScene'),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
     fancyButton(this, 510, 578, 160, 40, '에셋·라이선스',
       () => leaveTo('CreditsScene'),
@@ -7729,7 +7746,7 @@ const SPEECH_PHRASES = [
   { id: 'attention',  text: '저는 멀리서 이 분쟁을 지켜본 한 명의 학생입니다.' },
   { id: 'witness',    text: '제 두 눈으로 그 현장과 그곳 사람들의 삶을 보았습니다.' },
   { id: 'connect',    text: '이 일은 멀리 있는 사람의 이야기가 아니라 우리 모두의 일입니다.' },
-  { id: 'demand',     text: '국제 사회의 협력으로 강물을 되돌리고 사람들의 건강을 지켜야 합니다.' },
+  { id: 'demand',     text: '국제 사회의 협력으로 무너진 삶을 회복하고 사람들의 일상을 지켜야 합니다.' },
   { id: 'youth',      text: '학생인 저도 일상의 소비와 관심으로 함께 노력하겠습니다.' },
   { id: 'hope',       text: '평화는 멀리 있지 않습니다. 작은 관심에서 시작됩니다.' },
 ];
@@ -7928,7 +7945,7 @@ class SpeechScene extends Phaser.Scene {
 
     this.cameras.main.fadeOut(280, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('CaseSelectScene');
+      this.scene.start('LearningTreeScene');
     });
   }
 
@@ -7937,7 +7954,7 @@ class SpeechScene extends Phaser.Scene {
     this.leaving = true;
     this.cameras.main.fadeOut(220, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('CaseSelectScene');
+      this.scene.start('LearningTreeScene');
     });
   }
 
