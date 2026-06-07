@@ -547,6 +547,18 @@ function drawWallOffice(g) {
   shelf(37, 24, 3);
 }
 
+// ── intro 외벽(테두리) — 사무실 벽(블루그레이 패널, UN 톤). 책장과 구분. 40x40 ──
+function drawWallPanel(g) {
+  g.clear();
+  g.fillStyle(0x3f5a73, 1); g.fillRect(0, 0, 40, 40);   // 블루그레이 벽
+  g.fillStyle(0x49667f, 1); g.fillRect(2, 2, 36, 36);   // 안쪽 면
+  g.fillStyle(0x5b7a93, 1); g.fillRect(2, 2, 36, 2);    // 상단 하이라이트
+  g.fillStyle(0x2c4054, 1);                              // 외곽 음영
+  g.fillRect(0, 0, 40, 2); g.fillRect(0, 38, 40, 2);
+  g.fillRect(0, 0, 2, 40); g.fillRect(38, 0, 2, 40);
+  g.fillStyle(0x37516a, 1); g.fillRect(19, 6, 2, 28);   // 가운데 패널 분할
+}
+
 // ── 외벽 (우크라이나): 회색 콘크리트 + 균열, 40x40 ────────────
 function drawWallKyiv(g) {
   g.clear();
@@ -1318,9 +1330,11 @@ class BootScene extends Phaser.Scene {
     g.generateTexture('ground_concrete', GAME_W, GAME_H);
     drawWall(g);
     g.generateTexture('wall', TILE, TILE);
-    // intro(UN 본부) 전용 책장 벽
+    // intro(UN 본부) 전용 책장 벽(내부 블록) + 사무실 벽(테두리)
     drawWallOffice(g);
     g.generateTexture('wall_office', TILE, TILE);
+    drawWallPanel(g);
+    g.generateTexture('wall_office_panel', TILE, TILE);
     // 우크라이나 사건용 외벽 (회색 콘크리트 + 균열)
     drawWallKyiv(g);
     g.generateTexture('wall_kyiv', TILE, TILE);
@@ -3611,8 +3625,10 @@ class WorldScene extends Phaser.Scene {
       this.add.image(0, 0, isUkraine ? 'ground_concrete' : 'ground').setOrigin(0, 0);
     }
     this.walls = this.physics.add.staticGroup();
-    // intro는 'wall_office'(책장) — 사무실 느낌. 그 외는 'wall', 우크라는 콘크리트.
+    // intro: 외벽(테두리)=사무실 벽(패널), 내부 블록=책장. 그 외는 'wall'/콘크리트.
     const wallKey = isUkraine ? 'wall_kyiv' : (isIntro ? 'wall_office' : 'wall');
+    const borderKey = isIntro ? 'wall_office_panel' : wallKey;
+    const isBorderCell = (r, c) => (r === 0 || r === MAP.length - 1 || c === 0 || c === MAP[r].length - 1);
     const lastCol = MAP[0].length - 1;            // 옛 4:3 우측 끝(c=19)
     for (let r = 0; r < MAP.length; r++) {
       for (let c = 0; c < MAP[r].length; c++) {
@@ -3621,8 +3637,9 @@ class WorldScene extends Phaser.Scene {
           // 이중 벽처럼 보여 사이가 빈 통로로 노출되는 문제를 해결.
           // 상·하단 외벽은 그대로 두고, 중간 행의 옛 우측 외벽만 스킵.
           if (c === lastCol && r > 0 && r < MAP.length - 1) continue;
+          const key = isBorderCell(r, c) ? borderKey : wallKey;
           const wall = this.add.image(
-            c * TILE + TILE / 2, r * TILE + TILE / 2, wallKey);
+            c * TILE + TILE / 2, r * TILE + TILE / 2, key);
           this.walls.add(wall);
         }
       }
@@ -3632,16 +3649,16 @@ class WorldScene extends Phaser.Scene {
     const colMax = Math.floor(GAME_W / TILE);   // 24
     for (let c = MAP[0].length; c < colMax; c++) {
       // 상단 외벽 연장
-      this.walls.add(this.add.image(c * TILE + TILE/2, 0 + TILE/2, wallKey));
+      this.walls.add(this.add.image(c * TILE + TILE/2, 0 + TILE/2, borderKey));
       // 하단 외벽 연장
       this.walls.add(this.add.image(c * TILE + TILE/2,
-        (MAP.length - 1) * TILE + TILE/2, wallKey));
+        (MAP.length - 1) * TILE + TILE/2, borderKey));
     }
     // 우측 끝 (c=23) 세로 외벽 — 모든 행에 추가
     const rightC = colMax - 1;
     for (let r = 1; r < MAP.length - 1; r++) {
       this.walls.add(this.add.image(rightC * TILE + TILE/2,
-        r * TILE + TILE/2, wallKey));
+        r * TILE + TILE/2, borderKey));
     }
 
     // 플레이어 — intro(사무실)는 사무실 가운데 입구 spawn
