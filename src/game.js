@@ -6139,10 +6139,14 @@ class QuizScene extends Phaser.Scene {
     this.locked = true;
     this.clearChoices();
     if (window.SFX) window.SFX.play('fail');
-    this.typeText('【오답】 ' + ch.feedback + '\n\n다시 한 번 생각해 봐요...');
-    this.time.delayedCall(1800, () => {
-      this.locked = false;
-      this.showQuestion();
+    // 타자기 완료 후에 1.8초 대기 → 다시 문제 표시
+    // (이전엔 타자기 시작과 동시에 1.8초 카운트 시작 → 긴 피드백이 잘려서
+    //  '대화창이 혼자 빠르게 넘어가는' 증상 발생)
+    this.typeText('【오답】 ' + ch.feedback + '\n\n다시 한 번 생각해 봐요...', () => {
+      this.time.delayedCall(1800, () => {
+        this.locked = false;
+        this.showQuestion();
+      });
     });
   }
 
