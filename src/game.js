@@ -6093,9 +6093,16 @@ class QuizScene extends Phaser.Scene {
   }
 
   onClick() {
-    if (this.locked || this.inputLocked) return;
-    // 타자기 중이면 건너뛰기
+    if (this.inputLocked) return;
+    // 타자기 중이면 건너뛰기 (오답 피드백도 즉시 표시 후 클릭 대기)
     if (this.skipTyping()) return;
+    // 오답 피드백 후 클릭 → 문제 재출제 (학생 자율 진행)
+    if (this.mode === 'wrong') {
+      this.mode = 'question';
+      this.showQuestion();
+      return;
+    }
+    if (this.locked) return;
     if (this.mode === 'intro') {
       this.lineIdx++;
       if (this.lineIdx < this.citizen.intro.length) {
@@ -6136,18 +6143,14 @@ class QuizScene extends Phaser.Scene {
   }
 
   handleWrong(ch) {
-    this.locked = true;
     this.clearChoices();
+    this.mode = 'wrong';   // 클릭 대기 모드 (학생 자율 진행)
     if (window.SFX) window.SFX.play('fail');
-    // 타자기 완료 후에 1.8초 대기 → 다시 문제 표시
-    // (이전엔 타자기 시작과 동시에 1.8초 카운트 시작 → 긴 피드백이 잘려서
-    //  '대화창이 혼자 빠르게 넘어가는' 증상 발생)
-    this.typeText('【오답】 ' + ch.feedback + '\n\n다시 한 번 생각해 봐요...', () => {
-      this.time.delayedCall(1800, () => {
-        this.locked = false;
-        this.showQuestion();
-      });
-    });
+    // 타자기 출력 후 학생이 클릭(또는 SPACE)할 때까지 대기 → 문제 재출제
+    this.typeText(
+      '【오답】 ' + ch.feedback +
+      '\n\n다시 한 번 생각해 봐요...\n\n(클릭하여 계속)'
+    );
   }
 
   handleCorrect(ch) {
