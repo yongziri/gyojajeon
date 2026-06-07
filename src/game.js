@@ -5897,33 +5897,52 @@ class InvestigationScene extends Phaser.Scene {
   showRecord() {
     if (this.examine) this.toggleExamine();
     this.clearOverlay();
-    const bg = this.add.rectangle(480, 300, 960, 600, 0x070b12, 0.88)
+    // 화면 전체 어둡게 — 명령 바·맵까지 비활성화 효과
+    const bg = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.78)
       .setDepth(30).setInteractive();
-    const tp = this.add.graphics().setDepth(31);
-    tp.fillStyle(0x101a26, 0.95); tp.fillRoundedRect(250, 36, 300, 46, 12);
-    tp.lineStyle(2, 0xe8b86a, 1); tp.strokeRoundedRect(250, 36, 300, 46, 12);
-    const title = this.add.text(480, 59, '📘  수집한 단서', {
+    this.overlay.push(bg);
+    // 가운데 패널 — 모달 콘텐츠 영역(명령 바 위에 깔끔히 얹힘)
+    const PX = 60, PY = 36, PW = 840, PH = 528;
+    const panel = this.add.graphics().setDepth(31);
+    panel.fillStyle(0x0e1626, 1);
+    panel.fillRoundedRect(PX, PY, PW, PH, 16);
+    panel.lineStyle(2, 0xe8b86a, 1);
+    panel.strokeRoundedRect(PX, PY, PW, PH, 16);
+    this.overlay.push(panel);
+    // 타이틀 박스 — 패널 상단 가운데
+    const tp = this.add.graphics().setDepth(32);
+    tp.fillStyle(0x101a26, 1); tp.fillRoundedRect(330, 60, 300, 46, 12);
+    tp.lineStyle(2, 0xe8b86a, 1); tp.strokeRoundedRect(330, 60, 300, 46, 12);
+    const title = this.add.text(480, 83, '📘  수집한 단서', {
       fontFamily: FONT_TITLE, fontSize: '23px', color: '#ffe9b8',
       fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(32);
-    this.overlay.push(bg, tp, title);
+    }).setOrigin(0.5).setDepth(33);
+    this.overlay.push(tp, title);
 
     if (this.collected.length === 0) {
-      this.overlay.push(this.add.text(480, 280,
+      // 빈 상태 — 안내 아이콘 + 두 줄 안내
+      this.overlay.push(this.add.text(480, 260, '🔎', {
+        fontFamily: FONT, fontSize: '64px'
+      }).setOrigin(0.5).setDepth(32));
+      this.overlay.push(this.add.text(480, 340,
         '아직 모은 단서가 없습니다.', {
-          fontFamily: FONT, fontSize: '20px', color: '#ffffff'
-        }).setOrigin(0.5).setDepth(31));
+          fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffe9b8'
+        }).setOrigin(0.5).setDepth(32));
+      this.overlay.push(this.add.text(480, 380,
+        '명령 바의 [조사한다]를 눌러 돋보기로 노란 표지판을 조사하세요.', {
+          fontFamily: FONT, fontSize: '14px', color: '#9fb5d2'
+        }).setOrigin(0.5).setDepth(32));
     } else {
-      // 2단 컬럼 — 캔버스 960폭 가운데 정렬 + 단서별 박스로 가독성 향상
+      // 2단 컬럼 — 패널(PX=60, PW=840) 안쪽 padding 20씩 + 단서별 박스
       const tags = this.registry.get('evidenceTags') || {};
       const perCol = Math.ceil(this.collected.length / 2);
-      const colW = 440, gap = 20, rowH = 88;
-      const startX = (960 - (colW * 2 + gap)) / 2;   // = 30
+      const colW = 390, gap = 20, rowH = 88;
+      const startX = 80;                              // 패널 좌측(60) + padding 20
       this.collected.forEach((e, i) => {
         const col = Math.floor(i / perCol);
         const row = i % perCol;
         const bx = startX + col * (colW + gap);
-        const by = 100 + row * rowH;
+        const by = 130 + row * rowH;                  // 헤더(60~106) 아래 여백
         const ai = getArea(e);
         // 단서 박스 (배경 + 외곽선)
         const box = this.add.graphics().setDepth(31);
@@ -5961,14 +5980,15 @@ class InvestigationScene extends Phaser.Scene {
         }).setDepth(32));
       });
     }
-    const close = this.add.text(480, 545, '[ 닫기 ]', {
-      fontFamily: FONT, fontSize: '20px', color: '#ffe082'
-    }).setOrigin(0.5).setDepth(31);
-    close.setInteractive({ useHandCursor: true });
+    // 닫기 버튼 — 패널 안 하단 가운데, fancyButton 스타일로 통일
     const done = () => this.clearOverlay();
-    close.on('pointerdown', done);
+    const closeBtn = fancyButton(this, 480, 530, 200, 46, '✕  닫기', done, {
+      base: 0x352910, hover: 0x5c4718, edge: 0xe8b86a, text: '#ffe9b8'
+    });
+    closeBtn.g.setDepth(33); closeBtn.zone.setDepth(34); closeBtn.t.setDepth(34);
+    this.overlay.push(closeBtn.g, closeBtn.zone, closeBtn.t);
+    // 배경 클릭으로도 닫기 (단, 패널 내부는 닫지 않음)
     bg.on('pointerdown', done);
-    this.overlay.push(close);
   }
 
   clearOverlay() {
