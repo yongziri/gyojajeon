@@ -6213,6 +6213,11 @@ class QuizScene extends Phaser.Scene {
     fancyButton(this, 880, 30, 130, 36, '← 닫기',
       () => this.bailOut(),
       { base: 0x3a2410, hover: 0x5c4718, edge: 0xe8b86a, text: '#ffe9b8' });
+    // 단서 확인 — 이문호 교사 피드백: 퀴즈 힌트가 단서를 가리키니
+    // 모은 단서를 다시 열람할 수 있어야 교육적. 좌측 닫기 옆에 배치.
+    fancyButton(this, 730, 30, 150, 36, '📘 단서 확인',
+      () => this.showCluesPanel(),
+      { base: 0x14304a, hover: 0x1f4868, edge: 0x6fb7d6, text: '#dff1ff' });
 
     // 하단 대사 박스
     panel(this, 480, 510, 940, 170, 0x0c1620, 0xe8b86a);
@@ -6293,6 +6298,7 @@ class QuizScene extends Phaser.Scene {
 
   onClick() {
     if (this.inputLocked) return;
+    if (this.cluesOpen) return;   // 단서 열람 모달 중에는 글로벌 클릭 무시
     // 타자기 중이면 건너뛰기 (오답 피드백도 즉시 표시 후 클릭 대기)
     if (this.skipTyping()) return;
     // 오답 피드백 후 클릭 → 문제 재출제 (학생 자율 진행)
@@ -6433,6 +6439,109 @@ class QuizScene extends Phaser.Scene {
         });
       });
     });
+  }
+
+  // 단서 열람 모달 — 이문호 교사 피드백: 퀴즈 힌트가 단서를 가리키므로
+  // 인터뷰 중 모은 단서를 다시 볼 수 있어야 교육적. 장소별 그룹화 표시.
+  showCluesPanel() {
+    if (this.cluesOpen) return;
+    this.cluesOpen = true;
+    const collected = this.registry.get('evidence') || [];
+    const locTags = this.registry.get('locationTags') || {};
+    const layer = [];
+
+    // 화면 전체 어둡게
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.82)
+      .setDepth(3500).setInteractive();
+    layer.push(dim);
+    // 가운데 패널
+    const PX = 60, PY = 36, PW = 840, PH = 528;
+    const pg = this.add.graphics().setDepth(3501);
+    pg.fillStyle(0x0e1626, 1); pg.fillRoundedRect(PX, PY, PW, PH, 16);
+    pg.lineStyle(2, 0xe8b86a, 1); pg.strokeRoundedRect(PX, PY, PW, PH, 16);
+    layer.push(pg);
+    // 타이틀 박스
+    const tp = this.add.graphics().setDepth(3502);
+    tp.fillStyle(0x101a26, 1); tp.fillRoundedRect(310, 60, 340, 46, 12);
+    tp.lineStyle(2, 0xe8b86a, 1); tp.strokeRoundedRect(310, 60, 340, 46, 12);
+    layer.push(tp);
+    layer.push(this.add.text(480, 83, '📘  지금까지 모은 단서', {
+      fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffe9b8',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(3503));
+
+    if (collected.length === 0) {
+      layer.push(this.add.text(480, 260, '🔎', {
+        fontFamily: FONT, fontSize: '64px'
+      }).setOrigin(0.5).setDepth(3502));
+      layer.push(this.add.text(480, 340, '아직 모은 단서가 없습니다.', {
+        fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8'
+      }).setOrigin(0.5).setDepth(3502));
+      layer.push(this.add.text(480, 380,
+        '먼저 현장 조사로 단서를 모은 뒤 다시 와 주세요.', {
+        fontFamily: FONT, fontSize: '13px', color: '#9fb5d2'
+      }).setOrigin(0.5).setDepth(3502));
+    } else {
+      // 장소별 그룹화 — showRecord와 동일 로직(콤팩트)
+      let curY = 128;
+      Object.entries(CASE.locations).forEach(([lid, loc]) => {
+        const locEvs = loc.spots
+          .filter(s => s.evidence &&
+            collected.find(c => c.id === s.evidence.id))
+          .map(s => s.evidence);
+        if (locEvs.length === 0) return;
+        layer.push(this.add.text(80, curY,
+          '📍  ' + loc.name + '   (' + locEvs.length + '개)', {
+          fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
+          fontStyle: 'bold'
+        }).setDepth(3502));
+        curY += 22;
+        if (locTags[lid]) {
+          layer.push(this.add.text(98, curY,
+            '💭 ' + locTags[lid].label, {
+            fontFamily: FONT, fontSize: '12px', color: '#9fb5d2',
+            wordWrap: { width: 720 }, lineSpacing: 3, fontStyle: 'italic'
+          }).setDepth(3502));
+          curY += 22;
+        }
+        locEvs.forEach(e => {
+          const ai = (typeof getArea === 'function') ? getArea(e) : null;
+          if (ai) {
+            const tg = this.add.graphics().setDepth(3502);
+            tg.fillStyle(ai.color, 1); tg.fillRect(98, curY + 2, 36, 16);
+            layer.push(tg);
+            layer.push(this.add.text(116, curY + 10, ai.label, {
+              fontFamily: FONT, fontSize: '10px', color: '#0a1828',
+              fontStyle: 'bold'
+            }).setOrigin(0.5).setDepth(3503));
+          }
+          layer.push(this.add.text(ai ? 144 : 98, curY,
+            '● ' + e.name + '  —  ' + e.desc, {
+            fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
+            wordWrap: { width: ai ? 720 : 760 }, lineSpacing: 2
+          }).setDepth(3502));
+          curY += 22;
+        });
+        curY += 10;
+      });
+    }
+
+    // 닫기 — 패널 안 하단 가운데, fancyButton
+    const close = () => {
+      layer.forEach(o => { if (o && o.destroy) o.destroy(); });
+      this.cluesOpen = false;
+      // 같은 클릭이 글로벌 onClick으로 흐르지 않도록 짧은 락
+      this.inputLocked = true;
+      this.time.delayedCall(220, () => { this.inputLocked = false; });
+    };
+    const closeBtn = fancyButton(this, 480, 530, 220, 46,
+      '✕  닫고 문제 풀기', close, {
+        base: 0x352910, hover: 0x5c4718, edge: 0xe8b86a, text: '#ffe9b8'
+      });
+    closeBtn.g.setDepth(3503); closeBtn.zone.setDepth(3504); closeBtn.t.setDepth(3504);
+    layer.push(closeBtn.g, closeBtn.zone, closeBtn.t);
+    // dim 클릭으로는 닫지 않음(부주의 클릭 방어)
+    dim.on('pointerdown', () => { /* no-op */ });
   }
 
   // 사용자가 인터뷰 중간에 닫기 버튼 누름 — 상태 변경 없이 월드 복귀
