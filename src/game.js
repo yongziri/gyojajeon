@@ -7586,13 +7586,13 @@ class ReflectionScene extends Phaser.Scene {
         align: 'center', lineSpacing: 6
       }).setOrigin(0.5).setDepth(3002));
     } else {
-      // 2단 컬럼 카드 리스트
-      const cardW = 320, cardH = 64, gap = 10;
+      // 3단 컬럼 카드 리스트 — 단서가 많아도(사건당 최대 12개) 패널 안에 들어오게
+      const cols = 3, cardW = 262, cardH = 60, gapX = 11, gapY = 8;
       available.forEach((clue, i) => {
-        const col = i % 2;
-        const row = Math.floor(i / 2);
-        const cx = px + 16 + col * (cardW + 12);
-        const cy = py + 56 + row * (cardH + gap);
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const cx = px + 14 + col * (cardW + gapX);
+        const cy = py + 52 + row * (cardH + gapY);
         const cg = this.add.graphics().setDepth(3002);
         const draw = (hover) => {
           cg.clear();
@@ -7607,13 +7607,13 @@ class ReflectionScene extends Phaser.Scene {
         draw(false);
         overlay.push(cg);
         overlay.push(this.add.text(cx + 12, cy + 8, clue.name, {
-          fontFamily: FONT, fontSize: '13px', color: '#ffe9b8',
-          fontStyle: 'bold'
+          fontFamily: FONT, fontSize: '12px', color: '#ffe9b8',
+          fontStyle: 'bold', wordWrap: { width: cardW - 20 }
         }).setDepth(3003));
-        overlay.push(this.add.text(cx + 12, cy + 28,
-          (clue.desc || '').slice(0, 56) + ((clue.desc || '').length > 56 ? '…' : ''), {
+        overlay.push(this.add.text(cx + 12, cy + 30,
+          (clue.desc || '').slice(0, 38) + ((clue.desc || '').length > 38 ? '…' : ''), {
           fontFamily: FONT, fontSize: '10px', color: '#a8c4dc',
-          wordWrap: { width: cardW - 20 }, lineSpacing: 2
+          wordWrap: { width: cardW - 20 }
         }).setDepth(3003));
         const zone = this.add.zone(cx + cardW / 2, cy + cardH / 2, cardW, cardH)
           .setInteractive({ useHandCursor: true }).setDepth(3004);
