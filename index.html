@@ -578,8 +578,22 @@
   <script>
     // 서비스 워커 등록 — HTTPS(또는 localhost)에서만 등록됨
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      // 자동 업데이트: 새 SW가 활성화되면 1회만 자동 새로고침 → 항상 최신.
+      //  · hadController=false(첫 방문/첫 설치)면 새로고침 생략 (불필요한 첫 reload 방지)
+      //  · refreshing 플래그로 중복 reload 방지
+      //  · 새로고침 후엔 sw.js가 동일 → 재설치/재활성 없음 → controllerchange 미발생 → 루프 없음
+      var hadController = !!navigator.serviceWorker.controller;
+      var swRefreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (swRefreshing || !hadController) return;
+        swRefreshing = true;
+        window.location.reload();
+      });
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js').catch(function () {});
+        navigator.serviceWorker.register('sw.js').then(function (reg) {
+          // 탭이 떠 있는 동안에도 주기적으로 업데이트 확인 (선택)
+          try { reg.update(); } catch (e) {}
+        }).catch(function () {});
       });
     }
   </script>
