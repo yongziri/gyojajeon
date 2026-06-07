@@ -1685,7 +1685,7 @@ const SAVE_FIELDS = [
   'caseId', 'stage', 'enemyDefeated', 'evidence', 'coreClues',
   'quizSolved', 'slimeLove', 'invLoc', 'reportSent', 'reflectionDone',
   'reflection', 'speech', 'completedCases', 'caseBadges', 'caseReviews',
-  'learningReview', 'evidenceTags', 'userPledge', 'userReflection',
+  'learningReview', 'evidenceTags', 'locationTags', 'userPledge', 'userReflection',
 ];
 function saveGameState(registry) {
   if (typeof localStorage === 'undefined') return;
@@ -2245,6 +2245,7 @@ class CaseSelectScene extends Phaser.Scene {
       this.registry.set('reflectionDone', false);
       this.registry.set('reflection', null);
       this.registry.set('evidenceTags', {});
+      this.registry.set('locationTags', {});
       this.registry.set('learningReview', null);
       // 페이드 아웃 후 BriefingScene으로 — intro도 다른 사건과 동일 흐름
       this.cameras.main.fadeOut(380, 0, 0, 0);
@@ -5533,10 +5534,27 @@ class InvestigationScene extends Phaser.Scene {
     this.examine = !this.examine;
     this.clearOverlay();
     this.glass.setVisible(this.examine);
-    this.zones.forEach(z => z.setFillStyle(0xffe082, this.examine ? 0.14 : 0));
+    // spot 시각화 강화 — 이문호 교사 피드백: "네모박스가 너무 연해서 잘 안 보임".
+    //   alpha 0.14 → 0.32, 외곽선 추가, 깜빡이는 펄스 트윈으로 학생 시선 유도.
+    //   조사 종료 시 트윈 정리 + 외곽선 제거.
+    this.zones.forEach(z => {
+      this.tweens.killTweensOf(z);
+      if (this.examine) {
+        z.setFillStyle(0xffe082, 0.32);
+        z.setStrokeStyle(3, 0xffd54a, 1);
+        // 펄스 — fillAlpha 트윈
+        this.tweens.add({
+          targets: z, fillAlpha: 0.58, duration: 700,
+          yoyo: true, repeat: -1, ease: 'Sine.inOut'
+        });
+      } else {
+        z.setFillStyle(0xffe082, 0);
+        z.setStrokeStyle(0);
+      }
+    });
     this.btnExamine.t.setText(this.examine ? '조사 종료' : '조사한다');
     this.msg.setText(this.examine
-      ? '돋보기로 살펴볼 곳을 클릭하세요. (ESC: 취소)'
+      ? '🟡 노란 박스 안을 돋보기로 클릭하세요. (ESC: 취소)'
       : '명령을 선택하세요.');
   }
 
@@ -5651,8 +5669,9 @@ class InvestigationScene extends Phaser.Scene {
     bnZone.on('pointerdown', () => this.closeInspectPopup());
     this.inspectLayer.push(bg, bnTxt, bnZone);
 
-    // dim 클릭으로도 닫기
-    dim.on('pointerdown', () => this.closeInspectPopup());
+    // dim 클릭 닫기는 제거 -- 학생이 부주의 클릭으로 단서를 못 읽고 넘어가는
+    // 문제 방지(이문호 교사 피드백). 반드시 [확인] 버튼만으로 닫음.
+    dim.on('pointerdown', () => { /* no-op: 단서 패널 클릭 방어 */ });
     // ESC 단축키
     this.inspectEscHandler = () => {
       if (this.inspectOpen) this.closeInspectPopup();
@@ -5786,9 +5805,20 @@ class InvestigationScene extends Phaser.Scene {
     this.inspectOpen = false;
     const nf = this.inspectNewlyFound;
     this.inspectNewlyFound = null;
-    // 새 단서 입수 시 — 닫힌 직후 감정 태그 모달 자동 호출
+    // 감정 입력 모달 호출 정책 변경(이문호 교사 피드백):
+    //   "단서마다 표현하면 10개. 맵마다 표현하면 3개" → 장소별 1회로 통합.
+    //   이 장소(locId)의 모든 단서를 다 모았을 때만 종합 감정 입력 모달.
     if (nf) {
-      this.time.delayedCall(220, () => this.askThoughtTag(nf));
+      const loc = CASE.locations[this.locId];
+      const locEvs = loc.spots.filter(s => s.evidence).map(s => s.evidence);
+      const allLocCollected = locEvs.length > 0 &&
+        locEvs.every(ev => this.collected.find(c => c.id === ev.id));
+      const locTags = this.registry.get('locationTags') || {};
+      const alreadyWrote = !!locTags[this.locId];
+      if (allLocCollected && !alreadyWrote) {
+        this.time.delayedCall(320, () =>
+          this.askLocationThoughtTag(this.locId, locEvs));
+      }
     }
     // 모든 단서 수집 완료 시 하단 안내 갱신
     if (this.collected.length >= this.totalEvidence()) {
@@ -5796,8 +5826,122 @@ class InvestigationScene extends Phaser.Scene {
     }
   }
 
+  // 장소별 종합 감정 입력 — 이문호 교사 피드백 반영(단서별 10회 → 장소별 3회).
+  //   좌측에 그 장소에서 모은 단서 목록 표시 + 우측 안내 → HTML 입력 모달.
+  //   저장 키: locationTags[locId] + evidenceTags 에도 복제(보고서·기록 모달 호환).
+  askLocationThoughtTag(locId, evs) {
+    if (this.thoughtOpen) return;
+    this.thoughtOpen = true;
+
+    const loc = CASE.locations[locId];
+    const layer = [];
+    const dim = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.72)
+      .setDepth(3500).setInteractive();
+    layer.push(dim);
+
+    // 가운데 패널 — 좌(단서 목록) | 우(안내문) 2단 구성
+    const PX = 60, PY = 60, PW = 840, PH = 480;
+    const pg = this.add.graphics().setDepth(3501);
+    pg.fillStyle(0x0e1626, 1); pg.fillRoundedRect(PX, PY, PW, PH, 16);
+    pg.lineStyle(2, 0xc9a36b, 1); pg.strokeRoundedRect(PX, PY, PW, PH, 16);
+    layer.push(pg);
+
+    // 타이틀
+    layer.push(this.add.text(480, PY + 30,
+      '💭  ' + loc.name + ' — 이 장소의 단서들을 보며 든 생각', {
+      fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(3502));
+    layer.push(this.add.text(480, PY + 58,
+      '아래 ' + evs.length + '개 단서를 모두 모았어요. 어떤 느낌이 들었나요?', {
+      fontFamily: FONT, fontSize: '13px', color: '#a8c4dc'
+    }).setOrigin(0.5).setDepth(3502));
+
+    // 좌측 단서 카드들 (수직 나열)
+    const CX = PX + 24, CY = PY + 90, CW = 380, CRowH = 86;
+    evs.forEach((ev, i) => {
+      const by = CY + i * CRowH;
+      const cb = this.add.graphics().setDepth(3502);
+      cb.fillStyle(0x10202e, 0.95); cb.fillRoundedRect(CX, by, CW, CRowH - 8, 8);
+      const ai = (typeof getArea === 'function') ? getArea(ev) : null;
+      cb.lineStyle(2, ai ? ai.color : 0x2a5a82, 0.8);
+      cb.strokeRoundedRect(CX, by, CW, CRowH - 8, 8);
+      layer.push(cb);
+      if (ai) {
+        const tg = this.add.graphics().setDepth(3503);
+        tg.fillStyle(ai.color, 1); tg.fillRect(CX + 10, by + 8, 38, 18);
+        layer.push(tg);
+        layer.push(this.add.text(CX + 29, by + 17, ai.label, {
+          fontFamily: FONT, fontSize: '11px', color: '#0a1828', fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(3504));
+      }
+      const tx = CX + (ai ? 58 : 14);
+      layer.push(this.add.text(tx, by + 8, '● ' + ev.name, {
+        fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffe9b8',
+        fontStyle: 'bold'
+      }).setDepth(3503));
+      layer.push(this.add.text(CX + 14, by + 32, ev.desc, {
+        fontFamily: FONT, fontSize: '11px', color: '#cfe9ff',
+        wordWrap: { width: CW - 28 }, lineSpacing: 2
+      }).setDepth(3503));
+    });
+
+    // 우측 안내
+    const RX = PX + 440, RY = PY + 90;
+    layer.push(this.add.text(RX + 180, RY + 50, '✍️', {
+      fontFamily: FONT, fontSize: '54px'
+    }).setOrigin(0.5).setDepth(3503));
+    layer.push(this.add.text(RX + 180, RY + 140,
+      '잠시 후 입력창이 뜹니다', {
+      fontFamily: FONT_TITLE, fontSize: '18px', color: '#ffe9b8'
+    }).setOrigin(0.5).setDepth(3503));
+    layer.push(this.add.text(RX + 180, RY + 180,
+      '단서들을 천천히 보고\n자유로운 한 두 문장으로\n적어주세요 (선택 입력)', {
+      fontFamily: FONT, fontSize: '13px', color: '#a8c4dc',
+      align: 'center', lineSpacing: 6
+    }).setOrigin(0.5).setDepth(3503));
+
+    const close = () => {
+      layer.forEach(o => { if (o && o.destroy) o.destroy(); });
+      this.thoughtOpen = false;
+    };
+
+    // 학생이 단서를 차분히 볼 시간(800ms) 확보 후 HTML 모달 (이문호 피드백)
+    this.time.delayedCall(800, () => {
+      const proceed = (text) => {
+        const trimmed = (text || '').trim().slice(0, 150);
+        if (trimmed.length > 0) {
+          // 장소별 + 단서별 모두 저장(보고서·단서 기록 모달 호환)
+          const locTags = this.registry.get('locationTags') || {};
+          locTags[locId] = { id: 'custom', label: trimmed };
+          this.registry.set('locationTags', locTags);
+          const evTags = this.registry.get('evidenceTags') || {};
+          evs.forEach(ev => {
+            if (!evTags[ev.id]) evTags[ev.id] = { id: 'custom', label: trimmed };
+          });
+          this.registry.set('evidenceTags', evTags);
+          if (typeof reportProgress === 'function') reportProgress(this);
+        }
+        close();
+      };
+      if (window.PEACE && typeof window.PEACE.openTextInputModal === 'function') {
+        window.PEACE.openTextInputModal({
+          title: '💭 ' + loc.name + ' — 이 장소의 단서들을 보며 든 생각',
+          subtitle: evs.map(e => '【 ' + e.name + ' 】').join(' · ') +
+                    '<br>한두 문장으로 자유롭게 (선택 입력)',
+          placeholder: '예: 면화 한 송이를 위해 큰 바다가 사라졌다는 게 충격적이다.',
+          maxLength: 150,
+          initial: ''
+        }, proceed);
+      } else {
+        close();
+      }
+    });
+  }
+
   // 자기조절학습의 "자기 모니터링" — 단서별 학생 자유 입력 생각·소감
   // (이전엔 5지선다 감정 태그였으나 학생이 자유롭게 타이핑하는 방식으로 전환)
+  // [현재 직접 호출되지 않음 — askLocationThoughtTag로 통합. 코드 보존만.]
   askThoughtTag(evidence) {
     if (this.thoughtOpen) return;
     this.thoughtOpen = true;
@@ -5933,51 +6077,54 @@ class InvestigationScene extends Phaser.Scene {
           fontFamily: FONT, fontSize: '14px', color: '#9fb5d2'
         }).setOrigin(0.5).setDepth(32));
     } else {
-      // 2단 컬럼 — 패널(PX=60, PW=840) 안쪽 padding 20씩 + 단서별 박스
-      const tags = this.registry.get('evidenceTags') || {};
-      const perCol = Math.ceil(this.collected.length / 2);
-      const colW = 390, gap = 20, rowH = 88;
-      const startX = 80;                              // 패널 좌측(60) + padding 20
-      this.collected.forEach((e, i) => {
-        const col = Math.floor(i / perCol);
-        const row = i % perCol;
-        const bx = startX + col * (colW + gap);
-        const by = 130 + row * rowH;                  // 헤더(60~106) 아래 여백
-        const ai = getArea(e);
-        // 단서 박스 (배경 + 외곽선)
-        const box = this.add.graphics().setDepth(31);
-        box.fillStyle(0x10202e, 0.85); box.fillRect(bx, by, colW, rowH - 8);
-        box.lineStyle(2, ai ? ai.color : 0x2a5a82, 0.7);
-        box.strokeRect(bx, by, colW, rowH - 8);
-        this.overlay.push(box);
-        // 영역 색상 배지 (좌측 작은 사각형)
-        if (ai) {
-          const tag = this.add.graphics().setDepth(32);
-          tag.fillStyle(ai.color, 1); tag.fillRect(bx + 10, by + 8, 38, 18);
-          this.overlay.push(tag);
-          this.overlay.push(this.add.text(bx + 29, by + 17, ai.label, {
-            fontFamily: FONT, fontSize: '11px', color: '#0a1828', fontStyle: 'bold'
-          }).setOrigin(0.5).setDepth(33));
-        }
-        // 학생이 부착한 "내 생각" 태그 (있을 때만, 우상단)
-        const myTag = tags[e.id];
-        if (myTag) {
-          this.overlay.push(this.add.text(bx + colW - 10, by + 8,
-            '💭 ' + myTag.label, {
-              fontFamily: FONT, fontSize: '11px', color: '#ffd96a'
-            }).setOrigin(1, 0).setDepth(32));
-        }
-        // 단서명 + 설명 (배지 옆부터)
-        const textX = bx + (ai ? 58 : 14);
-        const textW = colW - (ai ? 72 : 28);
-        this.overlay.push(this.add.text(textX, by + 8, '● ' + e.name, {
-          fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffe9b8',
+      // 장소(맵)별 그룹화 — 이문호 교사 피드백 반영
+      //   각 장소 헤더 + 그 장소 종합 감정(있을 때) + 단서 한 줄당 하나(●)
+      const locTags = this.registry.get('locationTags') || {};
+      let curY = 128;
+      Object.entries(CASE.locations).forEach(([lid, loc]) => {
+        const locEvs = loc.spots
+          .filter(s => s.evidence &&
+            this.collected.find(c => c.id === s.evidence.id))
+          .map(s => s.evidence);
+        if (locEvs.length === 0) return;
+        // 장소 헤더
+        this.overlay.push(this.add.text(80, curY,
+          '📍  ' + loc.name + '   (' + locEvs.length + '개)', {
+          fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
           fontStyle: 'bold'
         }).setDepth(32));
-        this.overlay.push(this.add.text(bx + 14, by + 30, e.desc, {
-          fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
-          wordWrap: { width: colW - 28 }, lineSpacing: 3
-        }).setDepth(32));
+        curY += 22;
+        // 장소 종합 감정 (있을 때)
+        if (locTags[lid]) {
+          this.overlay.push(this.add.text(98, curY,
+            '💭 ' + locTags[lid].label, {
+            fontFamily: FONT, fontSize: '12px', color: '#9fb5d2',
+            wordWrap: { width: 720 }, lineSpacing: 3, fontStyle: 'italic'
+          }).setDepth(32));
+          curY += 22;
+        }
+        // 단서 1열 한 줄당 — ● 이름 — 짧은 설명
+        locEvs.forEach(e => {
+          const ai = getArea(e);
+          // 영역 배지 (없으면 ● 만)
+          if (ai) {
+            const tg = this.add.graphics().setDepth(32);
+            tg.fillStyle(ai.color, 1); tg.fillRect(98, curY + 2, 36, 16);
+            this.overlay.push(tg);
+            this.overlay.push(this.add.text(116, curY + 10, ai.label, {
+              fontFamily: FONT, fontSize: '10px', color: '#0a1828',
+              fontStyle: 'bold'
+            }).setOrigin(0.5).setDepth(33));
+          }
+          // 단서명 + 한 줄 설명
+          this.overlay.push(this.add.text(ai ? 144 : 98, curY,
+            '● ' + e.name + '  —  ' + e.desc, {
+            fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
+            wordWrap: { width: ai ? 720 : 760 }, lineSpacing: 2
+          }).setDepth(32));
+          curY += 22;
+        });
+        curY += 10;   // 장소 간 여백
       });
     }
     // 닫기 버튼 — 패널 안 하단 가운데, fancyButton 스타일로 통일
