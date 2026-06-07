@@ -2171,7 +2171,7 @@ class CaseSelectScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    // 하단 — intro(튜토리얼)는 별도 배지, 본 사건은 학습 영역 3색(인지/정서/행동)
+    // 하단 — intro(튜토리얼)는 P.E.A.C.E. 5단계 배지. 본 사건은 별도 표기 없음
     if (available && isIntro) {
       const tg = this.add.graphics();
       tg.fillStyle(0xffd96a, 0.9);
@@ -2181,27 +2181,14 @@ class CaseSelectScene extends Phaser.Scene {
       this.add.text(x + w / 2, y + 90, '🎓  P.E.A.C.E. 5단계 — 인식·탐색·분석·연결·실천', {
         fontFamily: FONT, fontSize: '10px', color: '#3a2410', fontStyle: 'bold'
       }).setOrigin(0.5);
-    } else if (available) {
-      const tags = [
-        { label: '인지', color: 0x6fb7d6 },
-        { label: '정서', color: 0xe79a78 },
-        { label: '행동', color: 0x7fd07f },
-      ];
-      tags.forEach((t, i) => {
-        const tx = x + 78 + i * 56;
-        const tg = this.add.graphics();
-        tg.fillStyle(t.color, 0.85);
-        tg.fillRect(tx, y + 78, 50, 18);
-        this.add.text(tx + 25, y + 87, t.label, {
-          fontFamily: FONT, fontSize: '10px', color: '#0a1828'
-        }).setOrigin(0.5);
-      });
-    } else {
+    } else if (!available) {
       this.add.text(x + 78, y + 85,
         '— 후속 업데이트 예정', {
         fontFamily: FONT, fontSize: '11px', color: '#6e7a86', fontStyle: 'italic'
       });
     }
+    // (본 사건의 인지/정서/행동 3색 배지는 제거됨 — UNESCO 3영역은 단서별
+    //  배지로 충분히 표시되어 사건 카드에는 중복이라 노이즈)
 
     // 상호작용 zone — 잠금이라도 클릭은 받아서 토스트 안내
     const zone = this.add.zone(x + w / 2, y + h / 2, w, h)
