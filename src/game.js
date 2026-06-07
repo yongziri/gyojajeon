@@ -1981,9 +1981,10 @@ class CaseSelectScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '11px', color: '#7aa6c8'
     }).setOrigin(1, 0.5);
 
-    // 각 사건 카드
-    // 4개 카드(intro 포함) listH 안에 fit: 110*4 + 8*3 = 464. listH 480으로 확장.
-    const cardH = 110, gap = 8;
+    // 각 사건 카드 — listH(490) 안에 4개 fit
+    // 계산: listY(90) + 헤더(44) + 4*(cardH+gap) - gap ≤ listY + listH(580)
+    //   → 4*cardH + 3*gap ≤ 446. cardH=104, gap=6 → 416+18=434 ✓ (안전 마진 12)
+    const cardH = 104, gap = 6;
     this.cards = [];
     CASE_LIST.forEach((c, i) => {
       const cy = listY + 44 + i * (cardH + gap);
