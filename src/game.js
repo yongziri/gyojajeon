@@ -41,13 +41,13 @@ const MAP = [
 // 새 NPC를 만들 때는 반드시 이 두 상수를 그대로 add.text 의 style 인자로 전달.
 const MARKER_STYLE_ACTIVE = {
   fontFamily: 'MonaS, "Malgun Gothic", sans-serif',
-  fontSize: '24px', color: '#ffe082',
-  stroke: '#000000', strokeThickness: 4
+  fontSize: '18px', color: '#ffe082',
+  stroke: '#000000', strokeThickness: 3
 };
 const MARKER_STYLE_SOLVED = {
   fontFamily: 'MonaS, "Malgun Gothic", sans-serif',
-  fontSize: '20px', color: '#7fd07f',
-  stroke: '#000000', strokeThickness: 4
+  fontSize: '16px', color: '#7fd07f',
+  stroke: '#000000', strokeThickness: 3
 };
 
 // 색상 팔레트
@@ -3801,8 +3801,8 @@ class WorldScene extends Phaser.Scene {
 
     // 머리 위 ! 마커 — 시민 인터뷰 완료 직후 등장 (E·A 끝났을 때)
     this.chairMarker = this.add.text(chairX, chairY - 50, '!', {
-      fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffd96a',
-      stroke: '#000000', strokeThickness: 4, fontStyle: 'bold'
+      fontFamily: FONT_TITLE, fontSize: '18px', color: '#ffd96a',
+      stroke: '#000000', strokeThickness: 3, fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(chairY + 1).setVisible(false);
     this.refreshChairMarker();   // 진입 시점에 한 번
 
@@ -5051,6 +5051,21 @@ class WorldScene extends Phaser.Scene {
   updateCitizenMarkers() {
     if (!this.citizenObjs || this.citizenObjs.length === 0) return;
     const solved = this.registry.get('quizSolved') || {};
+    // 인터뷰 잠금 중에는 시민 마커를 전부 숨김 — 안내인 ! 와 겹쳐 보이는 "꼬임" 방지.
+    //   잠금 해제: 안내인 대화 완료(enemyDefeated) + (튜토리얼이거나 현장 단서 3개+)
+    const introCase = (this.registry.get('caseId') === 'intro');
+    const defeated = !!this.registry.get('enemyDefeated');
+    const ev = (this.registry.get('evidence') || []).length;
+    const unlocked = defeated && (introCase || ev >= 3);
+    if (!unlocked) {
+      this.citizenObjs.forEach(co => {
+        if (co.marker && co.marker.scene) {
+          this.tweens.killTweensOf(co.marker);
+          co.marker.setVisible(false);
+        }
+      });
+      return;
+    }
     // 다음에 가야 할 시민(배열 순서상 첫 미해결) 찾기
     let nextIdx = -1;
     for (let i = 0; i < this.citizenObjs.length; i++) {
@@ -5064,11 +5079,11 @@ class WorldScene extends Phaser.Scene {
       this.tweens.killTweensOf(co.marker);
       if (isSolved) {
         // 완료 — ✓ 고정
-        co.marker.setText('✓').setColor('#7fd07f').setFontSize(20);
+        co.marker.setText('✓').setColor('#7fd07f').setFontSize(16);
         co.marker.setY(markerY0).setVisible(true);
       } else if (i === nextIdx) {
         // 다음 차례 — ▼ 떠다님
-        co.marker.setText('▼').setColor('#ffe082').setFontSize(28);
+        co.marker.setText('▼').setColor('#ffe082').setFontSize(18);
         co.marker.setY(markerY0).setVisible(true);
         this.tweens.add({
           targets: co.marker, y: markerY0 - 8, duration: 500,
