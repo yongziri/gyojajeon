@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v179';
+const CACHE = 'vanished-sea-v180';
 const PRECACHE = [
   './',
   './index.html',
@@ -23,7 +23,8 @@ const PRECACHE = [
   './assets/audio/bgm_aralsea.mp3',
   './assets/audio/bgm_ukraine.mp3',
   './assets/audio/bgm_palestine.mp3',
-  './assets/audio/bgm_investigation.mp3'
+  './assets/audio/bgm_investigation.mp3',
+  './assets/audio/bgm_caseselect.mp3'
 ];
 
 self.addEventListener('install', (e) => {

@@ -1833,6 +1833,7 @@ const BGM_BY_CASE = {
 };
 const BGM_INVESTIGATION = 'assets/audio/bgm_investigation.mp3';
 const BGM_TITLE         = 'assets/audio/Mandate_of_Peace.mp3';
+const BGM_CASESELECT    = 'assets/audio/bgm_caseselect.mp3';
 
 const CASE_LIST = [
   {
@@ -1930,6 +1931,9 @@ class CaseSelectScene extends Phaser.Scene {
     // 부드러운 페이드인 — 타이틀/엔딩 등 어디서 들어와도 자연스럽게
     this.cameras.main.fadeIn(320, 0, 0, 0);
 
+    // 임무 선택 화면 BGM (임무 받는 느낌) — 사건 진입 시 WorldScene이 사건별 BGM으로 전환
+    if (window.SFX) window.SFX.playBGM(BGM_CASESELECT);
+
     // ── 배경: 어두운 코발트 그라데이션 + 격자 (오버워치 풍) ───
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x07111f, 0x07111f, 0x122842, 0x0c1c30, 1);
@@ -1943,11 +1947,11 @@ class CaseSelectScene extends Phaser.Scene {
     // 좌측 강조 바
     const headBar = this.add.graphics();
     headBar.fillStyle(0xe8b86a, 1); headBar.fillRect(0, 22, 6, 38);
-    this.add.text(20, 22, '사건 선택', {
+    this.add.text(20, 22, '임무 선택', {
       fontFamily: FONT_TITLE, fontSize: '28px', color: '#ffe9b8',
       fontStyle: 'bold'
     });
-    this.add.text(20, 56, 'CASE  SELECT  —  UN 조사관 임무 브리핑', {
+    this.add.text(20, 56, 'MISSION  SELECT  —  UN 조사관 임무 브리핑', {
       fontFamily: FONT, fontSize: '12px', color: '#7aa6c8'
     });
     // 우측 식별 칩
@@ -2757,10 +2761,10 @@ class LearningTreeScene extends Phaser.Scene {
             () => this.scene.start('SpeechScene'));
         },
         { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
-      fancyButton(this, 750, 575, 150, 30, '← 사건 선택', goCaseSelect,
+      fancyButton(this, 750, 575, 150, 30, '← 임무 선택', goCaseSelect,
         { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
     } else {
-      fancyButton(this, 700, 575, 160, 30, '← 사건 선택', goCaseSelect,
+      fancyButton(this, 700, 575, 160, 30, '← 임무 선택', goCaseSelect,
         { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
     }
   }
@@ -4792,14 +4796,14 @@ class WorldScene extends Phaser.Scene {
     card.fillRect(cx + cw / 2 - 3, cy - ch / 2, 3, ch);
     layer.push(card);
 
-    const head = this.add.text(cx, cy - 55, '🏠  사건 선택으로 돌아가기', {
+    const head = this.add.text(cx, cy - 55, '🏠  임무 선택으로 돌아가기', {
       fontFamily: FONT_TITLE, fontSize: '19px', color: '#dff1ff',
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(5502);
     layer.push(head);
 
     const msg = this.add.text(cx, cy - 12,
-      '사건 선택 화면으로 돌아가시겠습니까?\n진행도는 그대로 저장됩니다.', {
+      '임무 선택 화면으로 돌아가시겠습니까?\n진행도는 그대로 저장됩니다.', {
       fontFamily: FONT, fontSize: '13px', color: '#a8c4dc',
       align: 'center', lineSpacing: 5
     }).setOrigin(0.5).setDepth(5502);
