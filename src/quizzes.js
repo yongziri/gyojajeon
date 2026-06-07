@@ -162,7 +162,7 @@ const CITIZENS_BY_CASE = {
           feedback: '몸을 쓰는 일이 줄어 그런 문제는 적어요.' },
       ],
       reward: {
-        id: 'health', area: 'emotional',
+        id: 'health_toll', area: 'emotional',
         name: '건강의 상처',
         desc: '소금·농약 먼지가 폐 깊숙이 박힌다. 가장 약한 아이와 노인부터 무너졌다.'
       }
