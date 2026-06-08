@@ -5425,7 +5425,13 @@ class InvestigationScene extends Phaser.Scene {
     // onResume이 맵 BGM으로 자동 전환.
     if (window.SFX) window.SFX.playBGM(BGM_INVESTIGATION);
     this.locId = this.registry.get('invLoc') || CASE.start;
-    this.collected = this.registry.get('evidence') || [];
+    // 현재 사건에 실제로 있는 단서만 유지 — 옛 세이브(이어하기)에 남은 삭제/타사건
+    // 단서가 섞여 개수가 꼬이는 문제 방지 (이문호 교사 피드백: 개수 불일치)
+    const validClueIds = new Set();
+    Object.values(CASE.locations).forEach(l =>
+      (l.spots || []).forEach(s => { if (s.evidence) validClueIds.add(s.evidence.id); }));
+    this.collected = (this.registry.get('evidence') || []).filter(e => e && validClueIds.has(e.id));
+    this.registry.set('evidence', this.collected);   // 정리된 값으로 다시 저장
     this.examine = false;
     this.overlay = [];
 
