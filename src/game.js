@@ -2243,10 +2243,11 @@ class CaseSelectScene extends Phaser.Scene {
       fontFamily: FONT_TITLE, fontSize: '17px',
       color: available ? '#ffe9b8' : '#7a8a98', fontStyle: 'bold'
     });
-    // 부제
+    // 부제 — wordWrap + 작은 폰트로 카드 폭 밖으로 안 튀어나가게 (이용빈 피드백)
     this.add.text(x + 78, y + 38, c.subtitle, {
-      fontFamily: FONT, fontSize: '12px',
-      color: available ? '#cfe9ff' : '#6e7a86'
+      fontFamily: FONT, fontSize: '11px',
+      color: available ? '#cfe9ff' : '#6e7a86',
+      wordWrap: { width: w - 88 }
     });
     // 지역
     this.add.text(x + 78, y + 56, '📍 ' + c.region, {
@@ -3176,36 +3177,10 @@ class BriefingScene extends Phaser.Scene {
 
     const mapLabels = [worldImg, pulse, dot, labelBg, labelTx, regionLbl];
 
-    // 학습 영역 배지 (아랄해만 표시)
-    const tagY = panelY + 318;
+    // (학습 영역 배지 제거 — AAAAAA-1에서 사건 카드의 인지/정서/행동 배지 제거 후
+    //  BriefingScene aralsea 잔재였음. UNESCO 3영역은 단서별 배지로 충분히 표시되어
+    //  중복 노이즈. 사용자 피드백: "이거 왜 남아있는거야")
     let tagObjs = [];
-    if (c.id === 'aralsea') {
-      const tags = [
-        { label: '인지', color: 0x6fb7d6 },
-        { label: '정서', color: 0xe79a78 },
-        { label: '행동', color: 0x7fd07f },
-      ];
-      // 학습 영역 라벨 + 배지 3개를 패널 가운데로 정렬
-      const badgeW = 54, badgeGap = 8;
-      const totalW = 78 /* "학습 영역" 라벨 폭 */
-                   + 12 /* 라벨↔첫 배지 간격 */
-                   + badgeW * 3 + badgeGap * 2;
-      const groupStartX = panelX + (panelW - totalW) / 2;
-      this.add.text(groupStartX, tagY,
-        '학습 영역', {
-        fontFamily: FONT, fontSize: '11px', color: '#7aa6c8'
-      });
-      tags.forEach((t, i) => {
-        const tx = groupStartX + 90 + i * (badgeW + badgeGap);
-        const tg = this.add.graphics();
-        tg.fillStyle(t.color, 0.9); tg.fillRect(tx, tagY - 4, badgeW, 22);
-        const txt = this.add.text(tx + badgeW / 2, tagY + 7, t.label, {
-          fontFamily: FONT, fontSize: '11px', color: '#0a1828'
-        }).setOrigin(0.5);
-        tg.setAlpha(0); txt.setAlpha(0);
-        tagObjs.push(tg, txt);
-      });
-    }
 
     // ── 하단: 진행 바 + 안내 (16:10 가운데 정렬) ───────────────
     const barW = 800, barH = 12;
