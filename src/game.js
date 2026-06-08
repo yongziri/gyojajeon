@@ -6174,23 +6174,17 @@ class InvestigationScene extends Phaser.Scene {
     loc.moves.forEach((m, i) => {
       const y = 478 + i * 48;
       const b = fancyButton(this, 480, y, 380, 40, '▶  ' + m.label, () => {
-        // 가장 표준 패턴 — Phaser SceneManager 의 scene.start.
-        // 현재 InvestigationScene shutdown + 새 InvestigationScene start.
-        // WorldScene paused 영향 X. 옛 restart() 와 동일하지만 명시적 scene 이름.
-        // 이게 안 되면 F12 콘솔 에러 확인 필요.
+        // 이전 6번 SceneManager 트릭 모두 실패. 100% 작동 보장 패턴 ──
+        //   진행도 저장 + 페이지 reload (URL 파라미터 ?scene=Investigation).
+        //   TitleScene line 1448 디버그 라우터가 InvestigationScene 직진.
+        //   BGM·자산 잠시 다시 로드 단점 있지만 멈춤보다 압도적으로 나음.
         this.registry.set('invLoc', m.to);
-        try {
-          this.scene.start('InvestigationScene');
-        } catch (e) {
-          console.error('[InvestigationScene] move start failed:', e);
-          // 폴백 — 페이지 새로고침으로 강제 진입 (BGM 재시작은 어쩔 수 없음)
-          const params = new URLSearchParams();
-          params.set('scene', 'Investigation');
-          params.set('case', this.registry.get('caseId') || 'aralsea');
-          params.set('loc', m.to);
-          try { saveGameState(this.registry); } catch (e2) {}
-          location.search = '?' + params.toString();
-        }
+        try { saveGameState(this.registry); } catch (e) {}
+        const params = new URLSearchParams();
+        params.set('scene', 'Investigation');
+        params.set('case', this.registry.get('caseId') || 'aralsea');
+        params.set('loc', m.to);
+        location.search = '?' + params.toString();
       }, theme);
       b.g.setDepth(7); b.zone.setDepth(8); b.t.setDepth(8);
       this.overlay.push(b.g, b.zone, b.t);
