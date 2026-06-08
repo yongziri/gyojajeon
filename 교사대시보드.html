@@ -516,7 +516,7 @@
         }
       }
 
-      // ── 🏛 P.E.A.C.E. 학급 종합 통계 (5차원 + 등급 분포) ────
+      // ── 🏛 P.E.A.C.E. 학급 종합 통계 (4차원 + 등급 분포) ────
       const peaceList = list.filter(d => d.peace);
       const ps = $('peaceStats');
       if (peaceList.length > 0) {
@@ -680,7 +680,7 @@
             '<span class="stmt" style="color:#fff8d0;font-style:italic">"' +
             esc(d.userPledge) + '"</span></div>');
         }
-        // P.E.A.C.E. 5차원 종합 점수
+        // P.E.A.C.E. 4차원 종합 점수
         if (d.peace) {
           parts.push('<div><span class="lbl">🏛 P.E.A.C.E.</span> ' +
             '<span class="val">[' + esc(d.peace.grade) + '] ' +
@@ -766,7 +766,7 @@
         );
       }
 
-      // 1c. P.E.A.C.E. 5차원 종합 평가
+      // 1c. P.E.A.C.E. 4차원 종합 평가
       if (d.peace) {
         const dimNames = {
           cognition: '🧠 사실 이해',

@@ -2691,7 +2691,7 @@ class LearningTreeScene extends Phaser.Scene {
             });
           }
         }
-        // 🆕 P.E.A.C.E. 종합 평가 — 계획서 5차원 자동 산출
+        // 🆕 P.E.A.C.E. 종합 평가 — 계획서 4차원 자동 산출 (공감 제외)
         // (현재는 caseId 기준 1건만 실시간 반영. 사건별 누적은 향후 확장)
         if (c.id === (this.registry.get('caseId') || '')) {
           const sc = computePeaceScores(this.registry);
@@ -2706,7 +2706,7 @@ class LearningTreeScene extends Phaser.Scene {
             fontFamily: FONT_TITLE, fontSize: '12px',
             color: gradeColor, fontStyle: 'bold'
           });
-          // 5차원 — 한 줄 압축
+          // 4차원 — 한 줄 압축
           let dx = sx;
           PEACE_DIMS.forEach(d => {
             const v = sc.dims[d.key];
@@ -2755,7 +2755,7 @@ class LearningTreeScene extends Phaser.Scene {
           fontStyle: 'bold'
         });
         this.add.text(60, y + 92,
-          '  🥇 정복 메달   ·   📊 5차원 평가 점수   ·   🏆 트로피 진열대 +1', {
+          '  🥇 정복 메달   ·   📊 4차원 평가 점수   ·   🏆 트로피 진열대 +1', {
           fontFamily: FONT, fontSize: '11px', color: '#a8d4b0'
         });
         this.add.text(60, y + 112,
@@ -3217,7 +3217,7 @@ function getArea(ev) {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  P.E.A.C.E. 종합 평가 — 계획서 평가 루브릭(5항목 x 3점 = 15점)
+//  P.E.A.C.E. 종합 평가 — 계획서 평가 루브릭(4항목 x 3점 = 12점, 공감 차원 제외)
 //  · 각 차원은 registry에 누적된 학습 데이터로부터 자동 산출
 //  · 학습 트리 카드 · 인쇄 보고서 · 교사 대시보드에서 공통 사용
 // ══════════════════════════════════════════════════════════════
@@ -3324,7 +3324,7 @@ function reportProgress(scene, extra) {
       if (t && t.id) tagCount[t.id] = (tagCount[t.id] || 0) + 1;
     });
 
-    // P.E.A.C.E. 5차원 점수 자동 산출 (대시보드에 전송)
+    // P.E.A.C.E. 4차원 점수 자동 산출 (대시보드에 전송, 공감 차원 제외)
     let peace = null;
     try { peace = computePeaceScores(r); } catch (e) { /* 무시 */ }
 
@@ -7237,7 +7237,7 @@ ${tmpl.signature}`;
           return '<h2 class="peace-eval">🏛 P.E.A.C.E. 종합 평가' +
               '<span class="peace-grade-badge peace-grade-' + sc.grade + '">' +
               sc.grade + ' · ' + sc.total + '/' + sc.max + '</span></h2>' +
-            '<p style="margin:4px 0 8px">계획서 평가 루브릭(5항목 × 3점 = 15점)에 따라 ' +
+            '<p style="margin:4px 0 8px">계획서 평가 루브릭(4항목 × 3점 = 12점)에 따라 ' +
             '게임 데이터로부터 자동 산출된 점수입니다.</p>' +
             '<table>' +
               '<tr><th style="width:55%">평가 차원</th><th>점수</th><th style="width:12%">/ 3</th></tr>' +
@@ -7247,16 +7247,17 @@ ${tmpl.signature}`;
                 sc.total + ' / ' + sc.max + '</strong></td></tr>' +
             '</table>' +
             // 채점 기준표 — 학생·교사·평가단이 등급 의미를 즉시 확인
+            //   (공감 제외 4차원 12점 기준 — 게임 코드 computePeaceScores 등급 컷오프와 정합)
             '<table class="grade-key" style="margin-top:8px; font-size:11px">' +
               '<tr><th style="width:18%">등급</th><th style="width:22%">점수 범위</th><th>해석</th></tr>' +
               '<tr><td><span class="peace-grade-badge peace-grade-S">S</span></td>' +
-                '<td>13 ~ 15</td><td>탁월 — 5차원 모두 깊이 있게 학습</td></tr>' +
+                '<td>10 ~ 12</td><td>탁월 — 4차원 모두 깊이 있게 학습</td></tr>' +
               '<tr><td><span class="peace-grade-badge peace-grade-A">A</span></td>' +
-                '<td>10 ~ 12</td><td>우수 — 핵심 학습 완성</td></tr>' +
+                '<td>&nbsp;8 ~ &nbsp;9</td><td>우수 — 핵심 학습 완성</td></tr>' +
               '<tr><td><span class="peace-grade-badge peace-grade-B">B</span></td>' +
-                '<td>&nbsp;7 ~ &nbsp;9</td><td>보통 — 주요 활동 참여</td></tr>' +
+                '<td>&nbsp;5 ~ &nbsp;7</td><td>보통 — 주요 활동 참여</td></tr>' +
               '<tr><td><span class="peace-grade-badge peace-grade-C">C</span></td>' +
-                '<td>&nbsp;0 ~ &nbsp;6</td><td>시작 — 추가 활동 권장</td></tr>' +
+                '<td>&nbsp;0 ~ &nbsp;4</td><td>시작 — 추가 활동 권장</td></tr>' +
             '</table>';
         })() +
 
