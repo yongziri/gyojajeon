@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v210';
+const CACHE = 'vanished-sea-v211';
 const PRECACHE = [
   './',
   './index.html',
@@ -15,6 +15,10 @@ const PRECACHE = [
   './manifest.webmanifest',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
+  './assets/icons/flag_un.png',
+  './assets/icons/flag_uzbekistan.png',
+  './assets/icons/flag_ukraine.png',
+  './assets/icons/flag_palestine.png',
   './assets/fonts/MonaS12TextKR.woff2',
   './assets/fonts/MonaS12-Bold.woff2',
   './assets/fonts/MonaS12.woff2',

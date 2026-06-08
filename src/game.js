@@ -1272,8 +1272,13 @@ class BootScene extends Phaser.Scene {
     // 인트로(튜토리얼) 일러스트 — 추후 제공. 미존재 시 fallback 자동
     this.load.image('portrait_hansen',    'assets/portraits/hansen.png');
     this.load.image('portrait_james',     'assets/portraits/james.png');
-    // UN 깃발 아이콘 (CaseSelectScene intro 카드)
+    // 임무 카드 국기 아이콘 (CaseSelectScene)
+    //   intro=UN, aralsea=우즈베키스탄, ukraine=우크라이나, palestine=팔레스타인
+    //   3개 국가 국기는 Wikimedia Commons PD (64px PNG)에서 다운로드
     this.load.image('flag_un',            'assets/icons/flag_un.png');
+    this.load.image('flag_uzbekistan',    'assets/icons/flag_uzbekistan.png');
+    this.load.image('flag_ukraine',       'assets/icons/flag_ukraine.png');
+    this.load.image('flag_palestine',     'assets/icons/flag_palestine.png');
     // 주인공 일러스트 (있으면 도트 generateTexture 대신 사용)
     this.load.image('hero_down_0', 'assets/character/hero_down_0.png');
     this.load.image('hero_down_1', 'assets/character/hero_down_1.png');
@@ -1647,6 +1652,11 @@ class CreditsScene extends Phaser.Scene {
       '  이미지 (학습자료용)',
       '  세계지도: Wikimedia',
       '  Commons (Public Domain)',
+      '',
+      '【국기】',
+      '  UN/우즈벡/우크라이나/팔레스타인',
+      '  국기 PNG: Wikimedia Commons',
+      '  (Public Domain)',
       '',
       '【사운드】',
       '  Web Audio API로 코드 생성',
@@ -2324,27 +2334,33 @@ class CaseSelectScene extends Phaser.Scene {
     return { id: c.id, drawCard, titleText, zone };
   }
 
-  // 카드 아이콘 — 사건별 단순 도형
+  // 카드 아이콘 — 사건 발생국 국기 PNG (Wikimedia Commons PD)
+  //   intro=UN, aralsea=우즈벡, ukraine=우크라이나, palestine=팔레스타인
+  //   각 국기를 setDisplaySize(34, 22)로 작게 표시 → 픽셀 톤 어울림
   drawCaseIcon(g, cx, cy, c) {
-    // intro(튜토리얼) — UN 깃발 이미지 (사용자 제공 PNG)
-    if (c.id === 'intro') {
-      if (this.textures.exists('flag_un')) {
-        this.add.image(cx, cy, 'flag_un').setDisplaySize(34, 22).setDepth(g.depth + 1);
-      } else {
-        // fallback — 코드 그림
-        const w = 34, h = 22;
-        const x = cx - w / 2, y = cy - h / 2;
-        g.fillStyle(0x5b92e5, 1); g.fillRect(x, y, w, h);
-        g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, 7);
-      }
-      return;
+    const FLAG_KEYS = {
+      intro:     'flag_un',
+      aralsea:   'flag_uzbekistan',
+      ukraine:   'flag_ukraine',
+      palestine: 'flag_palestine',
+    };
+    const key = FLAG_KEYS[c.id];
+    if (key && this.textures.exists(key)) {
+      const img = this.add.image(cx, cy, key)
+        .setDisplaySize(34, 22).setDepth(g.depth + 1);
+      // 테두리 (검정 가는 선) — 픽셀 톤 강화
+      g.lineStyle(1, 0x000000, 0.6);
+      g.strokeRect(cx - 17, cy - 11, 34, 22);
+      return img;
     }
-    // 사건 발생국 국기 (단순화 픽셀 도트)
+    // fallback — 텍스처 미로드 시 코드 픽셀 그림 (옛 동작)
     const w = 34, h = 22;
     const x = cx - w / 2, y = cy - h / 2;
     const band = h / 3;
-    if (c.id === 'aralsea') {
-      // 우즈베키스탄 — 파랑/흰/녹 3색 + 빨간 가는 분리선
+    if (c.id === 'intro') {
+      g.fillStyle(0x5b92e5, 1); g.fillRect(x, y, w, h);
+      g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, 7);
+    } else if (c.id === 'aralsea') {
       g.fillStyle(0x0099b5, 1); g.fillRect(x, y, w, band);
       g.fillStyle(0xffffff, 1); g.fillRect(x, y + band, w, band);
       g.fillStyle(0x1eb53a, 1); g.fillRect(x, y + 2 * band, w, band);
@@ -2352,18 +2368,15 @@ class CaseSelectScene extends Phaser.Scene {
       g.fillRect(x, y + band - 1, w, 1);
       g.fillRect(x, y + 2 * band, w, 1);
     } else if (c.id === 'ukraine') {
-      // 우크라이나 — 파랑/노랑 2색
       g.fillStyle(0x0057b8, 1); g.fillRect(x, y, w, h / 2);
       g.fillStyle(0xffd500, 1); g.fillRect(x, y + h / 2, w, h / 2);
     } else if (c.id === 'palestine') {
-      // 팔레스타인 — 검정/흰/녹 3색 + 좌측 빨간 삼각형
       g.fillStyle(0x000000, 1); g.fillRect(x, y, w, band);
       g.fillStyle(0xffffff, 1); g.fillRect(x, y + band, w, band);
       g.fillStyle(0x007a3d, 1); g.fillRect(x, y + 2 * band, w, band);
       g.fillStyle(0xce1126, 1);
       g.fillTriangle(x, y, x + 12, y + h / 2, x, y + h);
     }
-    // 깃발 테두리
     g.lineStyle(1, 0x000000, 0.5); g.strokeRect(x, y, w, h);
   }
 
