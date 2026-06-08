@@ -2257,7 +2257,7 @@ class CaseSelectScene extends Phaser.Scene {
       if (available) {
         info = '▶  ' + c.title + '\n   ' + c.subtitle + '\n   지역: ' + c.region;
       } else if (lockKind === 'tutorial') {
-        info = '🔒  ' + c.title + '\n   먼저 「신입 교육 — UN 본부」를 마치세요.\n   디렉터 한센과 P.E.A.C.E. 5단계 체험.';
+        info = '🔒  ' + c.title + '\n   먼저 「신입 교육 — UN 본부」를 마치세요.\n   디렉터 한센과 P.E.A.C.E. 학습 모델 체험.';
       } else {
         info = '🔒  ' + c.title + ' — 준비 중\n   ' + c.subtitle + '\n   다음 업데이트에서 만날 수 있어요.';
       }
@@ -6411,7 +6411,7 @@ class QuizScene extends Phaser.Scene {
       this.typeText('🎓  신입 교육 완료!\n\n' +
         '   P.E.A.C.E. 5단계를 모두 익혔습니다.\n' +
         '   본 임무 세 가지가 잠금 해제되었어요.\n\n' +
-        '   ▶ 클릭하면 사건 선택 화면으로 갑니다.', () => {
+        '   ▶ 클릭하면 임무 선택 화면으로 갑니다.', () => {
         this.mode = 'introDone2';
       });
       return;
