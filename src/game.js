@@ -3629,6 +3629,10 @@ class WorldScene extends Phaser.Scene {
     this.talking = false;
     this.entering = false;
     this.cardOpen = false;
+    // 🏠 임무 선택 돌아가기 모달 관련 플래그도 리셋 (사용자 피드백:
+    // "처음부터 다시 시작한 후에는 🏠 눌러도 아무 반응 없음")
+    this.leaving = false;
+    this.exitConfirmOpen = false;
     // 입장 직후 짧은 쿨다운 — 돌아온 위치가 NPC와 겹쳐있을 수 있어 즉시 발동 방지
     this.cooldown = true;
     this.time.delayedCall(450, () => { this.cooldown = false; });
@@ -4948,6 +4952,11 @@ class WorldScene extends Phaser.Scene {
         if (this.leaving) return;
         this.leaving = true;
         if (window.SFX) window.SFX.play('click');
+        // 저장 — 모달 안내문구("진행도는 그대로 저장됩니다") 약속 이행
+        //   (사용자 피드백: "저장된다해서 나갔다가 다시들어갔는데 처음부터 시작함")
+        try {
+          if (typeof saveGameState === 'function') saveGameState(this.registry);
+        } catch (e) { console.error('[exit] save error:', e); }
         this.cameras.main.fadeOut(280, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete',
           () => this.scene.start('CaseSelectScene'));
