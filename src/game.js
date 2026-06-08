@@ -1245,6 +1245,28 @@ class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
 
   preload() {
+    // 로딩 안내 — 첫 진입 검은 화면에서 학생이 멈춤으로 오인하지 않도록
+    //   배경 어두운 그라데이션 + 가운데 텍스트 + 진행도 %.
+    const bgG = this.add.graphics();
+    bgG.fillGradientStyle(0x081628, 0x081628, 0x122842, 0x081628, 1);
+    bgG.fillRect(0, 0, GAME_W, GAME_H);
+    const titleTxt = this.add.text(GAME_W / 2, GAME_H / 2 - 40,
+      '🌍  P.E.A.C.E.', {
+      fontFamily: 'sans-serif', fontSize: '40px', color: '#ffe9b8',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    const subTxt = this.add.text(GAME_W / 2, GAME_H / 2 + 4,
+      '에이전시 자산 로딩 중...', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#cfe9ff'
+    }).setOrigin(0.5);
+    const pctTxt = this.add.text(GAME_W / 2, GAME_H / 2 + 40,
+      '0%', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#6fb7d6'
+    }).setOrigin(0.5);
+    this.load.on('progress', (v) => {
+      pctTxt.setText(Math.round(v * 100) + '%');
+    });
+
     // (옛 photo_port/strait/market 등록은 실제로는 assets/photos/* 아래에 있으므로
     //  중복 등록을 제거. 새 경로는 아래 portraits/photos 블록에서 처리.)
     // Kenney CC0 스프라이트시트 (16x16, 1px 간격)
@@ -1447,7 +1469,8 @@ class TitleScene extends Phaser.Scene {
     if (lm) { this.registry.set('invLoc', lm[1]); }
     if (m) { this.scene.start(m[1].endsWith('Scene') ? m[1] : m[1] + 'Scene'); return; }
     setCfgBarVisible(true);   // 타이틀에선 참가 설정 바 표시
-    this.cameras.main.fadeIn(320, 0, 0, 0);  // 부드러운 페이드인
+    //   페이드인 단축 (320→220) -- 첫 진입 검은 화면 체감 시간 줄임
+    this.cameras.main.fadeIn(220, 0, 0, 0);
     const W = GAME_W, H = GAME_H;
 
     // 배경 — UN 본부 픽셀 아트 (PNG가 있으면 사용, 없으면 그라데이션 fallback)
@@ -3202,27 +3225,31 @@ class BriefingScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // ── 페이드 인 + 순차 등장 + 진행 바 ───────────────────────
-    this.cameras.main.fadeIn(360, 0, 0, 0);
+    //   페이드인 속도 단축 (사용자 피드백: 검은 화면 멈춤 오인 방지)
+    //   카메라 360→200ms, 텍스트 시퀀스 ~1.7s → ~0.85s.
+    //   title 은 delay 0 + 초기 alpha 0.25로 즉시 어렴풋이 보임.
+    this.cameras.main.fadeIn(200, 0, 0, 0);
+    title.setAlpha(0.25);
 
     // 텍스트 순차 등장 (단계별 delay)
     const fadeIn = (obj, delay, dy = 8) => {
       obj.y += dy;
       this.tweens.add({
         targets: obj, alpha: 1, y: obj.y - dy,
-        duration: 320, delay, ease: 'Sine.out'
+        duration: 240, delay, ease: 'Sine.out'
       });
     };
-    fadeIn(title, 200);
-    fadeIn(sub, 400);
-    fadeIn(region, 520);
-    fadeIn(divider, 700);
-    fadeIn(briefHdr, 800);
-    fadeIn(briefBody, 950);
-    fadeIn(mapG, 850);
-    fadeIn(mapHdr, 900);
-    fadeIn(mapMeta, 920);
-    mapLabels.forEach((lbl, i) => fadeIn(lbl, 1050 + i * 60));
-    tagObjs.forEach((o, i) => fadeIn(o, 1100 + i * 60));
+    fadeIn(title, 0);
+    fadeIn(sub, 180);
+    fadeIn(region, 260);
+    fadeIn(divider, 360);
+    fadeIn(briefHdr, 420);
+    fadeIn(briefBody, 500);
+    fadeIn(mapG, 440);
+    fadeIn(mapHdr, 480);
+    fadeIn(mapMeta, 500);
+    mapLabels.forEach((lbl, i) => fadeIn(lbl, 560 + i * 40));
+    tagObjs.forEach((o, i) => fadeIn(o, 600 + i * 40));
 
     // 로딩 점 애니메이션 (현장으로 이동 중...)
     let dots = 0;
@@ -3647,7 +3674,8 @@ class WorldScene extends Phaser.Scene {
     setCfgBarVisible(false);   // 게임 중엔 참가 설정 바 숨김
 
     // 부드러운 페이드-인 — 브리핑/조사/편지 등 어디서 돌아와도 자연스럽게
-    this.cameras.main.fadeIn(280, 0, 0, 0);
+    //   사용자 피드백: 진입 직후 캐릭터 식별 어렵다는 보고로 시간 단축 (280→220).
+    this.cameras.main.fadeIn(220, 0, 0, 0);
 
     // ⚠️ 플래그 리셋 — InvestigationScene/LetterScene에서 scene.start('WorldScene')로
     // 돌아오면 클래스 인스턴스는 재사용되어 'entering=true'가 남아있을 수 있다.
