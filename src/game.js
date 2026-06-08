@@ -1892,8 +1892,9 @@ const CASE_LIST = [
     // 완료 전엔 다른 3사건 잠금. id='intro', completedCases에 'intro' 들어가면 잠금 해제.
     id: 'intro',
     title: '신입 교육',
-    subtitle: 'UN 본부 — 디렉터 한센',
-    region: '북미 · 뉴욕 맨해튼',
+    subtitle: 'UN P.E.A.C.E. 에이전시 신입 조사관 교육',
+    region: '북미 · 뉴욕 맨해튼 · UN 본부',
+    brief: '디렉터 한센이 P.E.A.C.E. 학습 모델(인식→관찰→성찰→실천)을 직접 안내한다.\n동기 제임스와 함께 첫 분석 과제를 풀며 본 임무 출발 준비를 마친다.',
     status: 'available',
     accent: 0xffd96a,
     guide: { name: '한센' },
@@ -1912,8 +1913,9 @@ const CASE_LIST = [
   {
     id: 'aralsea',
     title: '사라진 바다',
-    subtitle: '아랄해 — 환경 분쟁과 세계시민',
-    region: '중앙아시아 · 카라칼팍스탄',
+    subtitle: '아랄해 — 냉전이 남긴 수자원 분쟁',
+    region: '중앙아시아 · 카라칼팍스탄 · 무이낙',
+    brief: '냉전 시기 면화 농업으로 두 강을 끌어 써 60년 만에 호수의 90%가 사라진 환경 재앙.\n중앙아시아 각국 간 수자원 분쟁 사례로, 환경적 세계시민성과 국제 협력의 필요성을 탐구한다.',
     status: 'available',
     accent: 0xe8b86a,
     guide: { name: '아이졸리' },
@@ -1933,8 +1935,9 @@ const CASE_LIST = [
   {
     id: 'ukraine',
     title: '깨어진 평화',
-    subtitle: '러시아·우크라이나 전쟁',
-    region: '동유럽 · 우크라이나',
+    subtitle: '러시아·우크라이나 전쟁 — 식량·에너지 위기',
+    region: '동유럽 · 우크라이나 · 키이우/오데사',
+    brief: '60년 만의 유럽 본토 지상전. 흑해 곡물 항구가 막히자 아프리카·중동의 빵 값이 두 배로 뛰었다.\n농산물·에너지 가격 폭등이 학생의 일상까지 닿는 사례로, 분쟁과 자신의 삶의 연결성을 체감한다.',
     status: 'available',
     accent: 0x6fb7d6,
     guide: { name: '카테리나' },
@@ -1953,8 +1956,9 @@ const CASE_LIST = [
   {
     id: 'palestine',
     title: '오래된 갈등',
-    subtitle: '팔레스타인 — 평화와 인도주의',
+    subtitle: '이스라엘·팔레스타인 — 종교·민족 갈등과 인도주의',
     region: '서아시아 · 가자/요르단강 서안',
+    brief: '천 년 넘게 세 종교(유대·기독교·이슬람)가 한 공간을 공유해 온 땅.\n종교·민족 갈등의 역사적 기원과 대규모 난민이라는 인도주의적 위기가 중층적으로 얽혀 있어,\n역사적·현재적 시각을 함께 탐구하기에 적합한 사례.',
     status: 'available',
     accent: 0xc9a3ff,
     // 예루살렘/가자 (31.8°N, 35.2°E) — 사용자 지정 정확 좌표
@@ -2085,7 +2089,8 @@ class CaseSelectScene extends Phaser.Scene {
          '인식 → 관찰 → 성찰 → 실천 — 을\n' +
          '직접 체험하세요.');
     this.infoText = this.add.text(infoX + 14, infoY + 38, this.defaultInfo, {
-      fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', lineSpacing: 4
+      fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', lineSpacing: 3,
+      wordWrap: { width: infoW - 28 }
     });
 
     // ── 🛠 DEBUG 모드 (URL ?debug=1) — 마커 좌표 픽커 ────────────
@@ -2256,6 +2261,8 @@ class CaseSelectScene extends Phaser.Scene {
       let info;
       if (available) {
         info = '▶  ' + c.title + '\n   ' + c.subtitle + '\n   지역: ' + c.region;
+        // brief 필드 있으면 한 줄 띄우고 자세한 설명 추가 (PDF 양식 선정 이유 기반)
+        if (c.brief) info += '\n\n' + c.brief;
       } else if (lockKind === 'tutorial') {
         info = '🔒  ' + c.title + '\n   먼저 「신입 교육 — UN 본부」를 마치세요.\n   디렉터 한센과 P.E.A.C.E. 학습 모델 체험.';
       } else {
@@ -5567,14 +5574,22 @@ class InvestigationScene extends Phaser.Scene {
     };
     this.refreshEvHud();
 
-    // 조사 지점
+    // 조사 지점 — NPC 대화 패턴과 동일하게 두 단계로 진행 (이용빈 사용자 피드백)
+    //   1차 클릭 = spot 위에 "🔍 ◯◯ 조사하기" 버튼 표시
+    //   2차 클릭(버튼) = 실제 inspect → showInspectPopup
+    //   직접 자동 inspect로 들어가면 학생이 클릭 의도를 인지 못한 채 진입함.
     this.zones = [];
+    this.inspectPromptLayer = null;
     loc.spots.forEach(spot => {
       const z = this.add.rectangle(
         spot.x + spot.w / 2, spot.y + spot.h / 2,
         spot.w, spot.h, 0xffe082, 0
       ).setInteractive({ useHandCursor: true });
-      z.on('pointerdown', () => { if (this.examine) this.inspect(spot); });
+      z.on('pointerdown', () => {
+        if (!this.examine) return;
+        if (this.inspectOpen || this.thoughtOpen) return;
+        this.showInspectPrompt(spot);
+      });
       this.zones.push(z);
     });
 
@@ -5677,6 +5692,7 @@ class InvestigationScene extends Phaser.Scene {
   toggleExamine() {
     this.examine = !this.examine;
     this.clearOverlay();
+    if (typeof this.clearInspectPrompt === 'function') this.clearInspectPrompt();
     this.glass.setVisible(this.examine);
     // spot 시각화 강화 — 이문호 교사 피드백: "네모박스가 너무 연해서 잘 안 보임".
     //   alpha 0.14 → 0.32, 외곽선 추가, 깜빡이는 펄스 트윈으로 학생 시선 유도.
@@ -5698,7 +5714,7 @@ class InvestigationScene extends Phaser.Scene {
     });
     this.btnExamine.t.setText(this.examine ? '조사 종료' : '조사한다');
     this.msg.setText(this.examine
-      ? '🟡 노란 박스 안을 돋보기로 클릭하세요. (ESC: 취소)'
+      ? '🟡 노란 박스 클릭 → 뜨는 「조사하기」 버튼 클릭. (ESC: 취소)'
       : '명령을 선택하세요.');
   }
 
@@ -6101,6 +6117,7 @@ class InvestigationScene extends Phaser.Scene {
   showMoves(loc) {
     if (this.examine) this.toggleExamine();
     this.clearOverlay();
+    this.clearInspectPrompt();
     this.msg.setText('어디로 이동할까?');
     const theme = {
       base: 0x1c3344, hover: 0x2c5066,
@@ -6109,17 +6126,52 @@ class InvestigationScene extends Phaser.Scene {
     loc.moves.forEach((m, i) => {
       const y = 478 + i * 48;
       const b = fancyButton(this, 480, y, 380, 40, '▶  ' + m.label, () => {
+        // 사용자 피드백: "지도실로 움직이니까 이상태에서 멈춤"
+        // 원인: f081d9b 후 InvestigationScene이 scene.launch로 띄워지는데
+        // scene.restart()는 launch된 scene을 안정적으로 재시작 못 함.
+        // 해결: stop + launch 패턴으로 명시적 재초기화.
         this.registry.set('invLoc', m.to);
-        this.scene.restart();
+        const sm = this.scene;
+        sm.stop();
+        sm.launch('InvestigationScene');
       }, theme);
       b.g.setDepth(7); b.zone.setDepth(8); b.t.setDepth(8);
       this.overlay.push(b.g, b.zone, b.t);
     });
   }
 
+  // spot 1차 클릭 시 표시되는 "🔍 ◯◯ 조사하기" 버튼 (NPC 대화 패턴과 동일)
+  showInspectPrompt(spot) {
+    this.clearInspectPrompt();
+    const px = spot.x + spot.w / 2;
+    // spot 위쪽에 띄우되 화면 위쪽 침범 시 아래로
+    let py = spot.y - 28;
+    if (py < 80) py = Math.min(spot.y + spot.h + 28, 440);
+    const label = '🔍  ' + spot.name;
+    const layer = [];
+    const btn = fancyButton(this, px, py, 240, 38, label,
+      () => {
+        this.clearInspectPrompt();
+        this.inspect(spot);
+      },
+      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xe8b86a, text: '#ffe9b8' });
+    btn.g.setDepth(25); btn.zone.setDepth(26); btn.t.setDepth(26);
+    if (btn.t) btn.t.setFontSize(13);
+    layer.push(btn.g, btn.zone, btn.t);
+    this.inspectPromptLayer = layer;
+  }
+
+  clearInspectPrompt() {
+    if (this.inspectPromptLayer) {
+      this.inspectPromptLayer.forEach(o => { if (o && o.destroy) o.destroy(); });
+      this.inspectPromptLayer = null;
+    }
+  }
+
   showRecord() {
     if (this.examine) this.toggleExamine();
     this.clearOverlay();
+    if (typeof this.clearInspectPrompt === 'function') this.clearInspectPrompt();
     // 화면 전체 어둡게 — 명령 바·맵까지 비활성화 효과
     const bg = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.78)
       .setDepth(30).setInteractive();
