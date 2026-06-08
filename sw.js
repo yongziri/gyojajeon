@@ -1,4 +1,4 @@
-const CACHE = 'vanished-sea-v205';
+const CACHE = 'vanished-sea-v206';
 const PRECACHE = [
   './',
   './index.html',

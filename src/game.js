@@ -3833,7 +3833,10 @@ class WorldScene extends Phaser.Scene {
         }
       } catch (e) { /* fail-safe — 잠금 검사 실패해도 진입 허용 */ }
       this.entering = true;
-      this.scene.start('InvestigationScene');
+      // 대화·퀴즈와 동일한 오버레이 패턴(pause+launch) — scene.start는 WorldScene를
+      // 매번 종료/재생성해 재진입 시 멈추는 버그가 있었음(이문호 교사 피드백).
+      this.scene.pause();
+      this.scene.launch('InvestigationScene');
     });
 
     // UN 우편함 (편지 쓰기 입구) — scale 고정 (꿈틀 제거)
@@ -4309,6 +4312,7 @@ class WorldScene extends Phaser.Scene {
     this.refreshObjective();
 
     // 다른 씬(오버레이)에서 돌아올 때 상태 동기화 + 단계 점검
+    this.events.off('resume');   // 재생성 시 중복 등록 방지
     this.events.on('resume', () => this.onResume());
 
     // 시작 시 단계 점검 (편의)
@@ -6223,7 +6227,9 @@ class InvestigationScene extends Phaser.Scene {
   }
 
   leave() {
-    this.scene.start('WorldScene');
+    // 오버레이 종료 → WorldScene 재개 (대화·조사 닫기와 동일 패턴)
+    this.scene.stop();
+    this.scene.resume('WorldScene');
   }
 
   update() {
