@@ -7423,6 +7423,8 @@ class ReflectionScene extends Phaser.Scene {
     // 인과 사슬 3슬롯: 0=원인, 1=과정, 2=결과
     this.slots = [null, null, null];
     this.slotLabels = ['원인', '과정', '결과'];
+    // 각 슬롯 의미 — 학생이 무엇을 넣을지 막막하지 않게 안내 (이문호 교사 피드백)
+    this.slotHints = ['문제의 시작', '그래서 벌어진 일', '사람들에게 미친 영향'];
     this.activeSlot = null;       // 현재 단서를 채우려는 슬롯 인덱스
     this.statementId = null;      // 선택된 자기성찰 카드 id
     this.leaving = false;
@@ -7447,7 +7449,7 @@ class ReflectionScene extends Phaser.Scene {
       fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
       fontStyle: 'bold'
     });
-    this.add.text(40, 102, '아래에서 단서 3개를 골라  [원인 → 과정 → 결과]  순서로 배치하세요.', {
+    this.add.text(40, 102, '💡 [원인] 문제의 시작  →  [과정] 그래서 벌어진 일  →  [결과] 사람들에게 미친 영향.   단서 3개를 순서대로 골라 배치하세요.', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     });
 
@@ -7670,7 +7672,7 @@ class ReflectionScene extends Phaser.Scene {
     overlay.push(pg);
 
     overlay.push(this.add.text(480, py + 22,
-      '[ ' + this.slotLabels[slotIndex] + ' ]  슬롯에 넣을 단서를 골라요', {
+      '[ ' + this.slotLabels[slotIndex] + ' · ' + (this.slotHints ? this.slotHints[slotIndex] : '') + ' ]  슬롯에 넣을 단서를 골라요', {
       fontFamily: FONT_TITLE, fontSize: '16px', color: '#ffe9b8',
       fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(3002));
