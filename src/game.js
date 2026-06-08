@@ -6174,22 +6174,23 @@ class InvestigationScene extends Phaser.Scene {
     loc.moves.forEach((m, i) => {
       const y = 478 + i * 48;
       const b = fancyButton(this, 480, y, 380, 40, '▶  ' + m.label, () => {
-        // 이문호/이용빈 피드백 재반복: 장소 이동 시 멈춤.
-        // 이전 시도 모두 실패한 원인 정리:
-        //   - scene.restart() → launch 패턴과 race condition
-        //   - 같은 프레임 stop+launch → SceneManager queue 무시
-        //   - paused WorldScene.time.delayedCall → paused 라 trigger 안 됨
-        //   - children.removeAll + create() 재호출 → 잔재 트윈/이벤트로 멈춤
-        // 진짜 단순한 픽스: window.setTimeout 으로 다음 macrotask 에 launch.
-        //   setTimeout 은 SceneManager·Phaser·paused scene 과 독립 — 항상 실행.
+        // 가장 표준 패턴 — Phaser SceneManager 의 scene.start.
+        // 현재 InvestigationScene shutdown + 새 InvestigationScene start.
+        // WorldScene paused 영향 X. 옛 restart() 와 동일하지만 명시적 scene 이름.
+        // 이게 안 되면 F12 콘솔 에러 확인 필요.
         this.registry.set('invLoc', m.to);
-        const sm = this.scene.manager;
-        this.scene.stop();
-        window.setTimeout(() => {
-          try { sm.launch('InvestigationScene'); } catch (e) {
-            console.error('[InvestigationScene] move launch error:', e);
-          }
-        }, 30);
+        try {
+          this.scene.start('InvestigationScene');
+        } catch (e) {
+          console.error('[InvestigationScene] move start failed:', e);
+          // 폴백 — 페이지 새로고침으로 강제 진입 (BGM 재시작은 어쩔 수 없음)
+          const params = new URLSearchParams();
+          params.set('scene', 'Investigation');
+          params.set('case', this.registry.get('caseId') || 'aralsea');
+          params.set('loc', m.to);
+          try { saveGameState(this.registry); } catch (e2) {}
+          location.search = '?' + params.toString();
+        }
       }, theme);
       b.g.setDepth(7); b.zone.setDepth(8); b.t.setDepth(8);
       this.overlay.push(b.g, b.zone, b.t);
