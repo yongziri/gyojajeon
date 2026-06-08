@@ -521,7 +521,7 @@
       const ps = $('peaceStats');
       if (peaceList.length > 0) {
         const grades = { S: 0, A: 0, B: 0, C: 0 };
-        const dimsAvg = { empathy: 0, cognition: 0, connection: 0, action: 0, cooperation: 0 };
+        const dimsAvg = { cognition: 0, connection: 0, action: 0, cooperation: 0 };
         let totalSum = 0;
         peaceList.forEach(d => {
           grades[d.peace.grade] = (grades[d.peace.grade] || 0) + 1;
@@ -540,7 +540,6 @@
         ).join('');
 
         const dimInfo = {
-          empathy:     { label: '🤝 공감',       color: '#e79a78' },
           cognition:   { label: '🧠 사실 이해',  color: '#6fb7d6' },
           connection:  { label: '🔗 연결',       color: '#7fd07f' },
           action:      { label: '✊ 실천',       color: '#ffd96a' },
@@ -559,7 +558,7 @@
 
         ps.style.display = 'block';
         ps.innerHTML =
-          '<h3>🏛 P.E.A.C.E. 학급 종합 평가 · 평균 <strong>' + avgTotal + ' / 15</strong> ' +
+          '<h3>🏛 P.E.A.C.E. 학급 종합 평가 · 평균 <strong>' + avgTotal + ' / 12</strong> ' +
           '<span style="font-size:13px;color:#9aa6ad">(' + peaceList.length + '명 기준)</span></h3>' +
           '<div class="gradeRow">' + gradeChips + '</div>' +
           '<div class="dimGrid">' + dimBars + '</div>';
@@ -770,7 +769,7 @@
       // 1c. P.E.A.C.E. 5차원 종합 평가
       if (d.peace) {
         const dimNames = {
-          empathy: '🤝 공감', cognition: '🧠 사실 이해',
+          cognition: '🧠 사실 이해',
           connection: '🔗 연결 의식', action: '✊ 실천 다짐',
           cooperation: '🌍 국제 협력'
         };
@@ -893,7 +892,7 @@
         '번호', '이름(학번)', '단계', '보고서송부',
         '현장단서', '핵심단서', '단서별생각수',
         'P.E.A.C.E.총점', '등급',
-        '공감', '사실이해', '연결', '실천', '국제협력',
+        '사실이해', '연결', '실천', '국제협력',
         '인과사슬', '자기성찰(카드)', '내 생각(자유)', '내 다짐(자유)',
         '단서별 자유입력 모음',
         '자기평가평균',
@@ -916,9 +915,9 @@
           d.reportSent ? '완료' : (STAGE_NAME[d.stage] || '1·인식'),
           d.reportSent ? 'Y' : '',
           d.evidence || 0, d.cores || 0, d.tagsCount || 0,
-          p.total != null ? (p.total + '/' + (p.max || 15)) : '',
+          p.total != null ? (p.total + '/' + (p.max || 12)) : '',
           p.grade || '',
-          dims.empathy || 0, dims.cognition || 0, dims.connection || 0,
+          dims.cognition || 0, dims.connection || 0,
           dims.action || 0, dims.cooperation || 0,
           chain,
           refl.statement || '',

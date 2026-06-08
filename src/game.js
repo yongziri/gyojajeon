@@ -3224,7 +3224,6 @@ function getArea(ev) {
 //  · 학습 트리 카드 · 인쇄 보고서 · 교사 대시보드에서 공통 사용
 // ══════════════════════════════════════════════════════════════
 const PEACE_DIMS = [
-  { key: 'empathy',     label: '공감',       en: 'Empathy',     color: '#e79a78', icon: '🤝' },
   { key: 'cognition',   label: '사실 이해',  en: 'Cognition',   color: '#6fb7d6', icon: '🧠' },
   { key: 'connection',  label: '연결 의식',  en: 'Connection',  color: '#7fd07f', icon: '🔗' },
   { key: 'action',      label: '실천 다짐',  en: 'Action',      color: '#ffd96a', icon: '✊' },
@@ -3232,7 +3231,6 @@ const PEACE_DIMS = [
 ];
 
 function computePeaceScores(registry) {
-  const love = registry.get('slimeLove') || 0;
   const evidence = registry.get('evidence') || [];
   const cores = registry.get('coreClues') || [];
   const refl = registry.get('reflection') || null;
@@ -3242,11 +3240,7 @@ function computePeaceScores(registry) {
   const letterSent = completedCases.includes(caseId);
   const review = registry.get('learningReview') || null;
 
-  // 공감 (Empathy) — 안내인과의 대화 깊이(이해도 누적)
-  let empathy = 0;
-  if (love >= 8) empathy = 3;
-  else if (love >= 5) empathy = 2;
-  else if (love >= 2) empathy = 1;
+  // (공감 차원 제거 — 사용자 요청) 4차원: 사실 이해·연결·실천·협력
 
   // 사실 이해 (Cognition) — 현장 단서 + 핵심 단서 수집량
   // intro는 단서가 3개뿐(본 사건은 12개)이라 임계값 별도
@@ -3293,14 +3287,14 @@ function computePeaceScores(registry) {
     if (letterSent) cooperation = 3;
   } else if (hasA || hasB) cooperation = 1;
 
-  const dims = { empathy, cognition, connection, action, cooperation };
-  const total = empathy + cognition + connection + action + cooperation;
-  const max = 15;
-  // 등급: 13+ S(우수), 10+ A(좋음), 7+ B(보통), 그 외 C(시작)
+  const dims = { cognition, connection, action, cooperation };
+  const total = cognition + connection + action + cooperation;
+  const max = 12;
+  // 등급(공감 제외, 4차원 12점): 10+ S, 8+ A, 5+ B, 그 외 C
   let grade = 'C';
-  if (total >= 13) grade = 'S';
-  else if (total >= 10) grade = 'A';
-  else if (total >= 7) grade = 'B';
+  if (total >= 10) grade = 'S';
+  else if (total >= 8) grade = 'A';
+  else if (total >= 5) grade = 'B';
   return { dims, total, max, grade };
 }
 
@@ -5283,11 +5277,7 @@ class DialogueScene extends Phaser.Scene {
       });
     }
 
-    // 우상단 이해도 칩 — 텍스트는 패널 가운데와 일치 (cx=712)
-    panel(this, 712, 30, 160, 40, 0x12283a, 0x6fb7d6);
-    this.loveText = this.add.text(712, 30, '', {
-      fontFamily: FONT, fontSize: '16px', color: '#bfe6ff'
-    }).setOrigin(0.5);
+    // (공감 차원 삭제 — 우상단 '🤝 공감' 이해도 칩 제거)
 
     // 우상단 — 대화 도중 빠져나가기 (월드로 복귀)
     fancyButton(this, 880, 30, 130, 36, '← 닫기',
@@ -5329,13 +5319,6 @@ class DialogueScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-SPACE', () => this.onClick());
   }
 
-  updateLove() {
-    // 공감 점수 시각화 — 누적 love(0~12+)를 5단 별로 표시
-    const filled = Math.max(0, Math.min(5, Math.floor(this.love / 2)));
-    const stars = '★'.repeat(filled) + '☆'.repeat(5 - filled);
-    this.loveText.setText('🤝 공감  ' + stars);
-  }
-
   show(nodeId) {
     const node = STORY[nodeId];
     if (!node) { return this.finish({}); }
@@ -5348,7 +5331,6 @@ class DialogueScene extends Phaser.Scene {
     this.bodyText.setText('');
     this.typing = true;
     this.hint.setVisible(false);
-    this.updateLove();
 
     // 타자기 효과
     let i = 0;
@@ -5412,11 +5394,6 @@ class DialogueScene extends Phaser.Scene {
   }
 
   pick(ch) {
-    if (ch.love) {
-      this.love += ch.love;
-      this.registry.set('slimeLove', this.love);
-      this.floatLove(ch.love);
-    }
     this.clearChoices();
     // 같은 클릭이 전역 onClick으로도 들어와 다음 대사 타자기를
     // 즉시 스킵하는 것 방지
@@ -5425,17 +5402,6 @@ class DialogueScene extends Phaser.Scene {
     if (ch.next) {
       this.show(ch.next);
     }
-  }
-
-  floatLove(amount) {
-    const t = this.add.text(160, 280, (amount > 0 ? '+' : '') + amount + ' 📘', {
-      fontFamily: FONT_TITLE, fontSize: '26px', color: '#7ad0ff',
-      stroke: '#000000', strokeThickness: 4
-    }).setOrigin(0.5).setDepth(10);
-    this.tweens.add({
-      targets: t, y: 230, alpha: 0, duration: 1000,
-      onComplete: () => t.destroy()
-    });
   }
 
   finish(node) {
