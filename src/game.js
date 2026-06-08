@@ -5306,7 +5306,7 @@ class DialogueScene extends Phaser.Scene {
       this.portrait.setScale(720 / tex.height);
       const maskShape = this.make.graphics({ add: false });
       maskShape.fillStyle(0xffffff);
-      maskShape.fillRect(0, 0, 960, 420);
+      maskShape.fillRect(0, 0, 960, 390);
       this.portrait.setMask(maskShape.createGeometryMask());
       this.tweens.add({
         targets: this.portrait, y: 18, duration: 900,
@@ -5330,22 +5330,22 @@ class DialogueScene extends Phaser.Scene {
       { base: 0x3a2410, hover: 0x5c4718, edge: 0xe8b86a, text: '#ffe9b8' });
 
     // 하단 대사 박스 (전체 너비)
-    panel(this, 480, 510, 940, 170, 0x0c1620, 0xe8b86a);
+    panel(this, 480, 495, 940, 210, 0x0c1620, 0xe8b86a);
 
-    // 이름표 [아이졸리] - 박스 상단 좌측
-    this.nameText = this.add.text(54, 438, '', {
+    // 이름표 [아이졸리] - 박스 상단 좌측 (박스 키움 h170->210에 맞춰 위로)
+    this.nameText = this.add.text(54, 402, '', {
       fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffd96a',
       fontStyle: 'bold'
     }).setOrigin(0, 0);
 
-    // 본문
-    this.bodyText = this.add.text(54, 472, '', {
-      fontFamily: FONT, fontSize: '20px', color: '#f3ece0',
-      wordWrap: { width: 860 }, lineSpacing: 8
+    // 본문 — 박스 크기 확대로 긴 안내인 대화도 안전하게 표시
+    this.bodyText = this.add.text(54, 436, '', {
+      fontFamily: FONT, fontSize: '19px', color: '#f3ece0',
+      wordWrap: { width: 860 }, lineSpacing: 6
     });
 
     // 하단 ▼ 진행 안내
-    this.hint = this.add.text(910, 578, '▼', {
+    this.hint = this.add.text(910, 590, '▼', {
       fontFamily: FONT, fontSize: '18px', color: '#e8b86a'
     }).setOrigin(1, 1);
     this.tweens.add({
@@ -6273,7 +6273,7 @@ class QuizScene extends Phaser.Scene {
       // 대화창(상단 y≈425) 위쪽까지만 보이게 마스크
       const maskShape = this.make.graphics({ add: false });
       maskShape.fillStyle(0xffffff);
-      maskShape.fillRect(0, 0, 960, 420);
+      maskShape.fillRect(0, 0, 960, 390);
       this.portrait.setMask(maskShape.createGeometryMask());
       this.tweens.add({
         targets: this.portrait, y: 18, duration: 900,
@@ -6299,18 +6299,19 @@ class QuizScene extends Phaser.Scene {
       { base: 0x14304a, hover: 0x1f4868, edge: 0x6fb7d6, text: '#dff1ff' });
 
     // 하단 대사 박스
-    panel(this, 480, 510, 940, 170, 0x0c1620, 0xe8b86a);
-    this.nameText = this.add.text(54, 438, '[' + this.citizen.name + ']', {
+    panel(this, 480, 495, 940, 210, 0x0c1620, 0xe8b86a);
+    this.nameText = this.add.text(54, 402, '[' + this.citizen.name + ']', {
       fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffd96a',
       fontStyle: 'bold'
     }).setOrigin(0, 0);
 
-    this.bodyText = this.add.text(54, 470, '', {
-      fontFamily: FONT, fontSize: '17px', color: '#f3ece0',
-      wordWrap: { width: 860 }, lineSpacing: 3
+    // 박스 확대(170->210)로 폰트·줄간격 복원 — 정답 메시지 5-6줄도 fit
+    this.bodyText = this.add.text(54, 436, '', {
+      fontFamily: FONT, fontSize: '18px', color: '#f3ece0',
+      wordWrap: { width: 860 }, lineSpacing: 5
     });
 
-    this.hint = this.add.text(910, 578, '▼', {
+    this.hint = this.add.text(910, 590, '▼', {
       fontFamily: FONT, fontSize: '18px', color: '#e8b86a'
     }).setOrigin(1, 1);
     this.tweens.add({
