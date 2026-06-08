@@ -2081,8 +2081,8 @@ class CaseSelectScene extends Phaser.Scene {
          '· 「오래된 갈등」 팔레스타인 — 평화·인도주의')
       : ('🎓 먼저 「신입 교육 — UN 본부」를 마쳐야\n' +
          '본 임무 세 가지가 잠금 해제됩니다.\n\n' +
-         '디렉터 한센과 만나 P.E.A.C.E. 5단계 —\n' +
-         '인식 · 탐색 · 분석 · 연결 · 실천 — 을\n' +
+         '디렉터 한센과 만나 P.E.A.C.E. 학습 모델 —\n' +
+         '인식 → 관찰 → 성찰 → 실천 — 을\n' +
          '직접 체험하세요.');
     this.infoText = this.add.text(infoX + 14, infoY + 38, this.defaultInfo, {
       fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', lineSpacing: 4
@@ -2226,14 +2226,14 @@ class CaseSelectScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    // 하단 — intro(튜토리얼)는 P.E.A.C.E. 5단계 배지. 본 사건은 별도 표기 없음
+    // 하단 — intro(튜토리얼)는 P.E.A.C.E. 학습 모델 배지(4수업 단계). 본 사건은 별도 표기 없음
     if (available && isIntro) {
       const tg = this.add.graphics();
       tg.fillStyle(0xffd96a, 0.9);
       tg.fillRect(x + 16, y + 80, w - 32, 20);
       tg.lineStyle(1, 0xb88a3a, 1);
       tg.strokeRect(x + 16, y + 80, w - 32, 20);
-      this.add.text(x + w / 2, y + 90, '🎓  P.E.A.C.E. 5단계 — 인식·탐색·분석·연결·실천', {
+      this.add.text(x + w / 2, y + 90, '🎓  P.E.A.C.E. 학습 모델 — 인식 → 관찰 → 성찰 → 실천', {
         fontFamily: FONT, fontSize: '10px', color: '#3a2410', fontStyle: 'bold'
       }).setOrigin(0.5);
     } else if (!available) {
