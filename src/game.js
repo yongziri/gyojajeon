@@ -5033,6 +5033,8 @@ class WorldScene extends Phaser.Scene {
 
     // dim 클릭 시 취소
     dim.on('pointerdown', closeAll);
+    // ESC 키로도 취소 — 학생 키보드 친화 (AAAAAAA-1)
+    this.input.keyboard.once('keydown-ESC', closeAll);
   }
 
   showStageInfoModal(stage) {
@@ -6334,6 +6336,8 @@ class InvestigationScene extends Phaser.Scene {
     this.overlay.push(closeBtn.g, closeBtn.zone, closeBtn.t);
     // 배경 클릭으로도 닫기 (단, 패널 내부는 닫지 않음)
     bg.on('pointerdown', done);
+    // ESC 키로도 닫기 — 학생 키보드 친화 (AAAAAAA-1)
+    this.input.keyboard.once('keydown-ESC', done);
   }
 
   clearOverlay() {
@@ -6764,6 +6768,8 @@ class QuizScene extends Phaser.Scene {
     layer.push(closeBtn.g, closeBtn.zone, closeBtn.t);
     // dim 클릭으로는 닫지 않음(부주의 클릭 방어)
     dim.on('pointerdown', () => { /* no-op */ });
+    // ESC 키로 닫기 — 학생 키보드 친화 (AAAAAAA-1)
+    this.input.keyboard.once('keydown-ESC', close);
   }
 
   // 사용자가 인터뷰 중간에 닫기 버튼 누름 — 상태 변경 없이 월드 복귀
