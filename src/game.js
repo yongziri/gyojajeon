@@ -1535,6 +1535,14 @@ class TitleScene extends Phaser.Scene {
         try { setStory(cid); } catch (e) {}
         try { setCitizens(cid); } catch (e) {}
       }
+      // 옛 세이브의 잔여(삭제/타사건) 단서 정리 — 개수 꼬임 방지 (이문호 교사 피드백)
+      try {
+        const valid = new Set();
+        Object.values(CASE.locations).forEach(l =>
+          (l.spots || []).forEach(s => { if (s.evidence) valid.add(s.evidence.id); }));
+        this.registry.set('evidence',
+          (this.registry.get('evidence') || []).filter(e => e && valid.has(e.id)));
+      } catch (e) { /* 무시 */ }
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('WorldScene');
