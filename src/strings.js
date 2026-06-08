@@ -14,7 +14,7 @@ const STRINGS = {
   // ── 화면 하단 목표 안내 (단계별, refreshObjective) ──────────
   objective: {
     perceive:        '🎯 인식 (P) — 안내인 {guide}에게 다가가 상황을 파악하세요',
-    exploreFirst:    '🎯 관찰 (E·탐색) — 노란 표지판으로 {place}을(를) 조사해 단서 {ev}/3 이상 모으세요',
+    exploreFirst:    '🎯 관찰 (E·탐색) — ▼ 표시된 🔍 조사 지점으로 {place}을(를) 조사해 단서 {ev}/3 이상 모으세요',
     analyzeCitizens: '🎯 관찰 (A·분석) — 시민(!)을 인터뷰해 핵심 단서 {co}/{need}개를 얻으세요',
     reflect:         '🎯 성찰 (C) — 🪞 성찰의 의자에 앉아 인과 사슬과 자기성찰을 마치세요',
     enact:           '🎯 실천 (E) — 파란 우편함으로 가서 UN 조사 보고서를 송부하세요',

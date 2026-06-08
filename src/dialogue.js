@@ -47,7 +47,7 @@ const STORIES = {
 
     peace_e: {
       speaker: '한센',
-      text: 'E — Explore (탐색). 현장의 노란 표지판을 클릭해, 사진 속 단서들을 직접 찾는 단계라네.',
+      text: 'E — Explore (탐색). ▼ 표시된 🔍 조사 지점을 눌러, 사진 속 단서들을 직접 찾는 단계라네.',
       next: 'peace_a'
     },
 

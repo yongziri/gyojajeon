@@ -3741,7 +3741,7 @@ class WorldScene extends Phaser.Scene {
       });
     }
 
-    // 옛 항구 조사 입구 (노란 표지판) — scale 고정 (꿈틀 제거)
+    // 옛 항구 조사 입구 (🔍 조사 지점 돋보기) — scale 고정 (꿈틀 제거)
     // intro(튜토리얼)에선 조사 화면 사용 안 함 → 화면 밖으로 (학생이 닿을 수 없음)
     const portalX = isIntro ? -500 : 4 * TILE;
     const portalY = isIntro ? -500 : 11 * TILE;
@@ -3756,6 +3756,16 @@ class WorldScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '12px', color: '#ffe082',
       backgroundColor: '#00000088', padding: { x: 4, y: 2 }
     }).setOrigin(0.5).setDepth(2000).setVisible(!isIntro);
+    // 조사 지점 머리 위 ▼ 마커 — 시민·안내인 마커와 통일.
+    //   안내인 만난 뒤 ~ 단서 3개 모으기 전까지 표시(이후 시민 ▼로 전환). (이문호 교사 피드백)
+    if (!isIntro) {
+      this._portalMarkerBaseY = portalY - 46;
+      this.portalMarker = this.add.text(portalX, this._portalMarkerBaseY, '▼', {
+        fontFamily: FONT_TITLE, fontSize: '18px', color: '#ffe082',
+        stroke: '#000000', strokeThickness: 3
+      }).setOrigin(0.5).setDepth(portalY + 1).setVisible(false);
+      this.refreshPortalMarker();
+    }
     this.physics.add.overlap(this.player, this.portal, () => {
       if (this.entering || this.cooldown || this.cardOpen) return;
       // 실제 조건으로 검사 — 안내인과 친구가 됐는가
@@ -3916,6 +3926,10 @@ class WorldScene extends Phaser.Scene {
       // 걸레받이
       wallBg.fillStyle(0x3a2410, 1);
       wallBg.fillRect(TILE, TILE * 4 - 4, GAME_W - TILE * 2, 6);
+      // 뒷벽(파란 띠) 충돌 — 주인공이 벽 안으로 올라가지 못하게 (이문호/사용자 피드백)
+      const backWall = this.add.rectangle(GAME_W / 2, TILE * 2.5, GAME_W - TILE * 2, TILE * 3, 0, 0);
+      this.physics.add.existing(backWall, true);
+      this.solids.push(backWall);
 
       // 칠판 (우측 뒷벽 아래 — 인과 사슬용)
       const boardG = this.add.graphics().setDepth(1);
@@ -4678,6 +4692,23 @@ class WorldScene extends Phaser.Scene {
     }
   }
 
+  // 조사 지점(돋보기 포털) ▼ 마커 — 안내인 만난 뒤 단서 3개 모으기 전까지 표시
+  refreshPortalMarker() {
+    if (!this.portalMarker) return;
+    const defeated = !!this.registry.get('enemyDefeated');
+    const ev = (this.registry.get('evidence') || []).length;
+    const show = defeated && ev < 3;
+    this.portalMarker.setVisible(show);
+    if (this.portalMarkerTween) { this.portalMarkerTween.stop(); this.portalMarkerTween = null; }
+    this.portalMarker.y = this._portalMarkerBaseY;
+    if (show) {
+      this.portalMarkerTween = this.tweens.add({
+        targets: this.portalMarker, y: this._portalMarkerBaseY - 6, duration: 500,
+        yoyo: true, repeat: -1, ease: 'Sine.inOut'
+      });
+    }
+  }
+
   // ── 인식·관찰·성찰·실천 단계 시스템 ───────────────────────
   buildStageHud() {
     const stages = [
@@ -4775,7 +4806,7 @@ class WorldScene extends Phaser.Scene {
       // intro(튜토리얼)는 단서 조사 단계 생략 — 곧장 시민 인터뷰 안내
       if (!isIntroCase && ev < 3) {
         text = S ? fmtString(S.exploreFirst, { place, ev })
-                 : '🎯 관찰 (E·탐색) — 노란 표지판으로 ' + place + '을(를) 조사해 단서 ' + ev + '/3 이상 모으세요';
+                 : '🎯 관찰 (E·탐색) — ▼ 표시된 🔍 조사 지점으로 ' + place + '을(를) 조사해 단서 ' + ev + '/3 이상 모으세요';
       } else if (isIntroCase) {
         text = '🎯 관찰 (A·분석) — 동기 제임스(!)에게 다가가 한 문제를 풀어보세요';
       } else {
@@ -4816,6 +4847,7 @@ class WorldScene extends Phaser.Scene {
     this.refreshStageHud();
     this.refreshObjective();
     this.refreshChairMarker();   // ! 마커 등장/숨김 동기화
+    this.refreshPortalMarker();  // 조사 지점 ▼ 마커 동기화
   }
 
   // 단계 칩 클릭 시 — 학생이 단계 의미를 잊었을 때 즉시 확인
@@ -4898,7 +4930,7 @@ class WorldScene extends Phaser.Scene {
            act:  '안내인(!)에게 다가가 대화를 시작하세요.' },
       2: { letter: 'E·A', en: 'Explore + Analyze', ko: '관찰',
            desc: '현장의 단서를 모으고 시민을 인터뷰해 사실을 분석합니다.',
-           act:  '🔍 노란 표지판으로 현장 조사 + 시민(!) 인터뷰' },
+           act:  '🔍 조사 지점(▼)에서 현장 조사 + 시민(!) 인터뷰' },
       3: { letter: 'C', en: 'Connect',   ko: '성찰',
            desc: '흩어진 사실들을 인과 사슬로 잇고 자기성찰을 합니다.',
            act:  '🪞 성찰의 의자에 앉아 [원인 → 과정 → 결과]를 만드세요.' },
@@ -5187,6 +5219,7 @@ class WorldScene extends Phaser.Scene {
 
     this.refreshCoreHud();
     this.refreshChairMarker();   // 성찰 의자 ! 마커도 즉시 갱신
+    this.refreshPortalMarker();  // 조사 지점 ▼ 마커도 즉시 갱신
     // 단계 자동 진입 (전환 카드 포함)
     this.checkStageAdvance();
     // 교사 대시보드로 진행도 발행
@@ -6096,7 +6129,7 @@ class InvestigationScene extends Phaser.Scene {
           fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffe9b8'
         }).setOrigin(0.5).setDepth(32));
       this.overlay.push(this.add.text(480, 380,
-        '명령 바의 [조사한다]를 눌러 돋보기로 노란 표지판을 조사하세요.', {
+        '명령 바의 [조사한다]를 눌러 돋보기로 노란 박스를 조사하세요.', {
           fontFamily: FONT, fontSize: '14px', color: '#9fb5d2'
         }).setOrigin(0.5).setDepth(32));
     } else {
