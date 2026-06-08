@@ -1734,7 +1734,7 @@ function getCaseShortName(registry) {
 const SAVE_KEY = 'peace_save_v1';
 const SAVE_FIELDS = [
   'caseId', 'stage', 'enemyDefeated', 'evidence', 'coreClues',
-  'quizSolved', 'slimeLove', 'invLoc', 'reportSent', 'reflectionDone',
+  'quizSolved', 'invLoc', 'reportSent', 'reflectionDone',
   'reflection', 'speech', 'completedCases', 'caseBadges', 'caseReviews',
   'learningReview', 'evidenceTags', 'locationTags', 'userPledge', 'userReflection',
 ];
@@ -2294,7 +2294,6 @@ class CaseSelectScene extends Phaser.Scene {
       this.registry.set('evidence', []);
       this.registry.set('coreClues', []);
       this.registry.set('quizSolved', {});
-      this.registry.set('slimeLove', 0);
       this.registry.set('invLoc', undefined);
       this.registry.set('reportSent', false);
       this.registry.set('reflectionDone', false);
@@ -2725,7 +2724,6 @@ class LearningTreeScene extends Phaser.Scene {
           const badgeDefs = [
             { key: 'collector', icon: '★', label: '단서 마스터',  color: '#ffd96a' },
             { key: 'sage',      icon: '🎯', label: '인터뷰 통달', color: '#7fd07f' },
-            { key: 'empath',    icon: '💭', label: '공감 기록자', color: '#e79a78' },
             { key: 'thinker',   icon: '🔗', label: '인과 분석가', color: '#6fb7d6' },
             { key: 'reflector', icon: '📊', label: '자기 성찰',   color: '#c9a36b' },
             { key: 'balanced',  icon: '🌐', label: '균형 시민',   color: '#cfe9ff' },
@@ -4448,9 +4446,8 @@ class WorldScene extends Phaser.Scene {
     const caseId = this.registry.get('caseId') || 'aralsea';
 
     if (targetStage >= 2) {
-      // 1단계 통과 — 안내인 친구 (공감 만점)
+      // 1단계 통과 — 안내인 친구
       this.registry.set('enemyDefeated', true);
-      this.registry.set('slimeLove', 8);
     }
 
     if (targetStage >= 3) {
@@ -5234,7 +5231,6 @@ class DialogueScene extends Phaser.Scene {
   constructor() { super('DialogueScene'); }
 
   create() {
-    this.love = this.registry.get('slimeLove') || 0;
     if (window.SFX) {
       window.SFX.play('talk');   // 대화 시작 신호음
       window.SFX.pauseBGM();     // 맵 BGM 일시정지 (대화 후 이어듣기)
@@ -7275,7 +7271,6 @@ ${tmpl.signature}`;
           const badgeDefs = [
             { key: 'collector', label: '★ 단서 마스터 — 모든 현장 단서 수집' },
             { key: 'sage',      label: '🎯 인터뷰 통달 — 모든 시민 인터뷰 완료' },
-            { key: 'empath',    label: '💭 공감 기록자 — 5개+ 단서에 감정 태그' },
             { key: 'thinker',   label: '🔗 인과 분석가 — 인과 사슬 3단 완성' },
             { key: 'reflector', label: '📊 자기 성찰 — 임무 회고 제출' },
             { key: 'balanced',  label: '🌐 균형 시민 — 인지·정서·행동 모두 학습' },
@@ -7333,7 +7328,6 @@ ${tmpl.signature}`;
     return {
       collector: ev.length >= 10,                                    // ★ 모든 현장 단서
       sage:      cores.length >= TOTAL_CITIZENS,                     // 🎯 모든 시민 인터뷰
-      empath:    Object.keys(tags).length >= 5,                      // 💭 단서 5개+ 감정 태그
       thinker:   !!(refl && refl.chainNames && refl.chainNames.length === 3),  // 🔗 인과 사슬
       reflector: !!review,                                           // 📊 자기 평가
       balanced:  areas.cognitive >= 1 && areas.emotional >= 1 && areas.behavioral >= 1,  // 🌐 영역 균형
