@@ -68,6 +68,8 @@
     }
     .stat .n { font-size: 26px; font-weight: bold; color: #ffe9b8; }
     .stat .l { font-size: 12px; color: #9aa6ad; }
+    .stat[title] { cursor: help; }
+    .stat[title]:hover { border-color: #6a4f2a; }
 
     /* P.E.A.C.E. 학급 통계 */
     #peaceStats {
@@ -99,12 +101,61 @@
     #peaceStats .pBar .b > div { height: 100%; transition: width .3s; }
     #peaceStats .pBar .val { font-size: 12px; color: #ffe082; min-width: 50px; text-align: right; }
 
-    /* 학생 카드 그리드 */
+    /* 설명 패널 (요약 지표·P.E.A.C.E. 점수 기준 공용) */
+    .helpPanel {
+      display: none; padding: 0 20px 16px; background: #0e1828;
+      border-bottom: 1px solid #28323e;
+    }
+    .helpPanel details {
+      background: #14202c; border: 1px solid #2e4a4a; border-radius: 6px;
+    }
+    .helpPanel summary {
+      cursor: pointer; padding: 9px 14px; font-size: 13px; color: #ffe082;
+      list-style: none; user-select: none;
+    }
+    .helpPanel summary::-webkit-details-marker { display: none; }
+    .helpPanel summary:hover { color: #fff3c4; }
+    .helpPanel .body { padding: 4px 14px 14px; }
+    .helpPanel .lead {
+      font-size: 12px; color: #9aa6ad; margin: 0 0 10px;
+    }
+    .helpPanel table {
+      width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px;
+    }
+    .helpPanel th, .helpPanel td {
+      border: 1px solid #2e3e4e; padding: 5px 9px; text-align: left; vertical-align: top;
+    }
+    .helpPanel th { background: #1a2a3a; color: #cfe9ff; font-weight: bold; }
+    .helpPanel td .dim { color: #ffe9b8; font-weight: bold; }
+    .helpPanel td .pt { color: #ffd96a; white-space: nowrap; }
+    .helpPanel .grades {
+      font-size: 12px; color: #cfe9ff; line-height: 1.8;
+    }
+    .helpPanel .gb {
+      display: inline-block; padding: 1px 9px; border-radius: 10px;
+      color: #fff; font-weight: bold; margin-right: 4px;
+    }
+
+    /* 학생 카드 그리드 — 길어지면 내부 스크롤 */
     #grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
       gap: 14px; padding: 20px;
+      max-height: 60vh; overflow-y: auto;
     }
+
+    /* 공통 스크롤바 스타일 (그리드·자유입력 목록) */
+    #grid::-webkit-scrollbar, .tagScroll::-webkit-scrollbar { width: 10px; }
+    #grid::-webkit-scrollbar-track, .tagScroll::-webkit-scrollbar-track {
+      background: #0e1620; border-radius: 5px;
+    }
+    #grid::-webkit-scrollbar-thumb, .tagScroll::-webkit-scrollbar-thumb {
+      background: #2e4a5a; border-radius: 5px;
+    }
+    #grid::-webkit-scrollbar-thumb:hover, .tagScroll::-webkit-scrollbar-thumb:hover {
+      background: #3e6a7a;
+    }
+    #grid, .tagScroll { scrollbar-width: thin; scrollbar-color: #2e4a5a #0e1620; }
     .card {
       background: #18283a; border: 2px solid #2e3e4e;
       border-radius: 8px; padding: 12px 14px;
@@ -187,6 +238,11 @@
     }
     .tagBar .b > div { height: 100%; transition: width .4s; }
     .tagBar .n { width: 32px; text-align: right; font-size: 12px; color: #ffd96a; }
+    /* 단서 자유입력 목록 — 길어지면 내부 스크롤 */
+    #tagDist .tagScroll {
+      max-height: 300px; overflow-y: auto;
+      padding-right: 6px; margin-top: 4px;
+    }
 
     /* 학생 상세 모달 */
     #modal {
@@ -276,7 +332,7 @@
     }
 
     @media print {
-      header, #summary, #tagDist, #grid, #empty, #modal {
+      header, #summary, #summaryHelp, #peaceHelp, #tagDist, #grid, #empty, #modal {
         display: none !important;
       }
       body { background: #fff !important; }
@@ -326,9 +382,78 @@
   </header>
 
   <div id="summary"></div>
+  <div id="summaryHelp" class="helpPanel" style="display:block">
+    <details>
+      <summary>ⓘ 위 숫자들은 무슨 뜻인가요? — 요약 지표 설명 보기</summary>
+      <div class="body">
+        <p class="lead">학급 전체 현황을 한눈에 보는 지표입니다. 각 박스에 마우스를 올려도 설명이 나옵니다.</p>
+        <table>
+          <tr><th style="width:26%">지표</th><th>의미</th></tr>
+          <tr><td><span class="dim">👥 참여 학생</span></td>
+              <td>이 교실 코드로 접속한 적 있는 <b>전체 학생 수</b></td></tr>
+          <tr><td><span class="dim">🟢 접속 중</span></td>
+              <td>지금 게임에 <b>접속해 있는</b> 학생 수 (실시간)</td></tr>
+          <tr><td><span class="dim">1·인식 ~ 4·실천</span></td>
+              <td>각 <b>학습 단계</b>에 현재 머물고 있는 학생 수.
+                  괄호 안 알파벳은 P.E.A.C.E. 사고 단계 —
+                  <span class="pt">P</span> 인식(Perceiving) ·
+                  <span class="pt">E·A</span> 관찰(Exploring·Analyzing) ·
+                  <span class="pt">C</span> 성찰(Connecting) ·
+                  <span class="pt">E</span> 실천(Enacting)</td></tr>
+          <tr><td><span class="dim">📮 송부 완료</span></td>
+              <td>UN 보고서를 제출해 <b>사건을 끝낸</b> 학생 수</td></tr>
+          <tr><td><span class="dim">🏆 학급 사건 정복</span></td>
+              <td>학급이 해결한 <b>사건 수 / 풀 수 있는 총 사건 수</b>. 분모 = 학생 수 × 3개 인도적 사건(아랄해·우크라이나·팔레스타인), 신입 교육 제외. 한 학생이 여러 사건을 해결하면 각각 합산됩니다</td></tr>
+          <tr><td><span class="dim">⭐ 자기평가 평균</span></td>
+              <td>자기평가를 제출한 학생들의 <b>평균 점수</b> (목표 달성도·사실 이해·실천 다짐 자신감 3항목, 5점 만점)</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
   <div id="caseDist" style="display:none; margin:14px 20px; padding:14px 18px;
        background:#14202c; border:1px solid #2a4a4a; border-radius:6px;"></div>
   <div id="peaceStats"></div>
+  <div id="peaceHelp" class="helpPanel">
+    <details>
+      <summary>ⓘ 이 점수는 어떻게 매겨지나요? — P.E.A.C.E. 점수 기준 보기</summary>
+      <div class="body">
+        <p class="lead">각 영역은 학생 1명당 <b>0~3점</b>, 4영역 합쳐 <b>12점 만점</b>입니다.
+          막대는 점수가 산출된 학생들의 <b>영역별 학급 평균</b>입니다.</p>
+        <table>
+          <tr><th style="width:24%">평가 영역</th><th>점수 획득 기준</th></tr>
+          <tr>
+            <td><span class="dim">🧠 사실 이해</span><br><span style="color:#9aa6ad">현장 단서를 얼마나 모았나</span></td>
+            <td><span class="pt">3점</span> 단서 12개 이상 &nbsp;·&nbsp;
+                <span class="pt">2점</span> 9개 이상 &nbsp;·&nbsp;
+                <span class="pt">1점</span> 5개 이상</td>
+          </tr>
+          <tr>
+            <td><span class="dim">🔗 연결 의식</span><br><span style="color:#9aa6ad">인과 관계를 엮어 생각했나</span></td>
+            <td><span class="pt">2점</span> 인과 사슬 3칸(원인→과정→결과) 완성 &nbsp;·&nbsp;
+                <span class="pt">3점</span> + 자기성찰 한 문장까지 작성</td>
+          </tr>
+          <tr>
+            <td><span class="dim">✊ 실천 다짐</span><br><span style="color:#9aa6ad">배움을 행동으로 옮겼나</span></td>
+            <td><span class="pt">2점</span> UN 보고서 송부 &nbsp;·&nbsp;
+                <span class="pt">3점</span> + UN 연설문까지 작성</td>
+          </tr>
+          <tr>
+            <td><span class="dim">🌍 국제 협력</span><br><span style="color:#9aa6ad">협력·연대의 단서를 찾았나</span></td>
+            <td><span class="pt">1점</span> 협력 단서 1개 &nbsp;·&nbsp;
+                <span class="pt">2점</span> 협력 단서 2개 모두 &nbsp;·&nbsp;
+                <span class="pt">3점</span> + 보고서 송부</td>
+          </tr>
+        </table>
+        <div class="grades">
+          <b>등급 (12점 기준):</b>&nbsp;
+          <span class="gb" style="background:#d4af37">S</span>10점 이상 &nbsp;
+          <span class="gb" style="background:#2e8b57">A</span>8점 이상 &nbsp;
+          <span class="gb" style="background:#4a7eb8">B</span>5점 이상 &nbsp;
+          <span class="gb" style="background:#888">C</span>그 외
+        </div>
+      </div>
+    </details>
+  </div>
   <div id="tagDist"></div>
   <div id="grid"></div>
   <div id="empty">
@@ -479,15 +604,18 @@
       const avgReview = revN ? (revSum / revN).toFixed(1) : '-';
 
       $('summary').innerHTML =
-        statBox(list.length, '👥 참여 학생') +
-        statBox(online, '🟢 접속 중') +
-        statBox(s1, '1·인식 (P)') +
-        statBox(s2, '2·관찰 (E·A)') +
-        statBox(s3, '3·성찰 (C)') +
-        statBox(s4, '4·실천 (E)') +
-        statBox(done, '📮 송부 완료') +
-        statBox('🏆 ' + classTrophies, '학급 정복 합계') +
-        statBox(avgReview + ' / 5', '⭐ 자기평가 평균');
+        statBox(list.length, '👥 참여 학생', '이 교실 코드로 접속한 적 있는 전체 학생 수') +
+        statBox(online, '🟢 접속 중', '지금 게임에 접속해 있는 학생 수 (실시간)') +
+        statBox(s1, '1·인식 (P)', '현재 1단계(인식)에 머무는 학생 수 · P=Perceiving') +
+        statBox(s2, '2·관찰 (E·A)', '현재 2단계(관찰)에 머무는 학생 수 · E=Exploring, A=Analyzing') +
+        statBox(s3, '3·성찰 (C)', '현재 3단계(성찰)에 머무는 학생 수 · C=Connecting') +
+        statBox(s4, '4·실천 (E)', '현재 4단계(실천)에 머무는 학생 수 · E=Enacting') +
+        statBox(done, '📮 송부 완료', 'UN 보고서를 제출해 사건을 끝낸 학생 수') +
+        statBox('🏆 ' + classTrophies + ' / ' + (list.length * 3), '학급 사건 정복',
+          '학급이 해결한 사건 수 / 풀 수 있는 총 사건 수 (학생 ' + list.length +
+          '명 × 3개 인도적 사건). 한 명이 여러 사건 해결 시 합산') +
+        statBox(avgReview + ' / 5', '⭐ 자기평가 평균',
+          '자기평가 제출 학생들의 평균 (목표·사실이해·실천 자신감 3항목, 5점 만점)');
 
       // ── 🌍 사건별 학생 분포 (어디서 무엇을 탐구 중인지) ──────
       const totalInCase = caseDistribution.intro + caseDistribution.aralsea +
@@ -559,11 +687,14 @@
         ps.style.display = 'block';
         ps.innerHTML =
           '<h3>🏛 P.E.A.C.E. 학급 종합 평가 · 평균 <strong>' + avgTotal + ' / 12</strong> ' +
-          '<span style="font-size:13px;color:#9aa6ad">(' + peaceList.length + '명 기준)</span></h3>' +
+          '<span style="font-size:13px;color:#9aa6ad">(점수 산출 ' + peaceList.length +
+          '명 / 전체 ' + list.length + '명)</span></h3>' +
           '<div class="gradeRow">' + gradeChips + '</div>' +
           '<div class="dimGrid">' + dimBars + '</div>';
+        $('peaceHelp').style.display = 'block';
       } else {
         ps.style.display = 'none';
+        $('peaceHelp').style.display = 'none';
       }
 
       // 학급 자유 입력 생각 — 학생들이 단서마다 적은 한 문장 총합
@@ -601,7 +732,9 @@
           '<p style="margin:0 0 8px;font-size:12px;color:#9aa6ad">' +
             '참여 학생 ' + withTagCount + '명 · 단서마다 한 문장 자유 입력 (자기 모니터링)' +
           '</p>' +
-          (liveTagCards || '<p style="color:#7a8590;font-style:italic">아직 학생 입력 없음</p>');
+          '<div class="tagScroll">' +
+            (liveTagCards || '<p style="color:#7a8590;font-style:italic">아직 학생 입력 없음</p>') +
+          '</div>';
         return;
       } else if (false) {
         td.innerHTML = '<h3>💭 학급 감정 태그 분포 (단서별 학생 반응)</h3>' +
@@ -632,8 +765,9 @@
       });
     }
 
-    function statBox(n, label) {
-      return '<div class="stat"><div class="n">' + n +
+    function statBox(n, label, tip) {
+      return '<div class="stat"' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' +
+        '<div class="n">' + n +
         '</div><div class="l">' + label + '</div></div>';
     }
 
