@@ -2492,8 +2492,48 @@ class LearningTreeScene extends Phaser.Scene {
   constructor() { super('LearningTreeScene'); }
 
   create() {
-    setCfgBarVisible(false);
-    this.cameras.main.fadeIn(280, 0, 0, 0);
+    // 진입 즉시 fadeIn — try/catch 안에서 throw가 나도 화면이 검정으로 멈추지 않게
+    // 보고서 송부 후 "나의 조사 기록" 클릭 시 검은 화면 멈춤 이슈 진단·폴백 (이문호 교사 피드백)
+    try {
+      setCfgBarVisible(false);
+      if (this.cameras && this.cameras.main) {
+        this.cameras.main.fadeIn(280, 0, 0, 0);
+      }
+    } catch (e) {
+      console.error('[LearningTreeScene] init error:', e);
+    }
+    try {
+      this._buildContent();
+    } catch (e) {
+      console.error('[LearningTreeScene] create error:', e);
+      // 폴백 — 검은 화면 대신 에러 안내 + 타이틀 복귀 버튼
+      try {
+        this.add.rectangle(480, 300, 960, 600, 0x0a1a1a);
+        this.add.text(480, 240, '⚠ 학습 트리 화면 로드 오류', {
+          fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffd96a',
+          fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.add.text(480, 290,
+          '잠시 후 다시 시도해 주세요. 문제가 반복되면 콘솔(F12)을 확인.', {
+          fontFamily: FONT, fontSize: '13px', color: '#cfe9ff'
+        }).setOrigin(0.5);
+        this.add.text(480, 320, String((e && e.message) || e), {
+          fontFamily: FONT, fontSize: '11px', color: '#ffa07f',
+          wordWrap: { width: 800 }, align: 'center'
+        }).setOrigin(0.5);
+        fancyButton(this, 380, 460, 180, 40, '← 타이틀로',
+          () => this.scene.start('TitleScene'),
+          { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+        fancyButton(this, 580, 460, 180, 40, '← 임무 선택',
+          () => this.scene.start('CaseSelectScene'),
+          { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+      } catch (e2) {
+        console.error('[LearningTreeScene] fallback error:', e2);
+      }
+    }
+  }
+
+  _buildContent() {
     this.leaving = false;
 
     // 배경: 숲처럼 따뜻한 다크 그린-블루
@@ -6105,6 +6145,8 @@ class InvestigationScene extends Phaser.Scene {
     } else {
       // 장소(맵)별 그룹화 — 이문호 교사 피드백 반영
       //   각 장소 헤더 + 그 장소 종합 감정(있을 때) + 단서 한 줄당 하나(●)
+      //   ※ 텍스트가 두 줄 이상이면 실제 높이(text.height)만큼 curY 증가
+      //     (단서 두 줄짜리가 다음 항목과 겹치는 문제 — 이문호 교사 피드백)
       const locTags = this.registry.get('locationTags') || {};
       let curY = 128;
       Object.entries(CASE.locations).forEach(([lid, loc]) => {
@@ -6120,14 +6162,15 @@ class InvestigationScene extends Phaser.Scene {
           fontStyle: 'bold'
         }).setDepth(32));
         curY += 22;
-        // 장소 종합 감정 (있을 때)
+        // 장소 종합 감정 (있을 때) — 두 줄 이상도 안전
         if (locTags[lid]) {
-          this.overlay.push(this.add.text(98, curY,
+          const fb = this.add.text(98, curY,
             '💭 ' + locTags[lid].label, {
             fontFamily: FONT, fontSize: '12px', color: '#9fb5d2',
             wordWrap: { width: 720 }, lineSpacing: 3, fontStyle: 'italic'
-          }).setDepth(32));
-          curY += 22;
+          }).setDepth(32);
+          this.overlay.push(fb);
+          curY += Math.max(22, fb.height + 4);
         }
         // 단서 1열 한 줄당 — ● 이름 — 짧은 설명
         locEvs.forEach(e => {
@@ -6142,13 +6185,14 @@ class InvestigationScene extends Phaser.Scene {
               fontStyle: 'bold'
             }).setOrigin(0.5).setDepth(33));
           }
-          // 단서명 + 한 줄 설명
-          this.overlay.push(this.add.text(ai ? 144 : 98, curY,
+          // 단서명 + 한 줄 설명 — 실제 height로 다음 행 위치 계산
+          const txt = this.add.text(ai ? 144 : 98, curY,
             '● ' + e.name + '  —  ' + e.desc, {
             fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
             wordWrap: { width: ai ? 720 : 760 }, lineSpacing: 2
-          }).setDepth(32));
-          curY += 22;
+          }).setDepth(32);
+          this.overlay.push(txt);
+          curY += Math.max(22, txt.height + 4);
         });
         curY += 10;   // 장소 간 여백
       });
@@ -6525,6 +6569,7 @@ class QuizScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(3502));
     } else {
       // 장소별 그룹화 — showRecord와 동일 로직(콤팩트)
+      //   ※ 텍스트 두 줄 이상 시 실제 height로 curY 증가 (겹침 방지)
       let curY = 128;
       Object.entries(CASE.locations).forEach(([lid, loc]) => {
         const locEvs = loc.spots
@@ -6539,12 +6584,13 @@ class QuizScene extends Phaser.Scene {
         }).setDepth(3502));
         curY += 22;
         if (locTags[lid]) {
-          layer.push(this.add.text(98, curY,
+          const fb = this.add.text(98, curY,
             '💭 ' + locTags[lid].label, {
             fontFamily: FONT, fontSize: '12px', color: '#9fb5d2',
             wordWrap: { width: 720 }, lineSpacing: 3, fontStyle: 'italic'
-          }).setDepth(3502));
-          curY += 22;
+          }).setDepth(3502);
+          layer.push(fb);
+          curY += Math.max(22, fb.height + 4);
         }
         locEvs.forEach(e => {
           const ai = (typeof getArea === 'function') ? getArea(e) : null;
@@ -6557,12 +6603,13 @@ class QuizScene extends Phaser.Scene {
               fontStyle: 'bold'
             }).setOrigin(0.5).setDepth(3503));
           }
-          layer.push(this.add.text(ai ? 144 : 98, curY,
+          const txt = this.add.text(ai ? 144 : 98, curY,
             '● ' + e.name + '  —  ' + e.desc, {
             fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
             wordWrap: { width: ai ? 720 : 760 }, lineSpacing: 2
-          }).setDepth(3502));
-          curY += 22;
+          }).setDepth(3502);
+          layer.push(txt);
+          curY += Math.max(22, txt.height + 4);
         });
         curY += 10;
       });
