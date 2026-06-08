@@ -5635,7 +5635,7 @@ class InvestigationScene extends Phaser.Scene {
     // 조사 지점 — NPC 대화 패턴과 동일하게 두 단계로 진행 (이용빈 사용자 피드백)
     //   1차 클릭 = spot 위에 "🔍 ◯◯ 조사하기" 버튼 표시
     //   2차 클릭(버튼) = 실제 inspect → showInspectPopup
-    //   직접 자동 inspect로 들어가면 학생이 클릭 의도를 인지 못한 채 진입함.
+    //   이미 수집한 spot 은 노란 박스 안 뜸 (이문호 교사 피드백)
     this.zones = [];
     this.inspectPromptLayer = null;
     loc.spots.forEach(spot => {
@@ -5643,9 +5643,13 @@ class InvestigationScene extends Phaser.Scene {
         spot.x + spot.w / 2, spot.y + spot.h / 2,
         spot.w, spot.h, 0xffe082, 0
       ).setInteractive({ useHandCursor: true });
+      z.spotData = spot;   // _refreshZoneVisuals 에서 collected 비교용
       z.on('pointerdown', () => {
         if (!this.examine) return;
         if (this.inspectOpen || this.thoughtOpen) return;
+        // 이미 수집한 단서는 클릭 무반응 (수집 표지 사라진 zone 클릭 방어)
+        if (spot.evidence &&
+            this.collected.find(e => e.id === spot.evidence.id)) return;
         this.showInspectPrompt(spot);
       });
       this.zones.push(z);
@@ -5752,24 +5756,9 @@ class InvestigationScene extends Phaser.Scene {
     this.clearOverlay();
     if (typeof this.clearInspectPrompt === 'function') this.clearInspectPrompt();
     this.glass.setVisible(this.examine);
-    // spot 시각화 강화 — 이문호 교사 피드백: "네모박스가 너무 연해서 잘 안 보임".
-    //   alpha 0.14 → 0.32, 외곽선 추가, 깜빡이는 펄스 트윈으로 학생 시선 유도.
-    //   조사 종료 시 트윈 정리 + 외곽선 제거.
-    this.zones.forEach(z => {
-      this.tweens.killTweensOf(z);
-      if (this.examine) {
-        z.setFillStyle(0xffe082, 0.32);
-        z.setStrokeStyle(3, 0xffd54a, 1);
-        // 펄스 — fillAlpha 트윈
-        this.tweens.add({
-          targets: z, fillAlpha: 0.58, duration: 700,
-          yoyo: true, repeat: -1, ease: 'Sine.inOut'
-        });
-      } else {
-        z.setFillStyle(0xffe082, 0);
-        z.setStrokeStyle(0);
-      }
-    });
+    // spot 시각화 — 이미 수집한 spot 은 표시 안 함 (이문호 교사 피드백:
+    //   "단서 확보되면 노란 네모창이 사라져야할듯합니다").
+    this._refreshZoneVisuals();
     this.btnExamine.t.setText(this.examine ? '조사 종료' : '조사한다');
     this.msg.setText(this.examine
       ? '🟡 노란 박스 클릭 → 뜨는 「조사하기」 버튼 클릭. (ESC: 취소)'
@@ -5786,9 +5775,35 @@ class InvestigationScene extends Phaser.Scene {
       if (window.SFX) window.SFX.play('evidence');
       if (this.refreshEvHud) this.refreshEvHud();
       newlyFound = spot.evidence;
+      // 수집 즉시 이 spot 의 노란 박스 정리 (이문호 교사 피드백)
+      if (this.examine) this._refreshZoneVisuals();
     }
     // 결과는 팝업 모달에 — 하단 명령 박스는 안내문 유지
     this.showInspectPopup(spot, newlyFound);
+  }
+
+  // 노란 spot 박스 시각화 갱신 — examine 모드 + 미수집 spot 만 표시.
+  //   toggleExamine / inspect 직후에 호출.
+  _refreshZoneVisuals() {
+    if (!this.zones) return;
+    this.zones.forEach(z => {
+      this.tweens.killTweensOf(z);
+      const spot = z.spotData;
+      const isCollected = spot && spot.evidence &&
+        this.collected.find(e => e.id === spot.evidence.id);
+      if (this.examine && !isCollected) {
+        z.setFillStyle(0xffe082, 0.32);
+        z.setStrokeStyle(3, 0xffd54a, 1);
+        // 펄스 — fillAlpha 트윈
+        this.tweens.add({
+          targets: z, fillAlpha: 0.58, duration: 700,
+          yoyo: true, repeat: -1, ease: 'Sine.inOut'
+        });
+      } else {
+        z.setFillStyle(0xffe082, 0);
+        z.setStrokeStyle(0);
+      }
+    });
   }
 
   // 돋보기로 spot 클릭 시 — 가운데 팝업에 장소·단서 정보 즉시 표시
@@ -6184,25 +6199,52 @@ class InvestigationScene extends Phaser.Scene {
     loc.moves.forEach((m, i) => {
       const y = 478 + i * 48;
       const b = fancyButton(this, 480, y, 380, 40, '▶  ' + m.label, () => {
-        // 사용자 피드백: "지도실로 움직이니까 이상태에서 멈춤" (재발)
-        // 원인: TTTTTT-1의 같은 프레임 stop+launch가 race condition. SceneManager
-        // queue 처리 순서로 stop과 launch가 같은 scene 대상이면 launch 무시 가능.
-        // 해결: paused WorldScene 의 time.delayedCall 로 한 프레임 지연 후 launch.
-        //   WorldScene.scene API 로 InvestigationScene 을 stop + launch.
+        // 이문호 교사 피드백 (재재): 팔레스타인 두 번째 장소 안 가짐.
+        // VVVVVV-1의 worldScene.time.delayedCall이 paused 상태 scene의 time은
+        // 트리거되지 않아 launch 호출이 영구히 안 됨 -> 멈춤.
+        // 새 패턴: scene 전환 자체를 포기하고, 같은 InvestigationScene 인스턴스
+        // 안에서 모든 children/tweens/timer 정리 + 상태 리셋 + create() 재호출.
+        // scene 시스템 안 건드리고 안정적.
         this.registry.set('invLoc', m.to);
-        const worldScene = this.scene.get('WorldScene');
-        this.scene.stop();
-        if (worldScene && worldScene.scene) {
-          worldScene.time.delayedCall(60, () => {
-            try { worldScene.scene.launch('InvestigationScene'); } catch (e) {
-              console.error('[InvestigationScene] move launch error:', e);
-            }
-          });
+        try { this._rebuildForLocation(); } catch (e) {
+          console.error('[InvestigationScene] rebuild error:', e);
         }
       }, theme);
       b.g.setDepth(7); b.zone.setDepth(8); b.t.setDepth(8);
       this.overlay.push(b.g, b.zone, b.t);
     });
+  }
+
+  // 같은 InvestigationScene 인스턴스 안에서 location 변경 + 화면 재구성.
+  //   scene.stop/launch 또는 scene.restart는 launch 패턴(f081d9b)과 충돌해
+  //   멈춤 발생. 이 함수는 children/tween/timer/input 정리 후 create() 호출.
+  _rebuildForLocation() {
+    // 1) BGM 그대로 유지 (조사 BGM 다시 시작 안 함 — playBGM 동일 src면 skip)
+    // 2) 모든 game object 정리 — children.removeAll(true)는 destroy까지 호출
+    this.children.removeAll(true);
+    // 3) 활성 트윈/타이머 정리
+    this.tweens.killAll();
+    if (this.time) this.time.removeAllEvents();
+    // 4) input 리스너 정리 (zone pointerdown, keyboard ESC 등)
+    if (this.input) {
+      this.input.removeAllListeners();
+      if (this.input.keyboard) this.input.keyboard.removeAllListeners();
+    }
+    // 5) 인스턴스 상태 플래그 리셋
+    this.inspectOpen = false;
+    this.thoughtOpen = false;
+    this.cluesOpen = false;
+    this.examine = false;
+    this.inspectPromptLayer = null;
+    this.overlay = [];
+    this._locDoneShown = false;
+    // 6) 카메라 fadeIn 다시
+    if (this.cameras && this.cameras.main) {
+      this.cameras.main.resetFX();
+      this.cameras.main.fadeIn(180, 0, 0, 0);
+    }
+    // 7) create() 다시 호출 — 새 location 으로 화면 빌드
+    this.create();
   }
 
   // spot 1차 클릭 시 표시되는 "🔍 ◯◯ 조사하기" 버튼 (NPC 대화 패턴과 동일)
@@ -7048,10 +7090,11 @@ ${tmpl.signature}`;
 
     // 본문 — 미리보기 영역(버튼 위)으로 마스크 클립. 내용이 길면 스크롤
     //  → 하단 버튼과 글씨가 겹치던 문제 해결 (이문호 교사 피드백)
+    //  → 우측 짤림 픽스: wordWrap 876→850, x 42 유지 → 우측 마진 28px (이문호)
     const PV_TOP = 80, PV_BOTTOM = 544, PV_H = PV_BOTTOM - PV_TOP;
     const bodyTxt = this.add.text(42, PV_TOP, body, {
       fontFamily: FONT, fontSize: '13px', color: '#1a1a2e',
-      wordWrap: { width: 876 }, lineSpacing: 4
+      wordWrap: { width: 850 }, lineSpacing: 4
     }).setDepth(3);
     const maskG = this.make.graphics({ add: false });
     maskG.fillRect(20, PV_TOP - 4, 920, PV_H + 8);
@@ -7227,8 +7270,38 @@ ${tmpl.signature}`;
         allReviews[caseId] = review;
         this.registry.set('caseReviews', allReviews);
         // 자기 평가 점수를 대시보드에 즉시 반영
-        reportProgress(this);
-        this.buildSent(body);
+        try { reportProgress(this); } catch (e) {
+          console.error('[LetterScene] reportProgress error:', e);
+        }
+        // 송부 후 화면 빌드 — throw 가 나도 학생이 안 멈추도록 가드 (이문호 교사 피드백)
+        try {
+          this.buildSent(body);
+        } catch (e) {
+          console.error('[LetterScene] buildSent error:', e);
+          // 폴백 — 최소 송부 완료 표시 + 학습 트리/타이틀 복귀 버튼
+          try {
+            this.clearAll();
+            this.add.rectangle(480, 300, 960, 600, 0x0a0e1a);
+            this.add.text(480, 240, '✨ 조사 보고서가 UN으로 전송되었습니다 ✨', {
+              fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8',
+              fontStyle: 'bold'
+            }).setOrigin(0.5);
+            this.add.text(480, 290,
+              '레이아웃 일부 표시 오류가 있었지만 송부는 정상 완료됐어요.\n' +
+              '아래 버튼으로 다음 단계로 진행하세요.', {
+              fontFamily: FONT, fontSize: '13px', color: '#cfe9ff',
+              align: 'center', lineSpacing: 4
+            }).setOrigin(0.5);
+            fancyButton(this, 380, 420, 200, 44, '🌳  나의 조사 기록',
+              () => this.scene.start('LearningTreeScene'),
+              { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+            fancyButton(this, 580, 420, 160, 44, '🏠  처음으로',
+              () => this.scene.start('TitleScene'),
+              { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+          } catch (e2) {
+            console.error('[LetterScene] fallback error:', e2);
+          }
+        }
       },
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
   }
