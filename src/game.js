@@ -7411,6 +7411,19 @@ function getReflectionStatements(registry) {
 // 하위 호환 — 옛 이름 참조 (한 곳이라도 남아있을 가능성)
 const REFLECTION_STATEMENTS = REFLECTION_STATEMENTS_BY_CASE.aralsea;
 
+// 권장 인과 사슬 — [원인, 과정, 결과] 슬롯별 추천 단서 id (이문호 교사 피드백 B안)
+//   정답이 하나는 아니지만, 막막하지 않도록 ⭐추천 표식으로 길잡이.
+const CHAIN_HINTS_BY_CASE = {
+  intro:     ['world_map', 'mission_brief', 'past_records'],
+  aralsea:   ['cause', 'shrink', 'people'],        // 강물 우회 → 사라진 바다 → 사람들의 삶
+  ukraine:   ['europe', 'corridor', 'global'],     // 유럽 지상전 → 흑해 곡물 협정 → 멀리 미친 충격
+  palestine: ['border', 'checkpoint', 'med_stamp'],// 땅·물의 분단 → 5분 거리의 두 시간 → 약의 도장 30개
+};
+function getChainHints(registry) {
+  const id = (registry && registry.get && registry.get('caseId')) || 'aralsea';
+  return CHAIN_HINTS_BY_CASE[id] || CHAIN_HINTS_BY_CASE.aralsea;
+}
+
 class ReflectionScene extends Phaser.Scene {
   constructor() { super('ReflectionScene'); }
 
@@ -7425,6 +7438,7 @@ class ReflectionScene extends Phaser.Scene {
     this.slotLabels = ['원인', '과정', '결과'];
     // 각 슬롯 의미 — 학생이 무엇을 넣을지 막막하지 않게 안내 (이문호 교사 피드백)
     this.slotHints = ['문제의 시작', '그래서 벌어진 일', '사람들에게 미친 영향'];
+    this.chainHints = getChainHints(this.registry);   // 슬롯별 추천 단서 id (⭐추천)
     this.activeSlot = null;       // 현재 단서를 채우려는 슬롯 인덱스
     this.statementId = null;      // 선택된 자기성찰 카드 id
     this.leaving = false;
@@ -7686,17 +7700,19 @@ class ReflectionScene extends Phaser.Scene {
     } else {
       // 3단 컬럼 카드 리스트 — 단서가 많아도(사건당 최대 12개) 패널 안에 들어오게
       const cols = 3, cardW = 262, cardH = 60, gapX = 11, gapY = 8;
+      const recId = (this.chainHints && this.chainHints[slotIndex]) || null;  // 이 슬롯 추천 단서
       available.forEach((clue, i) => {
         const col = i % cols;
         const row = Math.floor(i / cols);
         const cx = px + 14 + col * (cardW + gapX);
         const cy = py + 52 + row * (cardH + gapY);
+        const isRec = !!recId && clue.id === recId;
         const cg = this.add.graphics().setDepth(3002);
         const draw = (hover) => {
           cg.clear();
-          cg.fillStyle(hover ? 0x1a3a5c : 0x0e2238, 1);
+          cg.fillStyle(hover ? 0x1a3a5c : (isRec ? 0x18301c : 0x0e2238), 1);
           cg.fillRect(cx, cy, cardW, cardH);
-          cg.lineStyle(2, hover ? 0xc9a36b : 0x2a5a82, 1);
+          cg.lineStyle(isRec ? 3 : 2, hover ? 0xc9a36b : (isRec ? 0xffd96a : 0x2a5a82), 1);
           cg.strokeRect(cx, cy, cardW, cardH);
           // area 컬러 스트라이프
           const a = (typeof getArea === 'function') ? getArea(clue) : null;
@@ -7706,8 +7722,14 @@ class ReflectionScene extends Phaser.Scene {
         overlay.push(cg);
         overlay.push(this.add.text(cx + 12, cy + 8, clue.name, {
           fontFamily: FONT, fontSize: '12px', color: '#ffe9b8',
-          fontStyle: 'bold', wordWrap: { width: cardW - 20 }
+          fontStyle: 'bold', wordWrap: { width: cardW - (isRec ? 58 : 20) }
         }).setDepth(3003));
+        if (isRec) {
+          overlay.push(this.add.text(cx + cardW - 6, cy + 5, '⭐추천', {
+            fontFamily: FONT, fontSize: '9px', color: '#1a0e08',
+            backgroundColor: '#ffd96a', padding: { x: 3, y: 1 }
+          }).setOrigin(1, 0).setDepth(3004));
+        }
         overlay.push(this.add.text(cx + 12, cy + 30,
           (clue.desc || '').slice(0, 38) + ((clue.desc || '').length > 38 ? '…' : ''), {
           fontFamily: FONT, fontSize: '10px', color: '#a8c4dc',
