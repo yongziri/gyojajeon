@@ -6174,52 +6174,26 @@ class InvestigationScene extends Phaser.Scene {
     loc.moves.forEach((m, i) => {
       const y = 478 + i * 48;
       const b = fancyButton(this, 480, y, 380, 40, '▶  ' + m.label, () => {
-        // 이문호 교사 피드백 (재재): 팔레스타인 두 번째 장소 안 가짐.
-        // VVVVVV-1의 worldScene.time.delayedCall이 paused 상태 scene의 time은
-        // 트리거되지 않아 launch 호출이 영구히 안 됨 -> 멈춤.
-        // 새 패턴: scene 전환 자체를 포기하고, 같은 InvestigationScene 인스턴스
-        // 안에서 모든 children/tweens/timer 정리 + 상태 리셋 + create() 재호출.
-        // scene 시스템 안 건드리고 안정적.
+        // 이문호/이용빈 피드백 재반복: 장소 이동 시 멈춤.
+        // 이전 시도 모두 실패한 원인 정리:
+        //   - scene.restart() → launch 패턴과 race condition
+        //   - 같은 프레임 stop+launch → SceneManager queue 무시
+        //   - paused WorldScene.time.delayedCall → paused 라 trigger 안 됨
+        //   - children.removeAll + create() 재호출 → 잔재 트윈/이벤트로 멈춤
+        // 진짜 단순한 픽스: window.setTimeout 으로 다음 macrotask 에 launch.
+        //   setTimeout 은 SceneManager·Phaser·paused scene 과 독립 — 항상 실행.
         this.registry.set('invLoc', m.to);
-        try { this._rebuildForLocation(); } catch (e) {
-          console.error('[InvestigationScene] rebuild error:', e);
-        }
+        const sm = this.scene.manager;
+        this.scene.stop();
+        window.setTimeout(() => {
+          try { sm.launch('InvestigationScene'); } catch (e) {
+            console.error('[InvestigationScene] move launch error:', e);
+          }
+        }, 30);
       }, theme);
       b.g.setDepth(7); b.zone.setDepth(8); b.t.setDepth(8);
       this.overlay.push(b.g, b.zone, b.t);
     });
-  }
-
-  // 같은 InvestigationScene 인스턴스 안에서 location 변경 + 화면 재구성.
-  //   scene.stop/launch 또는 scene.restart는 launch 패턴(f081d9b)과 충돌해
-  //   멈춤 발생. 이 함수는 children/tween/timer/input 정리 후 create() 호출.
-  _rebuildForLocation() {
-    // 1) BGM 그대로 유지 (조사 BGM 다시 시작 안 함 — playBGM 동일 src면 skip)
-    // 2) 모든 game object 정리 — children.removeAll(true)는 destroy까지 호출
-    this.children.removeAll(true);
-    // 3) 활성 트윈/타이머 정리
-    this.tweens.killAll();
-    if (this.time) this.time.removeAllEvents();
-    // 4) input 리스너 정리 (zone pointerdown, keyboard ESC 등)
-    if (this.input) {
-      this.input.removeAllListeners();
-      if (this.input.keyboard) this.input.keyboard.removeAllListeners();
-    }
-    // 5) 인스턴스 상태 플래그 리셋
-    this.inspectOpen = false;
-    this.thoughtOpen = false;
-    this.cluesOpen = false;
-    this.examine = false;
-    this.inspectPromptLayer = null;
-    this.overlay = [];
-    this._locDoneShown = false;
-    // 6) 카메라 fadeIn 다시
-    if (this.cameras && this.cameras.main) {
-      this.cameras.main.resetFX();
-      this.cameras.main.fadeIn(180, 0, 0, 0);
-    }
-    // 7) create() 다시 호출 — 새 location 으로 화면 빌드
-    this.create();
   }
 
   // spot 1차 클릭 시 표시되는 "🔍 ◯◯ 조사하기" 버튼 (NPC 대화 패턴과 동일)
