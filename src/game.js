@@ -6305,9 +6305,9 @@ class QuizScene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0, 0);
 
-    this.bodyText = this.add.text(54, 472, '', {
-      fontFamily: FONT, fontSize: '18px', color: '#f3ece0',
-      wordWrap: { width: 860 }, lineSpacing: 6
+    this.bodyText = this.add.text(54, 470, '', {
+      fontFamily: FONT, fontSize: '17px', color: '#f3ece0',
+      wordWrap: { width: 860 }, lineSpacing: 3
     });
 
     this.hint = this.add.text(910, 578, '▼', {
@@ -6520,16 +6520,16 @@ class QuizScene extends Phaser.Scene {
     //   intro: 정답 메시지 클릭 → 신입 교육 완료 클릭 → fadeOut (introDone1/2)
     //   본 사건: 정답·핵심 단서·진행도·다음 안내를 한 메시지에 합쳐 클릭 → 마을 복귀 (caseDone)
     //   상태 변경/scene 전환 로직은 onClick의 mode 분기에서 처리.
+    // 메시지 길이 압축 — 하단 박스(170px) 안에 모두 들어오도록 빈 줄 최소화
+    //   (이문호 교사 피드백: "여기 아래에 넘친다" — 마지막 안내 줄 잘림)
     const progressTail = isIntroCase
-      ? '\n\n   ▶ 클릭하면 다음으로 진행합니다.'
-      : ('\n\n핵심 단서  ' + have + ' / ' + TOTAL_CITIZENS +
-         (have >= TOTAL_CITIZENS
-           ? '   ★ 모두 모았어요! 우편함으로 가보세요.'
-           : '   아직 시민이 더 있어요.') +
-         '\n\n   ▶ 클릭하면 마을로 돌아갑니다.');
+      ? '\n▶ 클릭하여 진행'
+      : ('\n핵심 단서 ' + have + '/' + TOTAL_CITIZENS +
+         (have >= TOTAL_CITIZENS ? ' — 우편함으로!' : '') +
+         '\n▶ 클릭하여 마을로');
     this.typeText('【정답!】 ' + ch.feedback +
-      '\n\n★ 핵심 단서 획득: ' + reward.name +
-      '\n   "' + reward.desc + '"' + progressTail, () => {
+      '\n★ ' + reward.name + ' — "' + reward.desc + '"' +
+      progressTail, () => {
       if (isIntroCase) {
         this.mode = 'introDone1';   // onClick → introDone1 분기로
       } else {
