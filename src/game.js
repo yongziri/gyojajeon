@@ -6420,6 +6420,13 @@ class QuizScene extends Phaser.Scene {
       }
       return;
     }
+    // 본 사건 정답 후 — 학생 클릭으로 마을 복귀 (이문호 교사 피드백)
+    if (this.mode === 'caseDone') {
+      this.mode = 'caseExit';
+      this.scene.stop();
+      this.scene.resume('WorldScene');
+      return;
+    }
     if (this.locked) return;
     if (this.mode === 'intro') {
       this.lineIdx++;
@@ -6499,31 +6506,26 @@ class QuizScene extends Phaser.Scene {
     const caseId = this.registry.get('caseId') || 'aralsea';
     const isIntroCase = (caseId === 'intro');
 
-    // 타자기 완료 후 → 진행도 표시 → 잠시 후 마을 복귀
-    //   intro(튜토리얼)는 자동 진행 대신 학생 클릭으로 2단계 진행
-    //   (이문호 교사 피드백: "자동으로 넘어가서 그 전의 말을 제대로 못봐")
-    //   1단계: 정답·핵심 단서 메시지 → 클릭 → 2단계: 신입 교육 완료 → 클릭 → fadeOut
-    //   상태 변경/scene 전환 로직은 onClick의 introDone1/introDone2 분기에서 처리.
+    // 타자기 완료 후 → 학생 클릭으로 다음 단계 진행
+    //   (이문호 교사 피드백: "자동으로 넘어가서 대화를 제대로 못봐")
+    //   intro: 정답 메시지 클릭 → 신입 교육 완료 클릭 → fadeOut (introDone1/2)
+    //   본 사건: 정답·핵심 단서·진행도·다음 안내를 한 메시지에 합쳐 클릭 → 마을 복귀 (caseDone)
+    //   상태 변경/scene 전환 로직은 onClick의 mode 분기에서 처리.
+    const progressTail = isIntroCase
+      ? '\n\n   ▶ 클릭하면 다음으로 진행합니다.'
+      : ('\n\n핵심 단서  ' + have + ' / ' + TOTAL_CITIZENS +
+         (have >= TOTAL_CITIZENS
+           ? '   ★ 모두 모았어요! 우편함으로 가보세요.'
+           : '   아직 시민이 더 있어요.') +
+         '\n\n   ▶ 클릭하면 마을로 돌아갑니다.');
     this.typeText('【정답!】 ' + ch.feedback +
       '\n\n★ 핵심 단서 획득: ' + reward.name +
-      '\n   "' + reward.desc + '"' +
-      (isIntroCase ? '\n\n   ▶ 클릭하면 다음으로 진행합니다.' : ''), () => {
+      '\n   "' + reward.desc + '"' + progressTail, () => {
       if (isIntroCase) {
-        // 학생 클릭 대기 — onClick의 introDone1 분기로 이어짐
-        this.mode = 'introDone1';
-        return;
+        this.mode = 'introDone1';   // onClick → introDone1 분기로
+      } else {
+        this.mode = 'caseDone';     // onClick → caseDone 분기로
       }
-      this.time.delayedCall(900, () => {
-        // 본 사건 — 기존 흐름
-        this.bodyText.setText('핵심 단서 ' + have + '/' + TOTAL_CITIZENS +
-          (have >= TOTAL_CITIZENS ?
-            '   모두 모았어요! 우편함으로 가보세요.' :
-            '   아직 시민이 더 있어요.'));
-        this.time.delayedCall(1400, () => {
-          this.scene.stop();
-          this.scene.resume('WorldScene');
-        });
-      });
     });
   }
 
