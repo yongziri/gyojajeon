@@ -6132,14 +6132,21 @@ class InvestigationScene extends Phaser.Scene {
     loc.moves.forEach((m, i) => {
       const y = 478 + i * 48;
       const b = fancyButton(this, 480, y, 380, 40, '▶  ' + m.label, () => {
-        // 사용자 피드백: "지도실로 움직이니까 이상태에서 멈춤"
-        // 원인: f081d9b 후 InvestigationScene이 scene.launch로 띄워지는데
-        // scene.restart()는 launch된 scene을 안정적으로 재시작 못 함.
-        // 해결: stop + launch 패턴으로 명시적 재초기화.
+        // 사용자 피드백: "지도실로 움직이니까 이상태에서 멈춤" (재발)
+        // 원인: TTTTTT-1의 같은 프레임 stop+launch가 race condition. SceneManager
+        // queue 처리 순서로 stop과 launch가 같은 scene 대상이면 launch 무시 가능.
+        // 해결: paused WorldScene 의 time.delayedCall 로 한 프레임 지연 후 launch.
+        //   WorldScene.scene API 로 InvestigationScene 을 stop + launch.
         this.registry.set('invLoc', m.to);
-        const sm = this.scene;
-        sm.stop();
-        sm.launch('InvestigationScene');
+        const worldScene = this.scene.get('WorldScene');
+        this.scene.stop();
+        if (worldScene && worldScene.scene) {
+          worldScene.time.delayedCall(60, () => {
+            try { worldScene.scene.launch('InvestigationScene'); } catch (e) {
+              console.error('[InvestigationScene] move launch error:', e);
+            }
+          });
+        }
       }, theme);
       b.g.setDepth(7); b.zone.setDepth(8); b.t.setDepth(8);
       this.overlay.push(b.g, b.zone, b.t);
