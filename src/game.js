@@ -6333,6 +6333,49 @@ class QuizScene extends Phaser.Scene {
       this.showQuestion();
       return;
     }
+    // 튜토리얼 완료 흐름 — 자동 진행 대신 학생 클릭으로 단계 이동
+    //   (이문호 교사 피드백: "자동으로 넘어가서 그 전의 말을 제대로 못봐")
+    //   locked 검사보다 위에 배치 — handleCorrect가 locked=true로 잠근 상태에서도 동작
+    if (this.mode === 'introDone1') {
+      this.mode = 'introDoneTyping';
+      // completedCases 등 상태 변경은 이 시점에 한 번 (스킵·중복 방지)
+      const completed = this.registry.get('completedCases') || [];
+      if (!completed.includes('intro')) {
+        completed.push('intro');
+        this.registry.set('completedCases', completed);
+      }
+      this.registry.set('reflectionDone', true);
+      this.registry.set('reportSent', true);
+      this.registry.set('stage', 4);
+      if (typeof reportProgress === 'function') reportProgress(this);
+      this.typeText('🎓  신입 교육 완료!\n\n' +
+        '   P.E.A.C.E. 5단계를 모두 익혔습니다.\n' +
+        '   본 임무 세 가지가 잠금 해제되었어요.\n\n' +
+        '   ▶ 클릭하면 사건 선택 화면으로 갑니다.', () => {
+        this.mode = 'introDone2';
+      });
+      return;
+    }
+    if (this.mode === 'introDone2') {
+      this.mode = 'introExit';
+      const finish = () => {
+        try { this.scene.stop('WorldScene'); } catch (e) {}
+        this.scene.start('CaseSelectScene');
+      };
+      if (this.cameras && this.cameras.main) {
+        this.cameras.main.fadeOut(320, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', finish);
+        this.time.delayedCall(600, () => {
+          if (this.scene && this.scene.isActive &&
+              this.scene.isActive('QuizScene')) {
+            finish();
+          }
+        });
+      } else {
+        finish();
+      }
+      return;
+    }
     if (this.locked) return;
     if (this.mode === 'intro') {
       this.lineIdx++;
@@ -6413,47 +6456,20 @@ class QuizScene extends Phaser.Scene {
     const isIntroCase = (caseId === 'intro');
 
     // 타자기 완료 후 → 진행도 표시 → 잠시 후 마을 복귀
+    //   intro(튜토리얼)는 자동 진행 대신 학생 클릭으로 2단계 진행
+    //   (이문호 교사 피드백: "자동으로 넘어가서 그 전의 말을 제대로 못봐")
+    //   1단계: 정답·핵심 단서 메시지 → 클릭 → 2단계: 신입 교육 완료 → 클릭 → fadeOut
+    //   상태 변경/scene 전환 로직은 onClick의 introDone1/introDone2 분기에서 처리.
     this.typeText('【정답!】 ' + ch.feedback +
       '\n\n★ 핵심 단서 획득: ' + reward.name +
-      '\n   "' + reward.desc + '"', () => {
+      '\n   "' + reward.desc + '"' +
+      (isIntroCase ? '\n\n   ▶ 클릭하면 다음으로 진행합니다.' : ''), () => {
+      if (isIntroCase) {
+        // 학생 클릭 대기 — onClick의 introDone1 분기로 이어짐
+        this.mode = 'introDone1';
+        return;
+      }
       this.time.delayedCall(900, () => {
-        // intro(튜토리얼)는 단순화 흐름 — 제임스 정답 시 자동 완료
-        if (isIntroCase) {
-          this.bodyText.setText('🎓  신입 교육 완료!\n' +
-            '   P.E.A.C.E. 5단계를 모두 익혔습니다.\n' +
-            '   본 임무 세 가지가 잠금 해제되었어요.');
-          // 자동 완료 처리 — completedCases에 intro 추가
-          const completed = this.registry.get('completedCases') || [];
-          if (!completed.includes('intro')) {
-            completed.push('intro');
-            this.registry.set('completedCases', completed);
-          }
-          this.registry.set('reflectionDone', true);
-          this.registry.set('reportSent', true);
-          this.registry.set('stage', 4);
-          if (typeof reportProgress === 'function') reportProgress(this);
-          this.time.delayedCall(2200, () => {
-            // QuizScene 자체 camera로 fadeOut (활성 상태라 작동 확실)
-            // → fade 완료 후 WorldScene 정리 + CaseSelectScene 진입
-            const finish = () => {
-              try { this.scene.stop('WorldScene'); } catch (e) {}
-              this.scene.start('CaseSelectScene');
-            };
-            if (this.cameras && this.cameras.main) {
-              this.cameras.main.fadeOut(320, 0, 0, 0);
-              this.cameras.main.once('camerafadeoutcomplete', finish);
-              // 안전 폴백 — fade 이벤트 못 받아도 600ms 후 강제 전환
-              this.time.delayedCall(600, () => {
-                if (this.scene && this.scene.isActive && this.scene.isActive('QuizScene')) {
-                  finish();
-                }
-              });
-            } else {
-              finish();
-            }
-          });
-          return;
-        }
         // 본 사건 — 기존 흐름
         this.bodyText.setText('핵심 단서 ' + have + '/' + TOTAL_CITIZENS +
           (have >= TOTAL_CITIZENS ?
