@@ -2663,8 +2663,8 @@ class LearningTreeScene extends Phaser.Scene {
     // 사건별 카드 (본 사건 3개만 표시 — 미완료는 회색)
     // intro(튜토리얼)는 학습 트리에서 제외
     // 새 layout: cardH=140, gap=6 → 3*146-6=432 (startY 90 ~ end 522, list 안 fit)
-    const cardH = 140, cardW = 880, gap = 6;
-    const startY = 90;
+    const cardH = 154, cardW = 880, gap = 6;
+    const startY = 88;
     const treeCases = CASE_LIST.filter(c => c.id !== 'intro');
     treeCases.forEach((c, i) => {
       const y = startY + i * (cardH + gap);
@@ -2739,110 +2739,61 @@ class LearningTreeScene extends Phaser.Scene {
         // 인과 사슬 (현재 사건만 reflection이 살아있음 — 사건별 누적은 향후 확장)
         const refl = (c.id === (this.registry.get('caseId') || ''))
           ? reflection : null;
-        const sx = 60, sy = y + 64;
-        if (refl && refl.chainNames && refl.chainNames.length === 3) {
-          this.add.text(sx, sy, '🔗 인과 사슬', {
-            fontFamily: FONT, fontSize: '11px', color: '#a8d4b0', fontStyle: 'bold'
+        // 내용 행을 위→아래로 차곡차곡 쌓는 커서 (겹침·넘침 방지 — 카드 밖으로 안 나감)
+        const sx = 60;
+        const isCur = (c.id === (this.registry.get('caseId') || ''));
+        const rfl = isCur ? reflection : null;
+        let ty = y + 54;
+        const ROW = 16, bottomLimit = y + cardH - 8;
+        const trunc = (s, n) => (s && s.length > n) ? s.slice(0, n) + '…' : (s || '');
+        const addRow = (label, value, opt) => {
+          opt = opt || {};
+          if (ty > bottomLimit || (!label && !value)) return;
+          if (label) this.add.text(sx, ty, label, {
+            fontFamily: FONT, fontSize: '11px',
+            color: opt.lc || '#a8d4b0', fontStyle: 'bold'
           });
-          this.add.text(sx + 80, sy,
-            refl.chainNames.join('  →  '), {
-            fontFamily: FONT, fontSize: '11px', color: '#dfffdf'
+          if (value) this.add.text(sx + (opt.vx != null ? opt.vx : 78), ty, value, {
+            fontFamily: FONT, fontSize: '11px',
+            color: opt.vc || '#dfffdf', fontStyle: opt.it ? 'italic' : 'normal'
           });
+          ty += ROW;
+        };
+
+        // 1) 인과 사슬
+        if (rfl && rfl.chainNames && rfl.chainNames.length === 3) {
+          addRow('🔗 인과 사슬', trunc(rfl.chainNames.join('  →  '), 60));
         }
-        if (refl && refl.statementText) {
-          this.add.text(sx, sy + 18, '💭 자기성찰', {
-            fontFamily: FONT, fontSize: '11px', color: '#a8d4b0', fontStyle: 'bold'
-          });
-          this.add.text(sx + 80, sy + 18,
-            '"' + refl.statementText + '"', {
-            fontFamily: FONT, fontSize: '11px', color: '#cfe9ff',
-            wordWrap: { width: cardW - 160 }
-          });
-        }
-        // 학생 본인이 쓴 한 문장 (선택 입력)
-        if (refl && refl.userStatement) {
-          this.add.text(sx, sy + 36, '✍ 내 생각', {
-            fontFamily: FONT, fontSize: '11px', color: '#ffd96a', fontStyle: 'bold'
-          });
-          this.add.text(sx + 80, sy + 36,
-            '"' + refl.userStatement + '"', {
-            fontFamily: FONT, fontSize: '11px', color: '#fff8d0',
-            wordWrap: { width: cardW - 160 }, fontStyle: 'italic'
-          });
-        }
-        // 🕊 UN 연설문 (선택) — SpeechScene에서 작성한 본문 한 줄 인용 (50자)
-        const speech = (c.id === (this.registry.get('caseId') || ''))
-          ? this.registry.get('speech') : null;
-        if (speech && speech.fullText) {
-          this.add.text(sx, sy + 56, '🕊 UN 연설', {
-            fontFamily: FONT, fontSize: '11px', color: '#a8d4b0', fontStyle: 'bold'
-          });
-          const snippet = speech.fullText.length > 60
-            ? speech.fullText.slice(0, 60) + '…'
-            : speech.fullText;
-          this.add.text(sx + 80, sy + 56, '"' + snippet + '"', {
-            fontFamily: FONT, fontSize: '11px', color: '#cfe9ff',
-            wordWrap: { width: cardW - 160 }, fontStyle: 'italic'
-          });
-        }
-        // 학생 본인이 쓴 다짐 (선택 입력) — 보고서 송부 직후 살아있음
-        const userPledge = (c.id === (this.registry.get('caseId') || ''))
-          ? (this.registry.get('userPledge') || '').trim() : '';
-        if (userPledge) {
-          this.add.text(sx, sy + 92, '✍ 내 다짐', {
-            fontFamily: FONT, fontSize: '11px', color: '#ffd96a', fontStyle: 'bold'
-          });
-          this.add.text(sx + 80, sy + 92,
-            '"' + userPledge + '"', {
-            fontFamily: FONT, fontSize: '11px', color: '#fff8d0',
-            wordWrap: { width: cardW - 160 }, fontStyle: 'italic'
-          });
-        }
-        // 자기 평가 점수
+        // 2) 자기성찰 — 학생 자유 입력 우선, 없으면 카드 문장
+        const stmt = (rfl && (rfl.userStatement || rfl.statementText)) || '';
+        if (stmt) addRow('💭 자기성찰', '"' + trunc(stmt, 52) + '"', { vc: '#cfe9ff', it: true });
+        // 3) 내 다짐 (학생 자유 입력, 있을 때만)
+        const pledge = isCur ? (this.registry.get('userPledge') || '').trim() : '';
+        if (pledge) addRow('✍ 내 다짐', '"' + trunc(pledge, 52) + '"',
+          { lc: '#ffd96a', vc: '#fff8d0', it: true });
+        // 4) 자기평가 + P.E.A.C.E. 종합 — 한 줄로 결합
+        let sc = null;
+        const parts = [];
         if (rv) {
-          const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
           const avg = ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1);
-          this.add.text(sx, sy + 56, '📊 자기 평가', {
-            fontFamily: FONT, fontSize: '11px', color: '#a8d4b0', fontStyle: 'bold'
-          });
-          this.add.text(sx + 80, sy + 56,
-            '평균 ' + avg + ' / 5.0   ·   목표 ' + stars(rv.goalMet) +
-            '   사실 ' + stars(rv.factConf) +
-            '   실천 ' + stars(rv.actionConf), {
-            fontFamily: FONT, fontSize: '11px', color: '#ffd96a'
-          });
-          if (rv.wantNextLabel) {
-            this.add.text(sx, sy + 74,
-              '🔍 다음에 알고 싶은 것: ' + rv.wantNextLabel, {
-              fontFamily: FONT, fontSize: '11px', color: '#cfe9ff'
-            });
-          }
+          parts.push('자기평가 ★' + avg + '/5');
         }
-        // 🆕 P.E.A.C.E. 종합 평가 — 계획서 4차원 자동 산출 (공감 제외)
-        // (현재는 caseId 기준 1건만 실시간 반영. 사건별 누적은 향후 확장)
-        if (c.id === (this.registry.get('caseId') || '')) {
-          const sc = computePeaceScores(this.registry);
-          const gradeColor = sc.grade === 'S' ? '#ffd96a'
-                           : sc.grade === 'A' ? '#7fd07f'
-                           : sc.grade === 'B' ? '#cfe9ff' : '#a8c4dc';
-          this.add.text(sx, sy + 94, '📌 P.E.A.C.E. 종합', {
-            fontFamily: FONT, fontSize: '11px', color: '#a8d4b0', fontStyle: 'bold'
-          });
-          this.add.text(sx + 100, sy + 94,
-            '[ ' + sc.grade + ' ]   ' + sc.total + ' / ' + sc.max, {
-            fontFamily: FONT_TITLE, fontSize: '12px',
-            color: gradeColor, fontStyle: 'bold'
-          });
-          // 4차원 — 한 줄 압축
-          let dx = sx;
-          PEACE_DIMS.forEach(d => {
-            const v = sc.dims[d.key];
-            const txt = this.add.text(dx, sy + 116,
-              d.icon + ' ' + d.label + '  ' + '★'.repeat(v) + '☆'.repeat(3 - v), {
-              fontFamily: FONT, fontSize: '11px', color: d.color
-            });
-            dx += txt.width + 14;
-          });
+        if (isCur) {
+          sc = computePeaceScores(this.registry);
+          parts.push('P.E.A.C.E. [' + sc.grade + '] ' + sc.total + '/' + sc.max);
+        }
+        if (parts.length) addRow('📊 평가', parts.join('   ·   '), { vc: '#ffd96a' });
+        // 5) P.E.A.C.E. 4영역 — 한 줄 압축 (아이콘 + 짧은 라벨 + 별점)
+        if (sc) {
+          const dimsStr = PEACE_DIMS.map(d =>
+            d.icon + d.label.split(' ')[0] + ' ' +
+            '★'.repeat(sc.dims[d.key]) + '☆'.repeat(3 - sc.dims[d.key])
+          ).join('   ');
+          addRow('', dimsStr, { vx: 0, vc: '#bcd6ea' });
+        }
+        // 6) 다음에 알고 싶은 것 (있을 때만)
+        if (rv && rv.wantNextLabel) {
+          addRow('🔍 다음', trunc(rv.wantNextLabel, 56), { vc: '#cfe9ff' });
         }
         // 뱃지 칩 — 사건 완료 시 자동 산정된 6종
         const allBadges = this.registry.get('caseBadges') || {};
