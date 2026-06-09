@@ -2327,7 +2327,7 @@ class CaseSelectScene extends Phaser.Scene {
       wordWrap: { width: w - 88 }
     });
     // 지역 — 부제가 1줄이든 2줄이든 그 아래에 붙도록 동적 배치 (겹침 방지, 이용빈 피드백)
-    this.add.text(x + 78, subT.y + subT.height + 2, '📍 ' + c.region, {
+    const regT = this.add.text(x + 78, subT.y + subT.height + 2, '📍 ' + c.region, {
       fontFamily: FONT, fontSize: '11px',
       color: available ? '#a8c4dc' : '#5a6470'
     });
@@ -2357,13 +2357,17 @@ class CaseSelectScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    // 잠긴 카드 안내 (84px 카드에 맞춰 위로). intro 학습모델 배지는 호버 안내로 대체(공간 절약).
+    // 잠긴 카드 안내 — 지역 줄 아래에 동적 배치 (고정 위치는 2줄 부제와 겹쳤음, 이용빈 피드백).
+    //   카드 높이를 넘으면 생략 — 🔒 배지와 하단 브리핑이 사유를 함께 안내하므로 무방.
     if (!available) {
-      this.add.text(x + 78, y + 66,
-        lockKind === 'finale' ? '— 3개 사건을 모두 마치면 열립니다'
-          : (lockKind === 'tutorial' ? '— 먼저 신입 교육을 마치세요' : '— 후속 업데이트 예정'), {
-        fontFamily: FONT, fontSize: '10px', color: '#6e7a86', fontStyle: 'italic'
-      });
+      const hintY = regT.y + regT.height + 1;
+      if (hintY + 12 <= y + h) {
+        this.add.text(x + 78, hintY,
+          lockKind === 'finale' ? '— 3개 사건을 모두 마치면 열립니다'
+            : (lockKind === 'tutorial' ? '— 먼저 신입 교육을 마치세요' : '— 후속 업데이트 예정'), {
+          fontFamily: FONT, fontSize: '10px', color: '#6e7a86', fontStyle: 'italic'
+        });
+      }
     }
     // (본 사건의 인지/정서/행동 3색 배지는 제거됨 — UNESCO 3영역은 단서별
     //  배지로 충분히 표시되어 사건 카드에는 중복이라 노이즈)
@@ -2486,6 +2490,7 @@ class CaseSelectScene extends Phaser.Scene {
       aralsea:   'flag_uzbekistan',
       ukraine:   'flag_ukraine',
       palestine: 'flag_palestine',
+      unhq:      'flag_un',   // UN 본부·총회 연설 — 신입 교육과 같은 UN 깃발
     };
     const key = FLAG_KEYS[c.id];
     if (key && this.textures.exists(key)) {
@@ -2500,7 +2505,7 @@ class CaseSelectScene extends Phaser.Scene {
     const w = 34, h = 22;
     const x = cx - w / 2, y = cy - h / 2;
     const band = h / 3;
-    if (c.id === 'intro') {
+    if (c.id === 'intro' || c.id === 'unhq') {
       g.fillStyle(0x5b92e5, 1); g.fillRect(x, y, w, h);
       g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, 7);
     } else if (c.id === 'aralsea') {
