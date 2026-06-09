@@ -1794,6 +1794,7 @@ const SAVE_FIELDS = [
   'reflection', 'speech', 'completedCases', 'caseBadges', 'caseReviews',
   'learningReview', 'evidenceTags', 'locationTags', 'userPledge', 'userReflection',
   'caseClues', 'caseSpeeches', 'casePledges', 'caseUserRefl',
+  'reportBody', 'caseReports',
 ];
 function saveGameState(registry) {
   if (typeof localStorage === 'undefined') return;
@@ -3502,6 +3503,9 @@ function reportProgress(scene, extra) {
     const refl = r.get('reflection') || null;
     const review = r.get('learningReview') || null;
     const tags = r.get('evidenceTags') || {};
+    // 학생이 작성한 보고서 본문·UN 연설문 — 교사 상세창에서 그대로 열람 (이용빈 피드백)
+    const speechObj = r.get('speech') || null;
+    const reportBody = (r.get('reportBody') || '').trim();
 
     // 감정 태그 분포 집계 (어떤 감정을 몇 번 골랐는지) — 학급 통계에 사용
     const tagCount = {};
@@ -3515,7 +3519,10 @@ function reportProgress(scene, extra) {
 
     const state = {
       caseId,                                       // 현재 진행 중 사건
-      completedCases: completed.length,             // 완료 사건 개수
+      // 완료 인도적 사건 수 — 신입 교육(intro)·UN 본부(unhq) 제외.
+      // 대시보드 "학급 사건 정복" 분모(학생수×3)와 일치시키기 위함.
+      completedCases: completed.filter(
+        id => ['aralsea', 'ukraine', 'palestine'].includes(id)).length,
       stage: r.get('stage') || 1,
       evidence: (r.get('evidence') || []).length,
       cores: (r.get('coreClues') || []).length,
@@ -3543,6 +3550,15 @@ function reportProgress(scene, extra) {
         ])
       ),
       peace,                                        // { dims, total, max, grade }
+      // 학생이 송부한 UN 조사 보고서 본문 (상세창 열람용 — 최신 송부분)
+      reportBody: reportBody || null,
+      // 학생이 작성한 UN 연설문 (상세창 열람용)
+      speech: speechObj ? {
+        caseTitle: speechObj.caseTitle || '',
+        fullText:  speechObj.fullText || '',
+        phrases:   speechObj.phrases || [],
+        closing:   speechObj.closing || '',
+      } : null,
     };
     if (extra) Object.assign(state, extra);
     window.Telemetry.update(state);
@@ -7464,6 +7480,28 @@ ${tmpl.signature}`;
     allBadges[caseId] = badges;
     this.registry.set('caseBadges', allBadges);
 
+    // 보고서 본문 — 자기 평가 결과를 덧붙여 완성 (있을 때만).
+    // reportProgress 보다 먼저 만들어 registry에 저장 → 교사 상세창 열람용으로 발행.
+    const review = this.registry.get('learningReview') || null;
+    let finalBody = body;
+    if (review) {
+      const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
+      finalBody = body +
+        '\n\n────────────────────────────────────────\n' +
+        '[ 조사관의 임무 회고 (자기 평가) ]\n' +
+        '  · 내 목표 달성도   ' + stars(review.goalMet)    + '  ' + review.goalMet    + '/5\n' +
+        '  · 사실 이해 자신감 ' + stars(review.factConf)   + '  ' + review.factConf   + '/5\n' +
+        '  · 실천 다짐 자신감 ' + stars(review.actionConf) + '  ' + review.actionConf + '/5' +
+        (review.wantNextLabel
+          ? '\n  · 다음에 알고 싶은 것: ' + review.wantNextLabel
+          : '');
+    }
+    // 보고서 본문 저장 (최신 + 사건별) — 대시보드 상세창에서 그대로 열람
+    this.registry.set('reportBody', finalBody);
+    const allReports = this.registry.get('caseReports') || {};
+    allReports[caseId] = finalBody;
+    this.registry.set('caseReports', allReports);
+
     reportProgress(this, { reportSent: true, badges });
 
     // 어두운 배경 + 상단 빛
@@ -7480,22 +7518,6 @@ ${tmpl.signature}`;
       '💡 아래 🖨 버튼으로 인쇄·PDF 저장 가능 (또는 이 화면 캡처)', {
       fontFamily: FONT, fontSize: '13px', color: '#ffe082'
     }).setOrigin(0.5);
-
-    // 보고서 본문에 자기 평가 결과 덧붙이기 (있을 때만)
-    const review = this.registry.get('learningReview') || null;
-    let finalBody = body;
-    if (review) {
-      const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
-      finalBody = body +
-        '\n\n────────────────────────────────────────\n' +
-        '[ 조사관의 임무 회고 (자기 평가) ]\n' +
-        '  · 내 목표 달성도   ' + stars(review.goalMet)    + '  ' + review.goalMet    + '/5\n' +
-        '  · 사실 이해 자신감 ' + stars(review.factConf)   + '  ' + review.factConf   + '/5\n' +
-        '  · 실천 다짐 자신감 ' + stars(review.actionConf) + '  ' + review.actionConf + '/5' +
-        (review.wantNextLabel
-          ? '\n  · 다음에 알고 싶은 것: ' + review.wantNextLabel
-          : '');
-    }
 
     // 완성 보고서 패널 (넉넉히)
     panel(this, 480, 330, 920, 456, 0xfff8e7, 0x6a4f2a);

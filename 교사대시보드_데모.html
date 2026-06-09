@@ -50,11 +50,22 @@
     button:hover { background: #3e8b73; }
     button.gray { background: #4a3a22; }
     button.gray:hover { background: #6a5a3a; }
+    button.sim { background: #2b3a52; border-color: #6fb7d6; }
+    button.sim:hover { background: #3b4f72; }
+    button.sim.on { background: #b8472e; border-color: #ffb0b0; }
     #status { font-size: 13px; }
     .dot { display: inline-block; width: 10px; height: 10px;
            border-radius: 50%; background: #888; margin-right: 4px; }
     .dot.on { background: #5fd35f; }
     .dot.off { background: #d35f5f; }
+
+    /* 데모 안내 배너 */
+    #demoBanner {
+      background: #3a2e10; color: #ffe082;
+      border-bottom: 1px solid #6a4f2a;
+      padding: 8px 20px; font-size: 13px;
+    }
+    #demoBanner b { color: #fff3c4; }
 
     /* 요약 통계 */
     #summary {
@@ -101,7 +112,7 @@
     #peaceStats .pBar .b > div { height: 100%; transition: width .3s; }
     #peaceStats .pBar .val { font-size: 12px; color: #ffe082; min-width: 50px; text-align: right; }
 
-    /* 설명 패널 (요약 지표·P.E.A.C.E. 점수 기준 공용) */
+    /* P.E.A.C.E. 점수 기준 설명 패널 */
     .helpPanel {
       display: none; padding: 0 20px 16px; background: #0e1828;
       border-bottom: 1px solid #28323e;
@@ -348,7 +359,7 @@
     }
 
     @media print {
-      header, #summary, #summaryHelp, #peaceHelp, #tagDist, #grid, #empty, #modal {
+      header, #demoBanner, #summary, #caseDist, #peaceStats, #tagDist, #grid, #empty, #modal {
         display: none !important;
       }
       body { background: #fff !important; }
@@ -365,7 +376,7 @@
     </div>
     <div class="ctl">
       <label>교실 코드</label>
-      <input id="room" value="aralsea-1" />
+      <input id="room" value="3학년1반" />
     </div>
     <button id="connectBtn">연결</button>
     <button id="clearBtn" class="gray">보드 초기화</button>
@@ -485,21 +496,16 @@
   <!-- 인쇄용 학급 리포트 (평소엔 숨김) -->
   <div id="printPanel"></div>
 
-  <script src="node_modules/mqtt/dist/mqtt.min.js"></script>
   <script>
   (function () {
-    const BROKER = 'wss://broker.emqx.io:8084/mqtt';
     const STAGE_NAME = {
       1: '1·인식', 2: '2·관찰', 3: '3·성찰', 4: '4·실천'
     };
-    // 단서별 자유 입력 생각 — 학생이 직접 타이핑한 한 문장
-    // (이전 5지선다 감정 태그 — RRRRR-1에서 자유 입력으로 전환)
     const TAG_INFO = {
       custom: { label: '내 생각', color: '#c9a36b' },
     };
     const stars = (n) => '★'.repeat(n || 0) + '☆'.repeat(5 - (n || 0));
 
-    let client = null;
     let curRoom = null;
     const students = {};   // id → 최신 상태
 
@@ -510,48 +516,351 @@
         '<span class="dot ' + (on ? 'on' : 'off') + '"></span>' + text;
     }
 
-    function connect() {
-      const room = $('room').value.trim() || 'aralsea-1';
-      if (client) { try { client.end(true); } catch (e) {} client = null; }
-      // 방 바뀌면 보드 비움
-      for (const k in students) delete students[k];
-      render();
-      curRoom = room;
-      setStatus(false, '연결 중...');
-      try {
-        client = mqtt.connect(BROKER, {
-          clientId: 'aral-dash-' + Math.random().toString(16).slice(2, 8),
-          connectTimeout: 6000, reconnectPeriod: 8000, clean: true
-        });
-        client.on('connect', () => {
-          setStatus(true, '연결됨 — 교실: ' + room);
-          client.subscribe('aralsea/' + room + '/student/#');
-        });
-        client.on('message', (topic, payload) => {
-          try {
-            const data = JSON.parse(payload.toString());
-            if (data && data.id) {
-              students[data.id] = data;
-              render();
-            }
-          } catch (e) { /* 무시 */ }
-        });
-        client.on('error', () => setStatus(false, '연결 오류'));
-        client.on('close', () => setStatus(false, '연결 끊김'));
-        client.on('offline', () => setStatus(false, '오프라인'));
-      } catch (e) {
-        setStatus(false, '연결 실패');
+    /* ───────────────────── 가상 데이터 생성기 ───────────────────── */
+    // 30명의 한국 중학생 이름
+    const NAMES = [
+      '김민준','이서연','박도윤','최지우','정하준','강시우','조서윤','윤지호',
+      '임하은','한예준','오유진','서지훈','신아린','권민서','황준우','안소율',
+      '송재윤','전다은','홍지안','문서준','양하린','배현우','백수아','유건우',
+      '남윤서','심예나','노주원','하지민','곽시현','성채원'
+    ];
+
+    // 사건별 콘텐츠 (인과 사슬·성찰 카드 문장·학생 자유 입력·다짐·단서 생각)
+    const CASE_CONTENT = {
+      intro: {
+        label: '🎓 신입 교육',
+        chain: ['세계 곳곳의 분쟁 지도', '임무 브리핑 분석', '과거 기록의 교훈'],
+        statements: [
+          '평화 요원의 첫걸음은 사실을 정확히 보는 것이다.',
+          '문제를 풀려면 먼저 원인을 제대로 알아야 한다.'
+        ],
+        userStatements: [
+          '세상에 이렇게 많은 갈등이 있는 줄 처음 알았다.',
+          '성급하게 판단하기 전에 자료부터 모아야겠다.'
+        ],
+        pledges: [
+          '근거를 찾기 전에는 함부로 단정하지 않겠습니다.',
+          '뉴스를 볼 때 원인과 결과를 따져보겠습니다.'
+        ],
+        tags: [
+          '세계에 분쟁이 이렇게 많은 줄 몰랐다.',
+          '임무가 진지해서 긴장된다.',
+          '과거 기록에서 배울 점이 많아 보인다.'
+        ]
+      },
+      aralsea: {
+        label: '🌊 사라진 바다',
+        chain: ['과도한 목화 재배와 관개', '아무다리야강 유입량 급감', '어업 붕괴·주민 건강 악화'],
+        statements: [
+          '한 나라의 개발 욕심이 바다 하나를 통째로 말려버렸다.',
+          '자연을 함부로 바꾸면 그 대가는 사람에게 돌아온다.'
+        ],
+        userStatements: [
+          '물을 함부로 쓰면 결국 사람도 살 수 없게 된다는 걸 알았다.',
+          '눈앞의 이익만 보다가 더 큰 것을 잃을 수 있다.'
+        ],
+        pledges: [
+          '샤워 시간을 줄이고 물을 아껴 쓰겠습니다.',
+          '환경 문제를 멀리 있는 일로 여기지 않겠습니다.'
+        ],
+        tags: [
+          '배가 모래 위에 버려져 있어서 충격이었다.',
+          '소금 먼지 때문에 아이들이 아프다니 안타깝다.',
+          '예전엔 큰 바다였다는 게 믿기지 않는다.',
+          '목화밭에 물을 다 써버린 게 원인이었다.'
+        ]
+      },
+      ukraine: {
+        label: '⚔️ 깨어진 평화',
+        chain: ['에너지·곡물 수출 의존 구조', '흑해 항로 봉쇄', '전 세계 식량 가격 폭등'],
+        statements: [
+          '한 지역의 전쟁이 지구 반대편 식탁까지 흔든다.',
+          '평화가 깨지면 그 영향은 국경을 넘어 퍼진다.'
+        ],
+        userStatements: [
+          '전쟁은 그 나라만의 문제가 아니라는 걸 알았다.',
+          '평화가 당연한 게 아니라는 걸 느꼈다.'
+        ],
+        pledges: [
+          '난민을 돕는 모금에 작게라도 참여하겠습니다.',
+          '평화의 소중함을 주변에 알리겠습니다.'
+        ],
+        tags: [
+          '곡물 창고가 텅 비어 있어서 놀랐다.',
+          '항구가 막혀 배가 못 나간다니 답답하다.',
+          '다른 나라 빵값까지 오른다니 충격이다.',
+          '피란민들이 집을 떠나는 모습이 마음 아팠다.'
+        ]
+      },
+      palestine: {
+        label: '🕊 오래된 갈등',
+        chain: ['분리 장벽과 경계선', '검문소 통제로 이동 제한', '의료·생계 접근 차단'],
+        statements: [
+          '선 하나가 사람들의 일상과 생명을 가른다.',
+          '오래된 갈등일수록 양쪽의 이야기를 들어야 한다.'
+        ],
+        userStatements: [
+          '경계선 때문에 병원도 못 가는 사람이 있다는 게 마음 아프다.',
+          '서로의 입장을 모르면 갈등은 풀리지 않는다.'
+        ],
+        pledges: [
+          '서로 다른 입장을 먼저 들어보려 노력하겠습니다.',
+          '한쪽 말만 듣고 편을 가르지 않겠습니다.'
+        ],
+        tags: [
+          '할머니의 우물이 장벽 너머에 있다니 안타깝다.',
+          '검문소에서 몇 시간씩 기다린다니 답답하다.',
+          '구급차도 막힌다니 충격이었다.',
+          '같은 땅에서 두 이야기가 부딪히고 있었다.'
+        ]
       }
+    };
+
+    const WANT_NEXT = [
+      '난민들은 지금 어떻게 지내는지 알고 싶다.',
+      '국제기구는 무엇을 하는지 궁금하다.',
+      '내가 지금 할 수 있는 일이 더 있을까?',
+      '다른 나라들은 이 문제를 어떻게 보는지 궁금하다.'
+    ];
+
+    // 보고서·연설문 샘플 — 게임 데이터 구조(reportBody·speech)와 동일 형식
+    const CASE_DOC = {
+      intro:     { title: '신입 교육',   recipient: 'P.E.A.C.E. 에이전시 본부',
+                   header: '《 P.E.A.C.E. 에이전시 · 신입 조사관 수습 보고서 》' },
+      aralsea:   { title: '사라진 바다', recipient: 'UN 환경계획(UNEP)',
+                   header: '《 UN 환경계획 · 아랄해 현지 조사 보고서 》' },
+      ukraine:   { title: '깨어진 평화', recipient: 'UN 인도주의업무조정국',
+                   header: '《 UN 인도주의업무조정국 · 우크라이나 현지 조사 보고서 》' },
+      palestine: { title: '오래된 갈등', recipient: 'UN 팔레스타인 난민구호기관',
+                   header: '《 UN 팔레스타인 난민구호기관 · 현지 조사 보고서 》' },
+    };
+    // 연설문 본문 문장 풀·마무리 (게임 SPEECH_PHRASES / SPEECH_CLOSINGS와 동일)
+    const SPEECH_POOL = [
+      '제 두 눈으로 그 현장과 그곳 사람들의 삶을 보았습니다.',
+      '이 일은 멀리 있는 사람의 이야기가 아니라 우리 모두의 일입니다.',
+      '국제 사회의 협력으로 무너진 삶을 회복하고 사람들의 일상을 지켜야 합니다.',
+      '학생인 저도 일상의 소비와 관심으로 함께 노력하겠습니다.',
+      '평화는 멀리 있지 않습니다. 작은 관심에서 시작됩니다.',
+    ];
+    const SPEECH_CLOSINGS = ['경청해 주셔서 감사합니다.', '함께 행동해 주십시오.', '평화를 위하여.'];
+
+    // 학생 1명의 보고서 본문(reportBody) 합성 — 게임 buildPreview 형식 모사
+    function buildSampleReport(d, C, rng) {
+      const doc = CASE_DOC[d.caseId] || CASE_DOC.aralsea;
+      const date = new Date().toISOString().slice(0, 10);
+      const facts = (C.tags || []).slice(0, 3).map(t => '  · ' + t);
+      const refl = d.reflection || {};
+      const chain = (refl.chainNames && refl.chainNames.length === 3)
+        ? '\n[ 사실의 연결 — 인과 사슬 ]\n  ' + refl.chainNames[0] +
+          '\n   → ' + refl.chainNames[1] + '\n   → ' + refl.chainNames[2] +
+          '\n\n[ 조사관의 자기성찰 ]\n  "' + (refl.statement || '') + '"' +
+          (refl.userStatement ? '\n\n[ ✍ 조사관의 한 문장 ]\n  "' + refl.userStatement + '"' : '')
+        : '';
+      const pledges = (C.pledges || []).slice(0, 2).map(p => '  □ ' + p).join('\n');
+      const userPledgeBlock = d.userPledge ? '\n\n[ ✍ 조사관의 다짐 ]\n  "' + d.userPledge + '"' : '';
+      return doc.header + '\n보고일 ' + date + '   ·   수신처: ' + doc.recipient +
+        '\n\n[ 현장에서 확인한 사실 ]\n' + facts.join('\n') +
+        '\n' + chain + '\n\n[ 권고와 시민의 다짐 ]\n' + pledges + userPledgeBlock +
+        '\n\n인류는 서로 연결되어 있습니다. 이 보고가 작은 행동의 시작이 되길 바랍니다.\n\n— P.E.A.C.E. 에이전시 조사관 ' + (d.name || '') + ' —';
+    }
+    // 학생 1명의 UN 연설문(speech) 합성 — 게임 buildSpeechText 형식 모사
+    function buildSampleSpeech(d, rng) {
+      const doc = CASE_DOC[d.caseId] || CASE_DOC.aralsea;
+      const n = 2 + Math.floor(rng() * 2);            // 근거 2~3개
+      const pool = SPEECH_POOL.slice();
+      const body = [];
+      for (let i = 0; i < n && pool.length; i++) {
+        body.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+      }
+      const closing = SPEECH_CLOSINGS[Math.floor(rng() * SPEECH_CLOSINGS.length)];
+      const intro = '존경하는 의장님, 그리고 각국 대표 여러분. 저는 ' + doc.title +
+        ' 현장을 직접 조사한 P.E.A.C.E. 조사관입니다.';
+      return {
+        caseTitle: doc.title,
+        phrases: body.map(s => s.slice(0, 12) + '…'),
+        closing,
+        fullText: intro + '  ' + body.join('  ') + '  ' + closing,
+      };
     }
 
+    // 시드 기반 난수 (재현 가능, 재생성 시 시드 변경)
+    let seed = 20260608;
+    function mulberry32(a) {
+      return function () {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        let t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    // 총점(0~12)을 4차원(각 0~3)으로 분배
+    function distributeDims(rng, total) {
+      const d = [0, 0, 0, 0];
+      let rem = total;
+      for (let i = 0; i < 4; i++) {
+        const slotsLeft = 3 - i;
+        const minHere = Math.max(0, rem - slotsLeft * 3);
+        const maxHere = Math.min(3, rem);
+        const v = minHere + Math.floor(rng() * (maxHere - minHere + 1));
+        d[i] = v; rem -= v;
+      }
+      // 순서 섞기 (특정 차원이 늘 높지 않도록)
+      for (let i = 3; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        const t = d[i]; d[i] = d[j]; d[j] = t;
+      }
+      return { cognition: d[0], connection: d[1], action: d[2], cooperation: d[3] };
+    }
+
+    function gradeOf(total) {
+      return total >= 10 ? 'S' : total >= 8 ? 'A' : total >= 5 ? 'B' : 'C';
+    }
+
+    // 학급 구성 설계 — 단계·완료·등급·접속 상태의 현실적 분포
+    // q: 'S'|'A'|'B'|'C'|null (null=점수 미산출)
+    const PLAN = [
+      // 보고서 송부 완료 (7)
+      { stage: 4, done: 1, online: 1, q: 'S' }, { stage: 4, done: 1, online: 1, q: 'S' },
+      { stage: 4, done: 1, online: 1, q: 'A' }, { stage: 4, done: 1, online: 1, q: 'A' },
+      { stage: 4, done: 1, online: 1, q: 'A' }, { stage: 4, done: 1, online: 0, q: 'B' },
+      { stage: 4, done: 1, online: 0, q: 'S' },
+      // 4·실천 진행 중 (4)
+      { stage: 4, done: 0, online: 1, q: 'A' }, { stage: 4, done: 0, online: 1, q: 'B' },
+      { stage: 4, done: 0, online: 1, q: 'B' }, { stage: 4, done: 0, online: 1, q: 'A' },
+      // 3·성찰 (6, 1명 정체)
+      { stage: 3, done: 0, online: 1, q: 'B' }, { stage: 3, done: 0, online: 1, q: 'B' },
+      { stage: 3, done: 0, online: 1, q: 'A' }, { stage: 3, done: 0, online: 1, q: 'C' },
+      { stage: 3, done: 0, online: 1, q: null }, { stage: 3, done: 0, online: 1, q: 'B', stuck: 1 },
+      // 2·관찰 (8, 2명 오프라인)
+      { stage: 2, done: 0, online: 1 }, { stage: 2, done: 0, online: 1 },
+      { stage: 2, done: 0, online: 1 }, { stage: 2, done: 0, online: 1 },
+      { stage: 2, done: 0, online: 1 }, { stage: 2, done: 0, online: 1 },
+      { stage: 2, done: 0, online: 0 }, { stage: 2, done: 0, online: 0, stuck: 1 },
+      // 1·인식 (5, 2명 오프라인)
+      { stage: 1, done: 0, online: 1 }, { stage: 1, done: 0, online: 1 },
+      { stage: 1, done: 0, online: 1 }, { stage: 1, done: 0, online: 0 },
+      { stage: 1, done: 0, online: 0 }
+    ];
+
+    function genStudents() {
+      const rng = mulberry32(seed);
+      const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+      const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+      const now = Date.now();
+
+      for (const k in students) delete students[k];
+
+      // 이름·번호 섞기
+      const idxOrder = NAMES.map((_, i) => i);
+
+      PLAN.forEach((p, i) => {
+        const no = i + 1;
+        const id = 's' + String(no).padStart(2, '0');
+        const name = String(no).padStart(2, '0') + ' ' + NAMES[idxOrder[i] % NAMES.length];
+        // 사건 배정 — 신입 교육(튜토리얼)은 초반 학생만, 완료·고급 학생은 실제 사건
+        let caseId;
+        if (p.done || p.stage >= 3) caseId = pick(['aralsea', 'aralsea', 'ukraine', 'palestine']);
+        else if (p.stage === 2)    caseId = pick(['intro', 'aralsea', 'aralsea', 'ukraine']);
+        else                       caseId = pick(['intro', 'intro', 'aralsea']);
+        const C = CASE_CONTENT[caseId];
+
+        const d = {
+          id, name, caseId,
+          online: !!p.online,
+          stage: p.done ? 4 : p.stage,
+          reportSent: !!p.done,
+          reflectionDone: p.stage >= 3 || p.done ? 1 : 0,
+        };
+
+        // 단서 진행도
+        if (p.done || p.stage === 4) { d.evidence = 10; d.cores = 3; }
+        else if (p.stage === 3) { d.evidence = ri(8, 10); d.cores = ri(1, 2); }
+        else if (p.stage === 2) { d.evidence = ri(3, 8); d.cores = ri(0, 1); }
+        else { d.evidence = ri(0, 2); d.cores = 0; }
+
+        // 단서별 자유 입력 (관찰 단계부터)
+        if (p.stage >= 2 || p.done) {
+          const nTags = p.done || p.stage >= 3 ? ri(3, 4) : ri(1, 3);
+          const pool = C.tags.slice();
+          const tags = {};
+          for (let t = 0; t < nTags && pool.length; t++) {
+            const idx = Math.floor(rng() * pool.length);
+            tags['e' + (t + 1)] = { label: pool.splice(idx, 1)[0] };
+          }
+          d.tags = tags;
+          d.tagsCount = Object.keys(tags).length;
+        }
+
+        // 인과 사슬·성찰 (성찰 단계부터)
+        if (p.stage >= 3 || p.done) {
+          d.reflection = {
+            chainNames: C.chain.slice(),
+            statement: pick(C.statements),
+            userStatement: rng() < 0.85 ? pick(C.userStatements) : ''
+          };
+        }
+
+        // P.E.A.C.E. 종합 점수 (등급이 지정된 경우)
+        if (p.q) {
+          const totalRange = { S: [10, 12], A: [8, 9], B: [5, 7], C: [2, 4] }[p.q];
+          const total = ri(totalRange[0], totalRange[1]);
+          const dims = distributeDims(rng, total);
+          d.peace = { grade: gradeOf(total), total, max: 12, dims };
+        }
+
+        // 학생 다짐 (실천/완료 단계)
+        if (p.done || p.stage === 4) {
+          if (rng() < 0.85) d.userPledge = pick(C.pledges);
+        }
+
+        // 보고서 본문 (송부 완료 학생) + UN 연설문 (대부분 작성)
+        if (p.done) {
+          d.reportBody = buildSampleReport(d, C, rng);
+          if (rng() < 0.8) d.speech = buildSampleSpeech(d, rng);
+        }
+
+        // 자기 평가 루브릭 (성찰 단계부터, 일부만)
+        if ((p.stage >= 3 || p.done) && rng() < 0.8) {
+          const base = p.q === 'S' ? 4 : p.q === 'A' ? 3 : 2;
+          d.review = {
+            goalMet: Math.min(5, base + ri(0, 1)),
+            factConf: Math.min(5, base + ri(0, 1)),
+            actionConf: Math.min(5, base + ri(0, 1)),
+            wantNext: rng() < 0.6 ? pick(WANT_NEXT) : ''
+          };
+        }
+
+        // 완료한 사건 수 (학급 트로피 합계용)
+        if (p.done) d.completedCases = ri(1, 3);
+        else if (p.stage >= 3) d.completedCases = ri(0, 1);
+        else d.completedCases = 0;
+
+        // 정체(stuck) 학생 — 마지막 변화 시각을 과거로
+        d._lastChangeAt = p.stuck ? now - ri(6, 18) * 60000 : now - ri(0, 4) * 60000;
+        // 시그니처 미리 기록 — 첫 render()가 _lastChangeAt을 덮어쓰지 않도록
+        d._lastSig = (d.stage || 1) + ':' + (d.evidence || 0) + ':' + (d.cores || 0) +
+                     ':' + (d.reflectionDone ? 1 : 0) + ':' + (d.reportSent ? 1 : 0);
+
+        students[id] = d;
+      });
+    }
+
+    function regenerate() {
+      seed = (Date.now() ^ Math.floor(Math.random() * 0xffffff)) >>> 0;
+      genStudents();
+      curRoom = $('room').value.trim() || '3학년1반';
+      setStatus(true, '연결됨 — 교실: ' + curRoom);
+      render();
+    }
+
+    /* ───────────────────── 이하 렌더링·모달·CSV·인쇄 ───────────────────── */
     function render() {
-      // 정렬·필터·검색 적용
       const sortBy = ($('sortSel') && $('sortSel').value) || 'name';
       const filterBy = ($('filterSel') && $('filterSel').value) || 'all';
       const searchQ = (($('searchBox') && $('searchBox').value) || '').trim().toLowerCase();
       const now = Date.now();
 
-      // CCC-4: 학생별 stuck 판정용 timestamp 캐시
       Object.values(students).forEach(d => {
         if (!d._lastChangeAt) d._lastChangeAt = now;
         const sig = (d.stage || 1) + ':' + (d.evidence || 0) + ':' + (d.cores || 0) +
@@ -591,11 +900,8 @@
       const grid = $('grid');
       const empty = $('empty');
 
-      // 요약 통계 — 단계별 + 사건별 분포 + 학급 트로피
       let s1 = 0, s2 = 0, s3 = 0, s4 = 0, done = 0, online = 0;
-      // 사건별 학생 분포 (어떤 사건 진행 중·완료)
       const caseDistribution = { intro: 0, aralsea: 0, ukraine: 0, palestine: 0 };
-      // 학급 트로피 합계 (각 학생이 정복한 사건 개수 — 학습 트리 도전과제 카운트)
       let classTrophies = 0;
       list.forEach(d => {
         if (d.online) online++;
@@ -609,7 +915,6 @@
         }
         if (d.completedCases) classTrophies += d.completedCases;
       });
-      // 자기 평가 평균 (회고 점수 제출한 학생만 평균)
       let revN = 0, revSum = 0;
       list.forEach(d => {
         if (d.review) {
@@ -633,7 +938,6 @@
         statBox(avgReview + ' / 5', '⭐ 자기평가 평균',
           '자기평가 제출 학생들의 평균 (목표·사실이해·실천 자신감 3항목, 5점 만점)');
 
-      // ── 🌍 사건별 학생 분포 (어디서 무엇을 탐구 중인지) ──────
       const totalInCase = caseDistribution.intro + caseDistribution.aralsea +
         caseDistribution.ukraine + caseDistribution.palestine;
       const cd = $('caseDist');
@@ -660,7 +964,6 @@
         }
       }
 
-      // ── 🏛 P.E.A.C.E. 학급 종합 통계 (4차원 + 등급 분포) ────
       const peaceList = list.filter(d => d.peace);
       const ps = $('peaceStats');
       if (peaceList.length > 0) {
@@ -713,8 +1016,6 @@
         $('peaceHelp').style.display = 'none';
       }
 
-      // 학급 자유 입력 생각 — 학생들이 단서마다 적은 한 문장 총합
-      // (이전엔 5종 감정 분포였으나 자유 타이핑이 되어 합계만 의미)
       let totalTags = 0, withTagCount = 0;
       list.forEach(d => {
         if (d.tagsCount) {
@@ -725,7 +1026,6 @@
       const td = $('tagDist');
       if (totalTags > 0) {
         td.style.display = 'block';
-        // 학생별 자유 입력 카드 — 학생이 직접 쓴 한 문장 모음 (실제 본문 표시)
         let liveTagCards = '';
         list.forEach(d => {
           if (!d.tags) return;
@@ -751,18 +1051,6 @@
           '<div class="tagScroll">' +
             (liveTagCards || '<p style="color:#7a8590;font-style:italic">아직 학생 입력 없음</p>') +
           '</div>';
-        return;
-      } else if (false) {
-        td.innerHTML = '<h3>💭 학급 감정 태그 분포 (단서별 학생 반응)</h3>' +
-          Object.keys(TAG_INFO).map(k => {
-            const n = totalTags;
-            const pct = 100;
-            const ti = TAG_INFO[k];
-            return '<div class="tagBar"><div class="l">' + ti.label +
-              '</div><div class="b"><div style="width:' + pct +
-              '%;background:' + ti.color + '"></div></div>' +
-              '<div class="n">' + n + '</div></div>';
-          }).join('');
       } else {
         td.style.display = 'none';
       }
@@ -775,7 +1063,6 @@
       empty.style.display = 'none';
       grid.innerHTML = list.map(card).join('');
 
-      // 카드 클릭 → 모달 열기
       [...grid.querySelectorAll('.card.clickable')].forEach(el => {
         el.addEventListener('click', () => openModal(el.dataset.id));
       });
@@ -795,18 +1082,15 @@
       const cls = ['card', 's' + (d.stage || 1)];
       if (d.reportSent) cls.push('done');
       if (!d.online) cls.push('offline');
-      // 자기주도성 데이터가 하나라도 있으면 클릭 가능 (모달)
       const hasSpeech = !!(d.speech && d.speech.fullText);
       const hasSRL = !!(d.reflection || d.review ||
         (d.tagsCount && d.tagsCount > 0) || d.reportBody || hasSpeech);
       if (hasSRL) cls.push('clickable');
-      // 정체 학생 판정 (보고서 미송부 + 5분+ 같은 상태)
       const stuckMin = (!d.reportSent && d._lastChangeAt)
         ? Math.floor((Date.now() - d._lastChangeAt) / 60000) : 0;
       const isStuck = stuckMin >= 5;
       if (isStuck) cls.push('stuck');
 
-      // 자기주도성 요약 (있을 때만 표시)
       let srlBlock = '';
       if (hasSRL) {
         const parts = [];
@@ -819,19 +1103,16 @@
           parts.push('<div><span class="lbl">💭</span> ' +
             '<span class="stmt">"' + esc(d.reflection.statement) + '"</span></div>');
         }
-        // 학생이 직접 쓴 자기성찰 한 문장
         if (d.reflection && d.reflection.userStatement) {
           parts.push('<div><span class="lbl" style="color:#ffd96a">✍ 내 생각</span> ' +
             '<span class="stmt" style="color:#fff8d0;font-style:italic">"' +
             esc(d.reflection.userStatement) + '"</span></div>');
         }
-        // 학생이 직접 쓴 다짐
         if (d.userPledge) {
           parts.push('<div><span class="lbl" style="color:#ffd96a">✍ 내 다짐</span> ' +
             '<span class="stmt" style="color:#fff8d0;font-style:italic">"' +
             esc(d.userPledge) + '"</span></div>');
         }
-        // P.E.A.C.E. 4차원 종합 점수
         if (d.peace) {
           parts.push('<div><span class="lbl">🏛 P.E.A.C.E.</span> ' +
             '<span class="val">[' + esc(d.peace.grade) + '] ' +
@@ -881,14 +1162,12 @@
         '</div>';
     }
 
-    // 학생 상세 모달 — 자기주도성 데이터 전체 표시
     function openModal(id) {
       const d = students[id];
       if (!d) return;
       const box = $('modalBox');
       const sections = [];
 
-      // 1. 인과 사슬 + 자기성찰 (성찰의 의자 결과)
       if (d.reflection) {
         const r = d.reflection;
         let chainHtml = '';
@@ -915,7 +1194,6 @@
         );
       }
 
-      // 1b. 학생이 직접 쓴 다짐 (UN 보고서 송부 전 입력)
       if (d.userPledge) {
         sections.push(
           '<section><h4>✍ 학생 본인의 다짐 (Action)</h4>' +
@@ -925,7 +1203,7 @@
         );
       }
 
-      // 1b-2. UN 조사 보고서 본문 — 학생이 송부한 보고서 전문 (Enacting)
+      // UN 조사 보고서 본문 — 학생이 송부한 보고서 전문 (Enacting)
       if (d.reportBody) {
         sections.push(
           '<section><h4>📋 UN 조사 보고서 (송부 전문)</h4>' +
@@ -934,7 +1212,7 @@
         );
       }
 
-      // 1b-3. UN 연설문 — 학생이 직접 조립한 연설 (Enacting)
+      // UN 연설문 — 학생이 직접 조립한 연설 (Enacting)
       if (d.speech && d.speech.fullText) {
         const sp = d.speech;
         const phraseList = (sp.phrases || []).length
@@ -952,7 +1230,6 @@
         );
       }
 
-      // 1c. P.E.A.C.E. 4차원 종합 평가
       if (d.peace) {
         const dimNames = {
           cognition: '🧠 사실 이해',
@@ -978,7 +1255,6 @@
         );
       }
 
-      // 2. 자기 평가 루브릭
       if (d.review) {
         const rv = d.review;
         const avg = ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1);
@@ -998,7 +1274,6 @@
         );
       }
 
-      // 3. 단서별 자유 입력 — 학생이 직접 쓴 한 문장 모음
       if (d.tags && Object.keys(d.tags).length > 0) {
         const tagItems = Object.keys(d.tags).map(eid => {
           const t = d.tags[eid];
@@ -1015,7 +1290,6 @@
           '</p></section>'
         );
       } else if (d.tagsCount > 0) {
-        // tags 객체가 없고 카운트만 있는 옛 페이로드
         sections.push(
           '<section><h4>💭 단서별 자유 입력 (Self-monitoring)</h4>' +
           '<p style="color:#7a8590">' +
@@ -1024,7 +1298,6 @@
         );
       }
 
-      // 4. 진행 요약
       sections.push(
         '<section><h4>📊 진행 요약</h4>' +
         '<p>단계: <strong>' + (STAGE_NAME[d.stage] || '1·인식') + '</strong></p>' +
@@ -1049,21 +1322,19 @@
         ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
     }
 
-    $('connectBtn').addEventListener('click', connect);
+    $('connectBtn').addEventListener('click', regenerate);
     $('clearBtn').addEventListener('click', () => {
       for (const k in students) delete students[k];
+      setStatus(false, '연결 안 됨');
       render();
     });
     $('printBtn').addEventListener('click', () => buildPrintPanel());
     $('csvBtn').addEventListener('click', () => downloadCSV());
-    // 검색·정렬·필터 — 입력 시 즉시 재렌더
     $('searchBox').addEventListener('input', render);
     $('sortSel').addEventListener('change', render);
     $('filterSel').addEventListener('change', render);
-    // 정체 학생 자동 강조 위해 30초마다 재렌더 (필터·강조 갱신)
     setInterval(() => render(), 30000);
 
-    // CSV 다운로드 — 학급 전체 데이터를 표 형태로
     function downloadCSV() {
       const list = Object.values(students)
         .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -1082,7 +1353,6 @@
         '인과사슬', '자기성찰(카드)', '내 생각(자유)', '내 다짐(자유)',
         '단서별 자유입력 모음',
         '자기평가평균',
-        'UN 연설문', 'UN 보고서 본문',
       ];
       const rows = list.map((d, i) => {
         const p = d.peace || {};
@@ -1092,7 +1362,6 @@
         const avgRv = rv ? ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1) : '';
         const chain = (refl.chainNames && refl.chainNames.length === 3)
           ? refl.chainNames.join(' → ') : '';
-        // 단서별 자유 입력 모음 — 한 셀에 모든 학생 입력 합치기
         const tagTexts = d.tags
           ? Object.values(d.tags).map(t => (t && t.label) || '').filter(x => x).join(' / ')
           : '';
@@ -1112,8 +1381,6 @@
           d.userPledge || '',
           tagTexts,
           avgRv,
-          (d.speech && d.speech.fullText) || '',
-          d.reportBody || '',
         ].map(csvEsc).join(',');
       });
       const csv = '﻿' + header.join(',') + '\n' + rows.join('\n');
@@ -1129,17 +1396,14 @@
       }, 200);
     }
 
-    // 학급 리포트 인쇄 — 학생별 자기주도성 표
     function buildPrintPanel() {
       const list = Object.values(students)
         .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       const room = curRoom || $('room').value || '-';
       const date = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
-      // 통계
       let s1 = 0, s2 = 0, s3 = 0, s4 = 0, done = 0;
       let revN = 0, revSum = 0;
-      const tagAgg = { shock: 0, sad: 0, wow: 0, anger: 0 };
       let totalTags = 0;
       list.forEach(d => {
         if (d.reportSent) done++;
@@ -1155,7 +1419,6 @@
       });
       const avgReview = revN ? (revSum / revN).toFixed(1) : '-';
 
-      // 학생 행
       const rows = list.length === 0
         ? '<tr><td colspan="9" style="text-align:center;color:#999">접속한 학생이 없습니다</td></tr>'
         : list.map((d, i) => {
@@ -1178,7 +1441,6 @@
             '</tr>';
           }).join('');
 
-      // 자유 입력 모음 — 학생별로 실제 쓴 문장 나열 (요약 숫자가 아닌 본문)
       let tagItemsHtml = '';
       list.forEach(d => {
         if (!d.tags) return;
@@ -1232,12 +1494,11 @@
           '— 공도중학교 P.E.A.C.E. 교사 대시보드 자동 생성 —' +
         '</p>';
 
-      // 인쇄 다이얼로그 호출
       setTimeout(() => window.print(), 80);
     }
 
-    render();
-    connect();   // 페이지 열리면 기본 교실로 자동 연결
+    // 페이지 열리면 즉시 가상 학급 생성
+    regenerate();
   })();
   </script>
 </body>
