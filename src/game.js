@@ -1530,8 +1530,8 @@ class TitleScene extends Phaser.Scene {
       if (started) return;
       started = true;
       if (window.SFX) window.SFX.stopBGM();   // 메인화면 BGM 정지
-      // 새 게임은 옛 세이브 삭제 — 사건 선택 시 새로운 진행 시작
-      clearGameState();
+      // 새 게임은 옛 세이브 삭제 + 사건별 누적 데이터 명시 리셋
+      clearGameState(this.registry);
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('CaseSelectScene');
@@ -1822,9 +1822,22 @@ function restoreRegistryFromSave(registry, state) {
     if (state[k] !== undefined) registry.set(k, state[k]);
   });
 }
-function clearGameState() {
+function clearGameState(registry) {
   if (typeof localStorage === 'undefined') return;
   try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  // 사건별 누적 데이터(다짐·성찰·단서·연설)도 registry 차원에서 명시 초기화 --
+  //   localStorage 만 비워도 같은 세션 안에서 새 게임 시작하면 registry 잔재가
+  //   다음 사건에 노출됨 (이용빈 피드백: "아랄해 다짐이 팔레스타인 작성 란에 그대로").
+  if (registry) {
+    try {
+      registry.set('casePledges',   {});
+      registry.set('caseUserRefl',  {});
+      registry.set('caseClues',     {});
+      registry.set('caseSpeeches',  {});
+      registry.set('userPledge',    '');
+      registry.set('userReflection', '');
+    } catch (e) {}
+  }
 }
 // 세이브가 "이어할 가치"가 있는지 (현재 사건이 진행 중인지) 판별.
 function hasResumableSave() {
@@ -7000,8 +7013,10 @@ class LetterScene extends Phaser.Scene {
     this.userPledge = _cp[_pcid] || '';
     // 보고서·대시보드 readers가 보는 작업용 키도 현재 사건 값으로 동기화
     this.registry.set('userPledge', this.userPledge);
+    // 버튼 라벨 — 본문 노출 X (이용빈 피드백). 작성 여부와 자수만 표시.
+    // 클릭 시 모달이 떠 본문 확인·수정 가능.
     const upLabel = () => this.userPledge
-      ? '✍ 내 다짐: "' + this.userPledge.slice(0, 50) + (this.userPledge.length > 50 ? '…' : '') + '"  (수정)'
+      ? '✍ 내 다짐  ✓  ' + this.userPledge.length + '자 작성됨  ·  보기·수정'
       : '✍ 내 다짐 한 줄 직접 적기 (선택)';
     // userPledgeBtn은 하단 버튼들과 같은 y=578 줄에 가로 분할로 배치
     this.userPledgeBtn = fancyButton(this, 480, 578, 380, 42, upLabel(),
