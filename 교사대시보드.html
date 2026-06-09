@@ -604,6 +604,15 @@
       });
 
       let list = Object.values(students);
+      // 유령 세션 숨김 — 참가번호를 입력하지 않고(이름=AR-XXXX) 진행도 0인 채
+      //   오프라인이 된 옛 retain 메시지. (실제로 플레이했거나 접속 중이면 표시)
+      list = list.filter(d => {
+        const noName = !d.name || d.name === d.id || /^AR-\d+$/.test(String(d.name));
+        const noProgress = !d.online && !(d.evidence > 0) && !(d.cores > 0) &&
+          !d.reportSent && !d.reflectionDone && (d.stage || 1) <= 1 &&
+          !(d.tagsCount > 0);
+        return !(noName && noProgress);   // 이름도 없고 진행도 없으면 숨김
+      });
       if (searchQ) {
         list = list.filter(d =>
           ((d.name || d.id || '') + '').toLowerCase().includes(searchQ));
