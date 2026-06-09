@@ -263,10 +263,21 @@
     }
     #modalBox {
       max-width: 720px; margin: 20px auto;
+      /* 보고서·연설문이 더해져 길어져도 화면 안에 들어오도록 높이 제한 + 스크롤 */
+      max-height: calc(100vh - 40px); overflow-y: auto;
       background: #18283a; border: 2px solid #ffd96a;
       border-radius: 10px; padding: 22px 26px;
       color: #e6efff;
+      scrollbar-width: thin; scrollbar-color: #6a4f2a #14202c;
     }
+    #modalBox::-webkit-scrollbar { width: 12px; }
+    #modalBox::-webkit-scrollbar-track {
+      background: #14202c; border-radius: 6px;
+    }
+    #modalBox::-webkit-scrollbar-thumb {
+      background: #5a4a2e; border: 2px solid #14202c; border-radius: 6px;
+    }
+    #modalBox::-webkit-scrollbar-thumb:hover { background: #7a6336; }
     #modalBox h2 { margin: 0 0 4px 0; color: #ffe9b8; }
     #modalBox .sub { font-size: 13px; color: #9aa6ad; margin-bottom: 14px; }
     #modalBox section {
@@ -290,8 +301,11 @@
     #modalBox .stars { color: #ffd96a; font-size: 14px; }
     #modalBox button.close {
       background: #2b3a52; border: 2px solid #6fb7d6;
-      color: #dff1ff; padding: 6px 14px; font-size: 13px;
-      cursor: pointer; margin-top: 10px;
+      color: #dff1ff; padding: 8px 14px; font-size: 13px;
+      cursor: pointer; margin-top: 14px;
+      /* 긴 내용에서도 항상 닿도록 스크롤 하단에 고정 */
+      position: sticky; bottom: -1px; width: 100%;
+      box-shadow: 0 -8px 16px -6px #18283a;
     }
     /* 보고서·연설문 본문 — 줄바꿈 보존 + 길면 내부 스크롤 */
     #modalBox .docBody {
