@@ -565,7 +565,14 @@
           try {
             const data = JSON.parse(payload.toString());
             if (data && data.id) {
-              students[data.id] = data;
+              // ⚠️ 병합(교체 X) — 연결 끊김 시 broker가 보내는 "Last Will"
+              //   메시지엔 {id, online:false}만 있고 이름·진행도가 없다.
+              //   교체하면 이름이 사라져 AR-XXXX로 표시되므로, 기존 데이터를
+              //   유지하고 새 필드만 덮어쓴다 (로그아웃해도 이름·진행도 보존).
+              const prev = students[data.id] || {};
+              students[data.id] = Object.assign({}, prev, data);
+              // 오프라인 알림(will)은 이름 칸이 비어 있어도 이전 이름을 살림
+              if (!data.name && prev.name) students[data.id].name = prev.name;
               render();
             }
           } catch (e) { /* 무시 */ }
