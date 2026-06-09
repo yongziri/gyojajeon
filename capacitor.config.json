@@ -4,5 +4,10 @@
   "webDir": "www",
   "android": {
     "allowMixedContent": true
+  },
+  "plugins": {
+    "Keyboard": {
+      "resize": "none"
+    }
   }
 }

@@ -57,7 +57,7 @@ jobs:
           cat > package.json <<'JSON'
           { "name": "peace-apk", "version": "1.0.0", "private": true }
           JSON
-          npm install @capacitor/core@^6 @capacitor/cli@^6 @capacitor/android@^6
+          npm install @capacitor/core@^6 @capacitor/cli@^6 @capacitor/android@^6 @capacitor/keyboard@^6
 
       - name: Add Android platform & sync web assets
         run: |

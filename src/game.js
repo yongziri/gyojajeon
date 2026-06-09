@@ -8750,6 +8750,19 @@ if (window.IS_MOBILE) {
 }
 const game = new Phaser.Game(phaserConfig);
 
+// 모바일 WebView(앱) 대응 — 소프트키보드·회전 등으로 뷰포트가 바뀐 뒤
+// 캔버스가 작게 남는 문제 방지: 뷰포트 변화 시 Phaser 스케일을 다시 맞춘다.
+(function () {
+  const refit = () => { try { game.scale.refresh(); } catch (e) {} };
+  window.addEventListener('resize', refit);
+  window.addEventListener('orientationchange', () => setTimeout(refit, 200));
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', refit);
+  }
+  // 입력창 포커스 해제(키보드 닫힘) 직후에도 한 번 더 보정
+  document.addEventListener('focusout', () => setTimeout(refit, 250));
+})();
+
 // HTML cfgBar의 🔊 버튼에서 음향 설정 패널(음소거+음량)을 열 수 있도록 전역 훅
 window.PEACE = window.PEACE || {};
 window.PEACE.openSound = function (onClose) {
