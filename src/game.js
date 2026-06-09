@@ -1256,7 +1256,7 @@ class BootScene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0.5);
     const subTxt = this.add.text(GAME_W / 2, GAME_H / 2 + 4,
-      '에이전시 자산 로딩 중...', {
+      '로딩 중...', {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#cfe9ff'
     }).setOrigin(0.5);
     const pctTxt = this.add.text(GAME_W / 2, GAME_H / 2 + 40,
