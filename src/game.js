@@ -7352,9 +7352,9 @@ ${tmpl.signature}`;
             fancyButton(this, 380, 420, 200, 44, '🌳  나의 조사 기록',
               () => this.scene.start('LearningTreeScene'),
               { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
-            fancyButton(this, 580, 420, 160, 44, '🏠  처음으로',
-              () => this.scene.start('TitleScene'),
-              { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+            fancyButton(this, 580, 420, 160, 44, '←  임무 선택',
+              () => this.scene.start('CaseSelectScene'),
+              { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
           } catch (e2) {
             console.error('[LetterScene] fallback error:', e2);
           }
@@ -7481,9 +7481,10 @@ ${tmpl.signature}`;
     fancyButton(this, 480, 578, 190, 40, '🌳  나의 조사 기록',
       () => leaveTo('LearningTreeScene'),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
-    fancyButton(this, 730, 578, 160, 40, '🏠  처음으로',
-      () => leaveTo('TitleScene'),
-      { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+    // 사용자 피드백: 처음으로(타이틀) 대신 임무 선택 화면으로 가야 자연스러움
+    fancyButton(this, 730, 578, 160, 40, '←  임무 선택',
+      () => leaveTo('CaseSelectScene'),
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
   }
 
   // ── 보고서 인쇄 (#printReport 채우고 window.print()) ──────
