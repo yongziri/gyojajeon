@@ -2722,8 +2722,8 @@ class LearningTreeScene extends Phaser.Scene {
     const completed = this.registry.get('completedCases') || [];
     const reviews = this.registry.get('caseReviews') || {};
     const reflection = this.registry.get('reflection') || null;
-    const _treeCases = CASE_LIST.filter(c => c.id !== 'intro');
-    const _compCount = completed.filter(id => id !== 'intro').length;
+    const _treeCases = CASE_LIST.filter(c => c.id !== 'intro' && !c.isSpeechHub);
+    const _compCount = completed.filter(id => id !== 'intro' && id !== 'unhq').length;
 
     panel(this, 480, 40, 920, 56, 0x1a2a2a, 0x7fd07f);
     this.add.text(380, 30, '🏆  나의 학습 트리  ·  Learning Portfolio', {
@@ -2753,7 +2753,7 @@ class LearningTreeScene extends Phaser.Scene {
     // intro(튜토리얼)는 학습 트리에서 제외
     const cardH = 154, cardW = 880, gap = 6;
     const startY = 88;
-    const treeCases = CASE_LIST.filter(c => c.id !== 'intro');
+    const treeCases = CASE_LIST.filter(c => c.id !== 'intro' && !c.isSpeechHub);
     const _cardsBeforeIdx = this.children.list.length;
     treeCases.forEach((c, i) => {
       const y = startY + i * (cardH + gap);
@@ -2995,8 +2995,8 @@ class LearningTreeScene extends Phaser.Scene {
 
     // 하단 종합 요약 — 완료 개수 + 평균 평가 (카드 영역 끝 532 이후)
     const ftY = 540;
-    // intro(튜토리얼)는 학습 트리 카운트에서 제외 — 본 사건 완료만 표시
-    const compCount = completed.filter(id => id !== 'intro').length;
+    // intro(튜토리얼)·UN본부는 학습 트리 카운트에서 제외 — 본 사건 완료만 표시
+    const compCount = completed.filter(id => id !== 'intro' && id !== 'unhq').length;
     const reviewVals = Object.values(reviews);
     let avgAll = '-';
     if (reviewVals.length) {
@@ -3005,7 +3005,7 @@ class LearningTreeScene extends Phaser.Scene {
       avgAll = (sum / (reviewVals.length * 3)).toFixed(1);
     }
     // 본 사건 3개 기준 (intro 튜토리얼은 학습 트리 카운트에서 제외)
-    const tCases = CASE_LIST.filter(c => c.id !== 'intro');
+    const tCases = CASE_LIST.filter(c => c.id !== 'intro' && !c.isSpeechHub);
     this.add.text(40, ftY,
       '★ 완료 ' + compCount + ' / ' + tCases.length +
       '     ·     📊 전체 자기 평가 평균 ' + avgAll + ' / 5.0', {
@@ -8693,6 +8693,13 @@ class SpeechScene extends Phaser.Scene {
     const allSp = this.registry.get('caseSpeeches') || {};
     allSp[this.selCase] = speechObj;
     this.registry.set('caseSpeeches', allSp);
+    // UN 본부(연설) 완료 처리 — 임무 선택에서 ★완료 표시 + 도전과제 인정
+    //   (연설을 한 번이라도 마치면 UN 본부 카드가 완료됨)
+    const completed = this.registry.get('completedCases') || [];
+    if (!completed.includes('unhq')) {
+      completed.push('unhq');
+      this.registry.set('completedCases', completed);
+    }
     if (window.SFX) window.SFX.play('send');
     reportProgress(this, { speechDone: true });
     this.cameras.main.fadeOut(280, 0, 0, 0);
