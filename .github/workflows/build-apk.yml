@@ -15,6 +15,7 @@ on:
       - 'manifest.webmanifest'
       - 'vendor/**'
       - 'assets/**'
+      - 'resources/**'
       - 'capacitor.config.json'
       - '.github/workflows/build-apk.yml'
 
@@ -63,6 +64,28 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+
+      - name: Apply custom app icon (resources/icon.png)
+        run: |
+          SRC=resources/icon.png
+          if [ ! -f "$SRC" ]; then echo "no $SRC — keeping default icon"; exit 0; fi
+          # ImageMagick 보장 (ubuntu 러너 기본 포함, 없으면 설치)
+          if ! command -v convert >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y imagemagick
+          fi
+          RES=android/app/src/main/res
+          # 투명 배경 → 흰색으로 평탄화한 풀-블리드 비트맵을 밀도별 생성
+          for pair in "mdpi 48" "hdpi 72" "xhdpi 96" "xxhdpi 144" "xxxhdpi 192"; do
+            set -- $pair; d=$1; sz=$2
+            dir="$RES/mipmap-$d"; mkdir -p "$dir"
+            convert "$SRC" -background white -alpha remove -alpha off \
+              -resize ${sz}x${sz} "$dir/ic_launcher.png"
+            cp "$dir/ic_launcher.png" "$dir/ic_launcher_round.png"
+          done
+          # 적응형(adaptive) 아이콘 XML 제거 → 정사각 비트맵 그대로 표시(그림 잘림 방지)
+          rm -f "$RES"/mipmap-anydpi-v26/ic_launcher.xml \
+                "$RES"/mipmap-anydpi-v26/ic_launcher_round.xml
+          echo "=== 적용된 아이콘 ===" && ls -1 "$RES"/mipmap-xxxhdpi/
 
       - name: Build debug APK
         run: |
