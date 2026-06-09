@@ -1630,6 +1630,14 @@ class TitleScene extends Phaser.Scene {
     // 사운드 토글 — 우상단 (클릭 시 음향 설정: 음소거 + BGM·효과음 음량)
     addMuteToggle(this, 936, 24);
 
+    // 교육용 고지문 (사실 검증 권고) — 가상 사례·기준 연도·다관점 안내
+    this.add.text(480, 588,
+      '이 게임은 세계시민교육을 위한 교육용 시뮬레이션입니다. 등장인물과 일부 개인 경험·장면은 실제 사건을 바탕으로 재구성한 가상 사례이며, ' +
+      '통계는 표시된 기관과 기준 연도의 자료를 사용해 상황에 따라 달라질 수 있습니다. 논쟁적 사안은 하나의 관점만으로 완전히 설명할 수 없습니다.',
+      { fontFamily: FONT, fontSize: '10px', color: '#9fb2c4', align: 'center',
+        wordWrap: { width: 900 }, lineSpacing: 2 }
+    ).setOrigin(0.5).setDepth(10);
+
     // 메인화면 배경음 (루프) — 자동재생 차단 시 첫 클릭/키 입력에서 시작
     if (window.SFX) window.SFX.playBGM(BGM_TITLE);
 
