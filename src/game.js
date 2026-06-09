@@ -2130,8 +2130,9 @@ class CaseSelectScene extends Phaser.Scene {
          '본 임무 세 가지가 잠금 해제됩니다.\n\n' +
          '디렉터 한센과 P.E.A.C.E. 학습 모델 —\n' +
          '인식 → 관찰 → 성찰 → 실천 — 을 체험하세요.');
-    this.infoText = this.add.text(infoX + 14, infoY + 38, this.defaultInfo, {
-      fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', lineSpacing: 3,
+    // 폰트 11px + lineSpacing 2 -- 한 줄 ~13px -> 패널 가용 줄 ~8줄 (안전 마진)
+    this.infoText = this.add.text(infoX + 14, infoY + 36, this.defaultInfo, {
+      fontFamily: FONT, fontSize: '11px', color: '#a8c4dc', lineSpacing: 2,
       wordWrap: { width: infoW - 28 }
     });
 
