@@ -2310,13 +2310,13 @@ class CaseSelectScene extends Phaser.Scene {
       color: available ? '#ffe9b8' : '#7a8a98', fontStyle: 'bold'
     });
     // 부제 — wordWrap + 작은 폰트로 카드 폭 밖으로 안 튀어나가게 (이용빈 피드백)
-    this.add.text(x + 78, y + 38, c.subtitle, {
-      fontFamily: FONT, fontSize: '11px',
+    const subT = this.add.text(x + 78, y + 36, c.subtitle, {
+      fontFamily: FONT, fontSize: '11px', lineSpacing: 1,
       color: available ? '#cfe9ff' : '#6e7a86',
       wordWrap: { width: w - 88 }
     });
-    // 지역
-    this.add.text(x + 78, y + 56, '📍 ' + c.region, {
+    // 지역 — 부제가 1줄이든 2줄이든 그 아래에 붙도록 동적 배치 (겹침 방지, 이용빈 피드백)
+    this.add.text(x + 78, subT.y + subT.height + 2, '📍 ' + c.region, {
       fontFamily: FONT, fontSize: '11px',
       color: available ? '#a8c4dc' : '#5a6470'
     });
