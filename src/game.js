@@ -7894,9 +7894,13 @@ ${tmpl.signature}`;
         '<div class="sign">' + esc(tmpl.signature) + '</div>' +
       '</div>';
 
-    // 인쇄 다이얼로그 호출 — Electron/브라우저 모두 동작
-    // (사용자가 PDF 저장 또는 종이 인쇄 선택)
-    setTimeout(() => window.print(), 80);
+    // 화면 모달로 표시 — 데스크톱/브라우저는 인쇄·PDF, 모바일·APK는 읽기+스크린샷.
+    //   (window.print()가 막힌 안드로이드 WebView 대응, 이용빈 피드백)
+    if (typeof window !== 'undefined' && window.openDocModal) {
+      window.openDocModal('📋 UN 조사 보고서');
+    } else {
+      setTimeout(() => window.print(), 80);
+    }
   }
 
   // ── 뱃지 계산 ─────────────────────────────────────────────
@@ -8881,7 +8885,12 @@ class SpeechScene extends Phaser.Scene {
           : '') +
         '<div class="sign">P.E.A.C.E. 조사관  ' + esc(name) + '</div>' +
       '</div>';
-    setTimeout(() => window.print(), 80);
+    // 화면 모달로 표시 (모바일·APK에서 인쇄 대체 — 읽기+스크린샷)
+    if (typeof window !== 'undefined' && window.openDocModal) {
+      window.openDocModal('🕊 UN 연설문');
+    } else {
+      setTimeout(() => window.print(), 80);
+    }
   }
 
   leaveBack() {
