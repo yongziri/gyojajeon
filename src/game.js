@@ -5517,6 +5517,9 @@ class InvestigationScene extends Phaser.Scene {
     // onResume이 맵 BGM으로 자동 전환.
     if (window.SFX) window.SFX.playBGM(BGM_INVESTIGATION);
     this.locId = this.registry.get('invLoc') || CASE.start;
+    // scene.restart 재진입 시 이전 인스턴스의 파괴된 버튼 참조가 남아 있으므로 초기화
+    // (showLocCompleteBanner 등이 stale btnMove.t.setText로 멈추던 버그 방어)
+    this.btnMove = null; this.btnExamine = null;
     // 현재 사건에 실제로 있는 단서만 유지 — 옛 세이브(이어하기)에 남은 삭제/타사건
     // 단서가 섞여 개수가 꼬이는 문제 방지 (이문호 교사 피드백: 개수 불일치)
     const validClueIds = new Set();
@@ -5601,7 +5604,9 @@ class InvestigationScene extends Phaser.Scene {
         this.showLocCompleteBanner();
       }
     };
-    this.refreshEvHud();
+    // ⚠️ refreshEvHud() 최초 호출은 명령 버튼(this.btnMove) 생성 후로 미룬다(아래).
+    //    완료된 장소로 scene.restart 재진입 시 showLocCompleteBanner가
+    //    아직 재생성 안 된(이전 인스턴스의 파괴된) btnMove.t를 건드려 멈추던 버그.
 
     // 조사 지점 — NPC 대화 패턴과 동일하게 두 단계로 진행 (이용빈 사용자 피드백)
     //   1차 클릭 = spot 위에 "🔍 ◯◯ 조사하기" 버튼 표시
@@ -5686,6 +5691,9 @@ class InvestigationScene extends Phaser.Scene {
       () => this.showMoves(loc));
     this.makeBtn(600, 565, 150, '단서 기록', () => this.showRecord());
     this.makeBtn(840, 565, 150, '나가기', () => this.leave());
+
+    // 단서 HUD 최초 갱신 — btnMove 생성 후 호출(완료 장소 재진입 멈춤 버그 수정)
+    this.refreshEvHud();
 
     // 돋보기 커서
     this.glass = this.add.image(0, 0, 'magnifier')
