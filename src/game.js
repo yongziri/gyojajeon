@@ -3101,22 +3101,70 @@ class LearningTreeScene extends Phaser.Scene {
       if (node.end || node.befriend) break;
     }
 
+    // ── 대화 본문 — 길면 스크롤(컨테이너+마스크+휠/드래그/스크롤바) ──
+    const VIEW_TOP = cy - ch / 2 + 50;      // 헤더 아래
+    const VIEW_BOTTOM = cy + ch / 2 - 52;   // 닫기 버튼 위
+    const VIEW_H = VIEW_BOTTOM - VIEW_TOP;
+    const content = this.add.container(0, 0).setDepth(4502);
     const body = this.add.text(cx - cw / 2 + 22, cy - ch / 2 + 54,
       lines.join('\n\n'), {
       fontFamily: FONT, fontSize: '12px', color: '#dfefff',
-      wordWrap: { width: cw - 44 }, lineSpacing: 4
-    }).setDepth(4502);
+      wordWrap: { width: cw - 56 }, lineSpacing: 4
+    });
+    content.add(body);
+    const maskShape = this.add.graphics();
+    maskShape.fillStyle(0xffffff, 1);
+    maskShape.fillRect(cx - cw / 2 + 4, VIEW_TOP, cw - 8, VIEW_H);
+    maskShape.setVisible(false);
+    content.setMask(maskShape.createGeometryMask());
+    // 카드 영역 클릭은 닫지 않도록 가림 — dim은 카드 '밖'에서만 닫힘(드래그 스크롤 가능)
+    const cardZone = this.add.zone(cx, cy, cw, ch).setInteractive().setDepth(4501);
+
+    const extras = [maskShape, cardZone];
+    let scrollCleanup = null;
+    const overflow = Math.max(0, (cy - ch / 2 + 54 + body.height) - VIEW_BOTTOM + 6);
+    if (overflow > 0) {
+      const sbX = cx + cw / 2 - 16, sbW = 6;
+      const track = this.add.graphics().setDepth(4503);
+      track.fillStyle(0x1a2a3a, 0.85); track.fillRoundedRect(sbX, VIEW_TOP, sbW, VIEW_H, 3);
+      const thumbH = Math.max(36, VIEW_H * (VIEW_H / (overflow + VIEW_H)));
+      const thumb = this.add.rectangle(sbX + sbW / 2, VIEW_TOP + thumbH / 2, sbW, thumbH, 0xe8b86a, 0.95).setDepth(4504);
+      const hint = this.add.text(cx, VIEW_BOTTOM + 6, '▲▼ 스크롤하여 전체 대화 보기', {
+        fontFamily: FONT, fontSize: '10px', color: '#9fb5d2'
+      }).setOrigin(0.5).setDepth(4503);
+      extras.push(track, thumb, hint);
+      const clampScroll = () => {
+        content.y = Phaser.Math.Clamp(content.y, -overflow, 0);
+        const frac = overflow ? (-content.y / overflow) : 0;
+        thumb.y = VIEW_TOP + thumbH / 2 + (VIEW_H - thumbH) * frac;
+      };
+      let drag = false, dY = 0, dCy = 0;
+      const onWheel = (p, o, dx, dy) => { content.y -= dy * 0.5; clampScroll(); };
+      const onDown = (p) => { if (p.y < VIEW_TOP || p.y > VIEW_BOTTOM) return; drag = true; dY = p.y; dCy = content.y; };
+      const onMove = (p) => { if (!drag) return; content.y = dCy + (p.y - dY); clampScroll(); };
+      const onUp = () => { drag = false; };
+      this.input.on('wheel', onWheel);
+      this.input.on('pointerdown', onDown);
+      this.input.on('pointermove', onMove);
+      this.input.on('pointerup', onUp);
+      scrollCleanup = () => {
+        this.input.off('wheel', onWheel); this.input.off('pointerdown', onDown);
+        this.input.off('pointermove', onMove); this.input.off('pointerup', onUp);
+      };
+    }
 
     // 닫기 버튼
     const closeBtn = fancyButton(this, cx, cy + ch / 2 - 30, 140, 32, '← 닫기',
       () => closeReplay(),
       { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
-    if (closeBtn.g)    closeBtn.g.setDepth(4503);
-    if (closeBtn.t)    closeBtn.t.setDepth(4504);
-    if (closeBtn.zone) closeBtn.zone.setDepth(4505);
+    if (closeBtn.g)    closeBtn.g.setDepth(4506);
+    if (closeBtn.t)    closeBtn.t.setDepth(4507);
+    if (closeBtn.zone) closeBtn.zone.setDepth(4508);
 
     const closeReplay = () => {
-      dim.destroy(); card.destroy(); head.destroy(); body.destroy();
+      if (scrollCleanup) scrollCleanup();
+      dim.destroy(); card.destroy(); head.destroy(); content.destroy();
+      extras.forEach(o => { if (o && o.destroy) o.destroy(); });
       if (closeBtn.g)    closeBtn.g.destroy();
       if (closeBtn.t)    closeBtn.t.destroy();
       if (closeBtn.zone) closeBtn.zone.destroy();
