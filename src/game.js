@@ -8743,15 +8743,133 @@ class SpeechScene extends Phaser.Scene {
     }
     if (window.SFX) window.SFX.play('send');
     reportProgress(this, { speechDone: true });
-    this.cameras.main.fadeOut(280, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('LearningTreeScene');
+    // 곧장 넘어가지 않고 '연설 완료' 화면을 띄워 인쇄·PDF 저장 기회를 준다.
+    this.leaving = false;   // 완료 화면 버튼(인쇄·계속) 동작 위해 해제
+    this.showDone(speechObj);
+  }
+
+  // ── 3단계: 연설 완료 — 전문 표시 + 인쇄/PDF ──────────────────
+  showDone(sp) {
+    this.step = 'done';
+    this.clearStep();
+    const L = this.stepLayer;
+
+    // 총회장 위 반투명 막
+    const dim = this.add.graphics().setDepth(40);
+    dim.fillStyle(0x05101a, 0.84); dim.fillRect(0, 72, GAME_W, GAME_H - 72);
+    L.push(dim);
+
+    L.push(this.add.text(480, 100, '🕊  연설을 마쳤습니다', {
+      fontFamily: FONT_TITLE, fontSize: '22px', color: '#ffe9b8', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(41));
+    L.push(this.add.text(480, 128, (sp.caseTitle || '') + '  ·  UN 총회 연설문', {
+      fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
+    }).setOrigin(0.5).setDepth(41));
+
+    // 연설 전문 패널
+    const px = 90, py = 150, pw = 780, ph = 330;
+    const pg = this.add.graphics().setDepth(41);
+    pg.fillStyle(0x0a1828, 0.96); pg.fillRect(px, py, pw, ph);
+    pg.lineStyle(2, 0xc9a36b, 0.9); pg.strokeRect(px, py, pw, ph);
+    pg.fillStyle(0xc9a36b, 1); pg.fillRect(px, py, 5, ph);
+    L.push(pg);
+    L.push(this.add.text(px + 18, py + 12, '📜 연설 전문', {
+      fontFamily: FONT, fontSize: '11px', color: '#c9a36b'
+    }).setDepth(42));
+
+    // 본문 — 길면 휠/드래그/스크롤바
+    const VIEW_TOP = py + 36, VIEW_BOTTOM = py + ph - 14, VIEW_H = VIEW_BOTTOM - VIEW_TOP;
+    const content = this.add.container(0, 0).setDepth(42);
+    const body = this.add.text(px + 22, VIEW_TOP, sp.fullText, {
+      fontFamily: FONT, fontSize: '15px', color: '#f2e8d0',
+      wordWrap: { width: pw - 60 }, lineSpacing: 8
     });
+    content.add(body); L.push(content);
+    const maskShape = this.add.graphics();
+    maskShape.fillStyle(0xffffff, 1);
+    maskShape.fillRect(px + 4, VIEW_TOP, pw - 8, VIEW_H);
+    maskShape.setVisible(false);
+    content.setMask(maskShape.createGeometryMask());
+    L.push(maskShape);
+    const overflow = Math.max(0, body.height - VIEW_H + 6);
+    if (overflow > 0) {
+      const sbX = px + pw - 14, sbW = 6;
+      const track = this.add.graphics().setDepth(42);
+      track.fillStyle(0x1a2a3a, 0.85); track.fillRoundedRect(sbX, VIEW_TOP, sbW, VIEW_H, 3);
+      const thumbH = Math.max(36, VIEW_H * (VIEW_H / (overflow + VIEW_H)));
+      const thumb = this.add.rectangle(sbX + sbW / 2, VIEW_TOP + thumbH / 2, sbW, thumbH, 0xc9a36b, 0.95).setDepth(43);
+      L.push(track, thumb);
+      const clampScroll = () => {
+        content.y = Phaser.Math.Clamp(content.y, -overflow, 0);
+        const frac = overflow ? (-content.y / overflow) : 0;
+        thumb.y = VIEW_TOP + thumbH / 2 + (VIEW_H - thumbH) * frac;
+      };
+      let drag = false, dY = 0, dCy = 0;
+      const onWheel = (p, o, dx, dy) => { content.y -= dy * 0.5; clampScroll(); };
+      const onDown = (p) => { if (p.y < VIEW_TOP || p.y > VIEW_BOTTOM) return; drag = true; dY = p.y; dCy = content.y; };
+      const onMove = (p) => { if (!drag) return; content.y = dCy + (p.y - dY); clampScroll(); };
+      const onUp = () => { drag = false; };
+      this.input.on('wheel', onWheel);
+      this.input.on('pointerdown', onDown);
+      this.input.on('pointermove', onMove);
+      this.input.on('pointerup', onUp);
+      // 화면을 떠날 때 리스너 정리 (다음 단계에서 중복 방지)
+      this._doneScrollCleanup = () => {
+        this.input.off('wheel', onWheel); this.input.off('pointerdown', onDown);
+        this.input.off('pointermove', onMove); this.input.off('pointerup', onUp);
+      };
+    }
+
+    const pr = fancyButton(this, 350, 542, 250, 42, '🖨  연설문 인쇄 · PDF 저장',
+      () => this.printSpeech(sp),
+      { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
+    pr.g.setDepth(42); pr.zone.setDepth(43); pr.t.setDepth(43);
+    const cont = fancyButton(this, 640, 542, 200, 42, '계속  →',
+      () => this.leaveBack(),
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    cont.g.setDepth(42); cont.zone.setDepth(43); cont.t.setDepth(43);
+    L.push(pr.g, pr.zone, pr.t, cont.g, cont.zone, cont.t);
+  }
+
+  // ── 연설문 인쇄 (#printReport 채우고 window.print()) ──────────
+  printSpeech(sp) {
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById('printReport');
+    if (!el) return;
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const date = new Date().toISOString().slice(0, 10);
+    const name = (document.getElementById('cfgName') &&
+                  document.getElementById('cfgName').value.trim()) || '학생';
+    const phraseList = (sp.phrases || []).map(p => '<li>' + esc(p) + '</li>').join('');
+    el.innerHTML =
+      '<div class="pr-doc">' +
+        '<h1><span class="un-logo">UN</span>《 UN 총회 연설문 》</h1>' +
+        '<div class="pr-meta">' +
+          '<strong>P.E.A.C.E. Agency · 세계 평화 호소 연설</strong><br>' +
+          '작성일 ' + esc(date) +
+          '  ·  사건: ' + esc(sp.caseTitle || '') +
+          '  ·  연설자: ' + esc(name) +
+        '</div>' +
+        '<h2>🕊 연설 전문</h2>' +
+        '<blockquote class="user-quote">' +
+          '<span class="user-quote-label">UN 총회 단상에서:</span><br>' +
+          '"' + esc(sp.fullText) + '"' +
+        '</blockquote>' +
+        (phraseList
+          ? '<h2>📋 배열한 근거 (발표 순서)</h2><ul>' + phraseList +
+            (sp.closing ? '<li><em>(마무리)</em> ' + esc(sp.closing) + '</li>' : '') +
+            '</ul>'
+          : '') +
+        '<div class="sign">P.E.A.C.E. 조사관  ' + esc(name) + '</div>' +
+      '</div>';
+    setTimeout(() => window.print(), 80);
   }
 
   leaveBack() {
     if (this.leaving) return;
     this.leaving = true;
+    if (this._doneScrollCleanup) { this._doneScrollCleanup(); this._doneScrollCleanup = null; }
     this.cameras.main.fadeOut(220, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('LearningTreeScene');
