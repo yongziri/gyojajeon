@@ -1794,7 +1794,7 @@ const SAVE_FIELDS = [
   'reflection', 'speech', 'completedCases', 'caseBadges', 'caseReviews',
   'learningReview', 'evidenceTags', 'locationTags', 'userPledge', 'userReflection',
   'caseClues', 'caseSpeeches', 'casePledges', 'caseUserRefl',
-  'reportBody', 'caseReports',
+  'reportBody', 'caseReports', 'caseHistory',
 ];
 function saveGameState(registry) {
   if (typeof localStorage === 'undefined') return;
@@ -3556,6 +3556,28 @@ function reportProgress(scene, extra) {
         phrases:   speechObj.phrases || [],
         closing:   speechObj.closing || '',
       } : null,
+      // 사건별 종합 기록 — 교사 상세창에서 과거 사건도 탭으로 열람 (caseHistory + 연설 병합)
+      cases: (() => {
+        const hist = r.get('caseHistory') || {};
+        const sp = r.get('caseSpeeches') || {};
+        const out = {};
+        Object.keys(hist).forEach(cid => {
+          const h = hist[cid] || {};
+          out[cid] = {
+            title: h.title || cid,
+            chainNames: h.chainNames || [],
+            statement: h.statement || '',
+            userStatement: h.userStatement || '',
+            review: h.review || null,
+            pledge: h.pledge || '',
+            peace: h.peace || null,
+            notes: h.notes || [],
+            report: h.report || '',
+            speech: sp[cid] ? (sp[cid].fullText || '') : '',
+          };
+        });
+        return out;
+      })(),
     };
     if (extra) Object.assign(state, extra);
     window.Telemetry.update(state);
@@ -6187,8 +6209,9 @@ class InvestigationScene extends Phaser.Scene {
       const trimmed = (text || '').trim().slice(0, 150);
       if (trimmed.length > 0) {
         // 장소별 + 단서별 모두 저장(보고서·단서 기록 모달 호환)
+        // locName 동봉 — 교사 대시보드에서 "어느 장소의 노트인지" 표시용
         const locTags = this.registry.get('locationTags') || {};
-        locTags[locId] = { id: 'custom', label: trimmed };
+        locTags[locId] = { id: 'custom', label: trimmed, locName: loc.name };
         this.registry.set('locationTags', locTags);
         const evTags = this.registry.get('evidenceTags') || {};
         evs.forEach(ev => {
@@ -7498,6 +7521,32 @@ ${tmpl.signature}`;
     const allReports = this.registry.get('caseReports') || {};
     allReports[caseId] = finalBody;
     this.registry.set('caseReports', allReports);
+
+    // 사건별 종합 기록 스냅샷 — 교사 대시보드 상세창에서 과거 사건도 탭으로 열람
+    try {
+      const r = this.registry;
+      const reflH = r.get('reflection') || null;
+      const revH = r.get('learningReview') || null;
+      let peaceH = null; try { peaceH = computePeaceScores(r); } catch (e) {}
+      const curC = (typeof CASE_LIST !== 'undefined') ? CASE_LIST.find(c => c.id === caseId) : null;
+      const hist = r.get('caseHistory') || {};
+      hist[caseId] = {
+        title: curC ? curC.title : caseId,
+        chainNames: reflH ? (reflH.chainNames || []) : [],
+        statement: reflH ? (reflH.statementText || '') : '',
+        userStatement: reflH ? (reflH.userStatement || '') : '',
+        review: revH ? {
+          goalMet: revH.goalMet, factConf: revH.factConf,
+          actionConf: revH.actionConf, wantNext: revH.wantNextLabel || ''
+        } : null,
+        pledge: (r.get('casePledges') || {})[caseId] || (r.get('userPledge') || ''),
+        peace: peaceH,
+        notes: Object.values(r.get('locationTags') || {})
+          .map(t => (t && t.label) || '').filter(Boolean),
+        report: finalBody,
+      };
+      r.set('caseHistory', hist);
+    } catch (e) { /* 스냅샷 실패해도 송부는 진행 */ }
 
     reportProgress(this, { reportSent: true, badges });
 

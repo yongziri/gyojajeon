@@ -269,6 +269,15 @@
     #modalBox::-webkit-scrollbar-thumb:hover { background: #7a6336; }
     #modalBox h2 { margin: 0 0 4px 0; color: #ffe9b8; }
     #modalBox .sub { font-size: 13px; color: #9aa6ad; margin-bottom: 14px; }
+    /* 사건별 기록 탭 (과거 사건 선택) */
+    #modalBox .caseTabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 14px; }
+    #modalBox .caseTab {
+      background: #1a2a3a; color: #9fb6cc; border: 1px solid #2e4a5e;
+      padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+      font-family: inherit;
+    }
+    #modalBox .caseTab:hover { background: #243646; color: #cfe9ff; }
+    #modalBox .caseTab.on { background: #2e6b58; color: #fff; border-color: #7fd07f; font-weight: bold; }
     #modalBox section {
       background: #0e1828; border-left: 3px solid #ffd96a;
       padding: 10px 14px; margin: 10px 0;
@@ -903,163 +912,202 @@
     }
 
     // 학생 상세 모달 — 자기주도성 데이터 전체 표시
+    let _modalId = null, _modalTab = null;   // _modalTab: '__live__' | caseId | null(기본)
     function openModal(id) {
-      const d = students[id];
+      _modalId = id; _modalTab = null;
+      renderModalBox();
+      $('modal').style.display = 'block';
+    }
+    function renderModalBox() {
+      const d = students[_modalId];
       if (!d) return;
       const box = $('modalBox');
+
+      // ── 사건 탭 구성 — 완료 사건(스냅샷) + 진행 중 사건(라이브) ──
+      const caseKeys = Object.keys(d.cases || {});
+      const showLive = !!(d.caseId && !caseKeys.includes(d.caseId) &&
+        (d.reflection || d.reportBody || d.peace || d.userPledge ||
+         (d.tagsCount > 0) || d.cores || d.evidence));
+      const tabs = [];
+      if (showLive) tabs.push({ key: '__live__', label: '● 진행 중' });
+      caseKeys.forEach(cid => tabs.push({ key: cid, label: (d.cases[cid].title || cid) }));
+
+      let sel = _modalTab;
+      const validKeys = tabs.map(t => t.key);
+      if (!sel || !validKeys.includes(sel)) {
+        sel = showLive ? '__live__'
+          : (validKeys.includes(d.caseId) ? d.caseId : (validKeys[0] || '__live__'));
+      }
+
+      // 선택 사건의 데이터(cd) — 라이브/스냅샷을 공통 형태로
+      let cd, isLive;
+      if (sel === '__live__') {
+        isLive = true;
+        cd = {
+          reflection: d.reflection || null,
+          pledge: d.userPledge || '',
+          report: d.reportBody || '',
+          speech: (d.speech && d.speech.fullText) ? d.speech.fullText : '',
+          speechPhrases: (d.speech && d.speech.phrases) || [],
+          speechTitle: (d.speech && d.speech.caseTitle) || '',
+          peace: d.peace || null,
+          review: d.review || null,
+          notes: uniqLabels(d),
+        };
+      } else {
+        isLive = false;
+        const h = (d.cases || {})[sel] || {};
+        const hasRefl = (h.chainNames && h.chainNames.length) || h.statement || h.userStatement;
+        cd = {
+          reflection: hasRefl ? {
+            chainNames: h.chainNames || [], statement: h.statement || '',
+            userStatement: h.userStatement || ''
+          } : null,
+          pledge: h.pledge || '',
+          report: h.report || '',
+          speech: h.speech || '',
+          speechPhrases: [], speechTitle: h.title || '',
+          peace: h.peace || null,
+          review: h.review || null,
+          notes: h.notes || [],
+        };
+      }
+
       const sections = [];
 
-      // 1. 인과 사슬 + 자기성찰 (성찰의 의자 결과)
-      if (d.reflection) {
-        const r = d.reflection;
+      // 1. 인과 사슬 + 자기성찰
+      if (cd.reflection) {
+        const r = cd.reflection;
         let chainHtml = '';
-        if (r.chainNames && r.chainNames.length === 3) {
-          chainHtml = '<div class="chain">' +
-            '<span>' + esc(r.chainNames[0]) + '</span>' +
-            '<span class="arrow">→</span>' +
-            '<span>' + esc(r.chainNames[1]) + '</span>' +
-            '<span class="arrow">→</span>' +
-            '<span>' + esc(r.chainNames[2]) + '</span>' +
-            '</div>';
+        if (r.chainNames && r.chainNames.length >= 2) {
+          chainHtml = '<div class="chain">' + r.chainNames.map((c, i) =>
+            (i ? '<span class="arrow">→</span>' : '') + '<span>' + esc(c) + '</span>'
+          ).join('') + '</div>';
         }
         sections.push(
           '<section><h4>🔗 인과 사슬 (Connecting)</h4>' +
           (chainHtml || '<p style="color:#7a8590">아직 미작성</p>') +
-          (r.statement ? '<p>💭 자기성찰: <em>"' +
-            esc(r.statement) + '"</em></p>' : '') +
+          (r.statement ? '<p>💭 자기성찰: <em>"' + esc(r.statement) + '"</em></p>' : '') +
           (r.userStatement
             ? '<p style="background:#3a2e10;padding:8px 12px;border-left:3px solid #ffd96a;margin-top:8px;color:#fff8d0;font-style:italic">' +
               '<strong style="color:#ffd96a">✍ 학생이 직접 쓴 한 문장:</strong><br>' +
-              '"' + esc(r.userStatement) + '"</p>'
-            : '') +
+              '"' + esc(r.userStatement) + '"</p>' : '') +
           '</section>'
         );
       }
 
-      // 1b. 학생이 직접 쓴 다짐 (UN 보고서 송부 전 입력)
-      if (d.userPledge) {
+      // 2. 학생 본인의 다짐
+      if (cd.pledge) {
         sections.push(
           '<section><h4>✍ 학생 본인의 다짐 (Action)</h4>' +
           '<p style="background:#3a2e10;padding:10px 14px;border-left:3px solid #ffd96a;color:#fff8d0;font-style:italic">' +
-          '"' + esc(d.userPledge) + '"</p>' +
-          '</section>'
+          '"' + esc(cd.pledge) + '"</p></section>'
         );
       }
 
-      // 1b-2. UN 조사 보고서 본문 — 학생이 송부한 보고서 전문 (Enacting)
-      if (d.reportBody) {
+      // 3. UN 조사 보고서 본문
+      if (cd.report) {
         sections.push(
           '<section><h4>📋 UN 조사 보고서 (송부 전문)</h4>' +
-          '<div class="docBody">' + esc(d.reportBody) + '</div>' +
-          '</section>'
+          '<div class="docBody">' + esc(cd.report) + '</div></section>'
         );
       }
 
-      // 1b-3. UN 연설문 — 학생이 직접 조립한 연설 (Enacting)
-      if (d.speech && d.speech.fullText) {
-        const sp = d.speech;
-        const phraseList = (sp.phrases || []).length
+      // 4. UN 연설문
+      if (cd.speech) {
+        const phraseList = (cd.speechPhrases || []).length
           ? '<p style="margin-top:8px;color:#9aa6ad;font-size:12px">배열한 근거: ' +
-            sp.phrases.map(p => '<span style="color:#cfe9ff">' + esc(p) + '</span>')
+            cd.speechPhrases.map(p => '<span style="color:#cfe9ff">' + esc(p) + '</span>')
               .join(' <span style="color:#ffd96a">→</span> ') + '</p>'
           : '';
         sections.push(
           '<section style="border-left-color:#6fb7d6"><h4 style="color:#6fb7d6">🕊 UN 연설문' +
-            (sp.caseTitle ? ' <span style="color:#9aa6ad;font-size:12px">— ' +
-              esc(sp.caseTitle) + '</span>' : '') + '</h4>' +
-          '<div class="docBody speech">' + esc(sp.fullText) + '</div>' +
-          phraseList +
+            (cd.speechTitle ? ' <span style="color:#9aa6ad;font-size:12px">— ' +
+              esc(cd.speechTitle) + '</span>' : '') + '</h4>' +
+          '<div class="docBody speech">' + esc(cd.speech) + '</div>' + phraseList +
           '</section>'
         );
       }
 
-      // 1c. P.E.A.C.E. 4차원 종합 평가
-      if (d.peace) {
+      // 5. P.E.A.C.E. 4차원 종합 평가
+      if (cd.peace) {
         const dimNames = {
-          cognition: '🧠 사실 이해',
-          connection: '🔗 연결 의식', action: '✊ 실천 다짐',
-          cooperation: '🌍 국제 협력'
+          cognition: '🧠 사실 이해', connection: '🔗 연결 의식',
+          action: '✊ 실천 다짐', cooperation: '🌍 국제 협력'
         };
         const dimsHtml = Object.keys(dimNames).map(k => {
-          const v = (d.peace.dims && d.peace.dims[k]) || 0;
+          const v = (cd.peace.dims && cd.peace.dims[k]) || 0;
           return '<p><span class="lbl">' + dimNames[k] + '</span> ' +
-            '<span class="stars">' + '★'.repeat(v) + '☆'.repeat(3 - v) + '</span> ' +
-            v + '/3</p>';
+            '<span class="stars">' + '★'.repeat(v) + '☆'.repeat(3 - v) + '</span> ' + v + '/3</p>';
         }).join('');
         const gradeColors = { S: '#d4af37', A: '#2e8b57', B: '#4a7eb8', C: '#888' };
-        const gc = gradeColors[d.peace.grade] || '#888';
+        const gc = gradeColors[cd.peace.grade] || '#888';
         sections.push(
           '<section><h4>🏛 P.E.A.C.E. 종합 평가 ' +
-            '<span style="background:' + gc + ';color:#fff;padding:2px 10px;' +
-            'border-radius:4px;font-size:13px;margin-left:8px">' +
-            '등급 ' + esc(d.peace.grade) + ' · ' + d.peace.total + ' / ' + d.peace.max +
-            '</span></h4>' +
-          dimsHtml +
-          '</section>'
+            '<span style="background:' + gc + ';color:#fff;padding:2px 10px;border-radius:4px;font-size:13px;margin-left:8px">' +
+            '등급 ' + esc(cd.peace.grade) + ' · ' + cd.peace.total + ' / ' + cd.peace.max +
+            '</span></h4>' + dimsHtml + '</section>'
         );
       }
 
-      // 2. 자기 평가 루브릭
-      if (d.review) {
-        const rv = d.review;
+      // 6. 자기 평가 루브릭
+      if (cd.review) {
+        const rv = cd.review;
         const avg = ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1);
         sections.push(
           '<section><h4>📊 자기 평가 (Self-Evaluation)</h4>' +
-          '<p><span class="lbl">목표 달성도</span> ' +
-            '<span class="stars">' + stars(rv.goalMet) + '</span> ' + rv.goalMet + '/5</p>' +
-          '<p><span class="lbl">사실 이해 자신감</span> ' +
-            '<span class="stars">' + stars(rv.factConf) + '</span> ' + rv.factConf + '/5</p>' +
-          '<p><span class="lbl">실천 다짐 자신감</span> ' +
-            '<span class="stars">' + stars(rv.actionConf) + '</span> ' + rv.actionConf + '/5</p>' +
+          '<p><span class="lbl">목표 달성도</span> <span class="stars">' + stars(rv.goalMet) + '</span> ' + rv.goalMet + '/5</p>' +
+          '<p><span class="lbl">사실 이해 자신감</span> <span class="stars">' + stars(rv.factConf) + '</span> ' + rv.factConf + '/5</p>' +
+          '<p><span class="lbl">실천 다짐 자신감</span> <span class="stars">' + stars(rv.actionConf) + '</span> ' + rv.actionConf + '/5</p>' +
           '<p style="margin-top:8px"><strong>평균 ★ ' + avg + ' / 5.0</strong></p>' +
-          (rv.wantNext
-            ? '<p>🔍 다음에 알고 싶은 것: ' + esc(rv.wantNext) + '</p>'
-            : '') +
+          (rv.wantNext ? '<p>🔍 다음에 알고 싶은 것: ' + esc(rv.wantNext) + '</p>' : '') +
           '</section>'
         );
       }
 
-      // 3. 장소별 자유 입력 — 학생이 직접 쓴 한 문장 모음 (중복 제거)
-      const _ulabs = uniqLabels(d);
-      if (_ulabs.length > 0) {
-        const tagItems = _ulabs.map(label =>
-          '<span style="background:#c9a36b22;border-color:#c9a36b;' +
-          'color:#fff8d0">' + esc(label) + '</span>').join('');
+      // 7. 장소별 조사 노트
+      if ((cd.notes || []).length > 0) {
+        const tagItems = cd.notes.map(label =>
+          '<span style="background:#c9a36b22;border-color:#c9a36b;color:#fff8d0">' + esc(label) + '</span>').join('');
         sections.push(
           '<section><h4>💭 장소별 조사 노트 — 학생이 직접 쓴 생각 (Self-monitoring)</h4>' +
           '<div class="tagList">' + tagItems + '</div>' +
-          '<p style="color:#7a8590;margin-top:6px">' +
-            '총 ' + _ulabs.length + '곳에서 조사 노트 작성' +
-          '</p></section>'
-        );
-      } else if (d.tagsCount > 0) {
-        // tags 객체가 없고 카운트만 있는 옛 페이로드
-        sections.push(
-          '<section><h4>💭 장소별 조사 노트 (Self-monitoring)</h4>' +
-          '<p style="color:#7a8590">' +
-            '총 ' + d.tagsCount + '곳에서 조사 노트 작성' +
-          '</p></section>'
+          '<p style="color:#7a8590;margin-top:6px">총 ' + cd.notes.length + '곳에서 조사 노트 작성</p></section>'
         );
       }
 
-      // 4. 진행 요약
-      sections.push(
-        '<section><h4>📊 진행 요약</h4>' +
-        '<p>단계: <strong>' + (STAGE_NAME[d.stage] || '1·인식') + '</strong></p>' +
-        '<p>현장 단서: ' + (d.evidence || 0) + ' / 10  ·  ' +
-          '핵심 단서: ' + (d.cores || 0) + ' / 3</p>' +
-        '<p>성찰 완료: ' + (d.reflectionDone ? '✓' : '·') + '  ·  ' +
-          '보고서 송부: ' + (d.reportSent ? '✅' : '·') + '</p>' +
-        '</section>'
-      );
+      // 8. 진행 요약 (라이브 탭에서만)
+      if (isLive) {
+        sections.push(
+          '<section><h4>📊 진행 요약</h4>' +
+          '<p>단계: <strong>' + (STAGE_NAME[d.stage] || '1·인식') + '</strong></p>' +
+          '<p>현장 단서: ' + (d.evidence || 0) + ' / 10  ·  핵심 단서: ' + (d.cores || 0) + ' / 3</p>' +
+          '<p>성찰 완료: ' + (d.reflectionDone ? '✓' : '·') + '  ·  보고서 송부: ' + (d.reportSent ? '✅' : '·') + '</p>' +
+          '</section>'
+        );
+      }
+
+      if (sections.length === 0) {
+        sections.push('<section><p style="color:#7a8590">이 사건의 기록이 아직 없습니다.</p></section>');
+      }
+
+      const tabBar = (tabs.length > 1)
+        ? '<div class="caseTabs">' + tabs.map(t =>
+            '<button class="caseTab' + (t.key === sel ? ' on' : '') + '" data-tab="' + t.key + '">' +
+            esc(t.label) + '</button>').join('') + '</div>'
+        : '';
 
       box.innerHTML =
         '<h2>' + esc(d.name || d.id) + '  <span style="font-size:13px;color:#9aa6ad">' +
           (d.online ? '🟢 접속 중' : '⚪ 오프라인') + '</span></h2>' +
-        '<div class="sub">사건: ' + esc(d.caseId || 'aralsea') + '</div>' +
+        '<div class="sub">' + (tabs.length > 1 ? '사건별 기록 — 탭을 눌러 과거 사건도 볼 수 있어요' : ('사건: ' + esc(d.caseId || 'aralsea'))) + '</div>' +
+        tabBar +
         sections.join('') +
         '<button class="close" onclick="document.getElementById(\'modal\').style.display=\'none\'">닫기</button>';
-      $('modal').style.display = 'block';
+
+      // 탭 클릭 → 해당 사건으로 재렌더
+      [...box.querySelectorAll('.caseTab')].forEach(b =>
+        b.addEventListener('click', () => { _modalTab = b.dataset.tab; renderModalBox(); }));
     }
 
     function esc(s) {
