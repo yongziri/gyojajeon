@@ -6680,8 +6680,12 @@ class QuizScene extends Phaser.Scene {
         fontFamily: FONT, fontSize: '13px', color: '#9fb5d2'
       }).setOrigin(0.5).setDepth(3502));
     } else {
-      // 장소별 그룹화 — showRecord와 동일 로직(콤팩트)
+      // 장소별 그룹화 — 스크롤 가능한 컨테이너 + 마스크
+      //   단서가 많아 길어지면 닫기 버튼에 가려지던 문제 → 휠·드래그·스크롤바로 해결
       //   ※ 텍스트 두 줄 이상 시 실제 height로 curY 증가 (겹침 방지)
+      const VIEW_TOP = 116, VIEW_BOTTOM = 492, VIEW_H = VIEW_BOTTOM - VIEW_TOP;
+      const content = this.add.container(0, 0).setDepth(3502);
+      layer.push(content);
       let curY = 128;
       Object.entries(CASE.locations).forEach(([lid, loc]) => {
         const locEvs = loc.spots
@@ -6689,53 +6693,108 @@ class QuizScene extends Phaser.Scene {
             collected.find(c => c.id === s.evidence.id))
           .map(s => s.evidence);
         if (locEvs.length === 0) return;
-        layer.push(this.add.text(80, curY,
+        content.add(this.add.text(80, curY,
           '📍  ' + loc.name + '   (' + locEvs.length + '개)', {
           fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
           fontStyle: 'bold'
-        }).setDepth(3502));
+        }));
         curY += 22;
         if (locTags[lid]) {
           const fb = this.add.text(98, curY,
             '💭 ' + locTags[lid].label, {
             fontFamily: FONT, fontSize: '12px', color: '#9fb5d2',
-            wordWrap: { width: 720 }, lineSpacing: 3, fontStyle: 'italic'
-          }).setDepth(3502);
-          layer.push(fb);
+            wordWrap: { width: 700 }, lineSpacing: 3, fontStyle: 'italic'
+          });
+          content.add(fb);
           curY += Math.max(22, fb.height + 4);
         }
         locEvs.forEach(e => {
           const ai = (typeof getArea === 'function') ? getArea(e) : null;
           if (ai) {
-            const tg = this.add.graphics().setDepth(3502);
+            const tg = this.add.graphics();
             tg.fillStyle(ai.color, 1); tg.fillRect(98, curY + 2, 36, 16);
-            layer.push(tg);
-            layer.push(this.add.text(116, curY + 10, ai.label, {
+            content.add(tg);
+            content.add(this.add.text(116, curY + 10, ai.label, {
               fontFamily: FONT, fontSize: '10px', color: '#0a1828',
               fontStyle: 'bold'
-            }).setOrigin(0.5).setDepth(3503));
+            }).setOrigin(0.5));
           }
           const txt = this.add.text(ai ? 144 : 98, curY,
             '● ' + e.name + '  —  ' + e.desc, {
             fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
-            wordWrap: { width: ai ? 720 : 760 }, lineSpacing: 2
-          }).setDepth(3502);
-          layer.push(txt);
+            wordWrap: { width: ai ? 700 : 740 }, lineSpacing: 2
+          });
+          content.add(txt);
           curY += Math.max(22, txt.height + 4);
         });
         curY += 10;
       });
+
+      // 뷰포트 밖 내용 클립하는 마스크
+      const maskShape = this.add.graphics();
+      maskShape.fillStyle(0xffffff, 1);
+      maskShape.fillRect(PX, VIEW_TOP, PW, VIEW_H);
+      maskShape.setVisible(false);
+      content.setMask(maskShape.createGeometryMask());
+      layer.push(maskShape);
+
+      // 넘치면 스크롤 활성화 (휠 + 터치 드래그 + 스크롤바) — 태블릿 대응
+      const overflow = Math.max(0, curY - VIEW_BOTTOM);
+      if (overflow > 0) {
+        const sbX = 886, sbW = 6;
+        const track = this.add.graphics().setDepth(3503);
+        track.fillStyle(0x1a2a3a, 0.85);
+        track.fillRoundedRect(sbX, VIEW_TOP, sbW, VIEW_H, 3);
+        layer.push(track);
+        const thumbH = Math.max(36, VIEW_H * (VIEW_H / (overflow + VIEW_H)));
+        const thumb = this.add.rectangle(sbX + sbW / 2, VIEW_TOP + thumbH / 2,
+          sbW, thumbH, 0xe8b86a, 0.95).setDepth(3504);
+        layer.push(thumb);
+        const hint = this.add.text(480, 502, '▲▼ 스크롤하여 더 보기', {
+          fontFamily: FONT, fontSize: '11px', color: '#9fb5d2'
+        }).setOrigin(0.5).setDepth(3503);
+        layer.push(hint);
+
+        const clampScroll = () => {
+          content.y = Phaser.Math.Clamp(content.y, -overflow, 0);
+          const frac = overflow ? (-content.y / overflow) : 0;
+          thumb.y = VIEW_TOP + thumbH / 2 + (VIEW_H - thumbH) * frac;
+        };
+        let dragActive = false, dragStartY = 0, dragStartCy = 0;
+        const onWheel = (p, over, dx, dy) => { content.y -= dy * 0.4; clampScroll(); };
+        const onDown = (p) => {
+          if (p.y < VIEW_TOP || p.y > VIEW_BOTTOM) return;
+          dragActive = true; dragStartY = p.y; dragStartCy = content.y;
+        };
+        const onMove = (p) => {
+          if (!dragActive) return;
+          content.y = dragStartCy + (p.y - dragStartY); clampScroll();
+        };
+        const onUp = () => { dragActive = false; };
+        this.input.on('wheel', onWheel);
+        this.input.on('pointerdown', onDown);
+        this.input.on('pointermove', onMove);
+        this.input.on('pointerup', onUp);
+        this._cluesScrollCleanup = () => {
+          this.input.off('wheel', onWheel);
+          this.input.off('pointerdown', onDown);
+          this.input.off('pointermove', onMove);
+          this.input.off('pointerup', onUp);
+          this._cluesScrollCleanup = null;
+        };
+      }
     }
 
     // 닫기 — 패널 안 하단 가운데, fancyButton
     const close = () => {
+      if (this._cluesScrollCleanup) this._cluesScrollCleanup();
       layer.forEach(o => { if (o && o.destroy) o.destroy(); });
       this.cluesOpen = false;
       // 같은 클릭이 글로벌 onClick으로 흐르지 않도록 짧은 락
       this.inputLocked = true;
       this.time.delayedCall(220, () => { this.inputLocked = false; });
     };
-    const closeBtn = fancyButton(this, 480, 530, 220, 46,
+    const closeBtn = fancyButton(this, 480, 538, 220, 42,
       '✕  닫고 문제 풀기', close, {
         base: 0x352910, hover: 0x5c4718, edge: 0xe8b86a, text: '#ffe9b8'
       });
