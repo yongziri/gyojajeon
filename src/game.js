@@ -7241,48 +7241,44 @@ ${tmpl.signature}`;
       }
     });
 
-    // "더 알고 싶은 것" 선택 (단일 선택)
+    // "더 알고 싶은 것" — 자유 입력 (선택형 → 자유 텍스트, 사용자 피드백)
+    //   (이전엔 아랄해 전용 4지선다라 타 사건에서도 "카라칼팍의 미래"가 떠 부적절)
     const wY = 372;
     const wp = this.add.graphics();
-    wp.fillStyle(0x0a1828, 0.85); wp.fillRect(40, wY, 880, 142);
-    wp.lineStyle(2, 0x2a5a82, 1); wp.strokeRect(40, wY, 720, 142);
-    this.add.text(54, wY + 10, '🔍  다음에 더 알아보고 싶은 것 (선택사항)', {
+    wp.fillStyle(0x0a1828, 0.85); wp.fillRect(40, wY, 880, 96);
+    wp.lineStyle(2, 0x2a5a82, 1); wp.strokeRect(40, wY, 880, 96);
+    this.add.text(54, wY + 12, '🔍  다음에 더 알아보고 싶은 것 (선택사항)', {
       fontFamily: FONT_TITLE, fontSize: '14px', color: '#ffd96a',
       fontStyle: 'bold'
     });
-    const wantOptions = [
-      { id: 'more_disaster',  label: '다른 환경 재앙 사례' },
-      { id: 'more_un',        label: 'UN·국제기구 활동' },
-      { id: 'more_consume',   label: '내가 할 수 있는 소비' },
-      { id: 'more_future',    label: '카라칼팍의 미래' },
-    ];
-    this.wantNext = null;
-    const wantBtns = [];
-    wantOptions.forEach((opt, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const wx = 54 + col * 354, wyy = wY + 38 + row * 46;
-      const ww = 340, wh = 38;
-      const gg = this.add.graphics();
-      const draw = (sel) => {
-        gg.clear();
-        gg.fillStyle(sel ? 0x2e4a36 : 0x102238, 1);
-        gg.fillRect(wx, wyy, ww, wh);
-        gg.lineStyle(2, sel ? 0x7fd07f : 0x2a5a82, 1);
-        gg.strokeRect(wx, wyy, ww, wh);
-      };
-      draw(false);
-      this.add.text(wx + 14, wyy + wh / 2, opt.label, {
-        fontFamily: FONT, fontSize: '12px', color: '#e6efff'
-      }).setOrigin(0, 0.5);
-      const zone = this.add.zone(wx + ww / 2, wyy + wh / 2, ww, wh)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => {
-        this.wantNext = (this.wantNext === opt.id) ? null : opt.id;
-        wantBtns.forEach(b => b.draw(b.id === this.wantNext));
-      });
-      wantBtns.push({ id: opt.id, draw });
-    });
+    // 저장된 값 복원 (재진입 시)
+    if (this.wantNextText === undefined) {
+      this.wantNextText = (this.registry.get('learningReview') || {}).wantNextLabel || '';
+    }
+    const wnLabel = () => this.wantNextText
+      ? '✍ "' + this.wantNextText.slice(0, 56) + (this.wantNextText.length > 56 ? '…' : '') + '"   (수정)'
+      : '✏️  여기를 눌러 자유롭게 적어보세요';
+    this.wantNextBtn = fancyButton(this, 480, wY + 64, 856, 40, wnLabel(),
+      () => {
+        const cur = this.wantNextText || '';
+        const apply = (text) => {
+          this.wantNextText = (text || '').trim().slice(0, 200);
+          if (this.wantNextBtn && this.wantNextBtn.t) this.wantNextBtn.t.setText(wnLabel());
+        };
+        if (window.PEACE && typeof window.PEACE.openTextInputModal === 'function') {
+          window.PEACE.openTextInputModal({
+            title: '🔍 다음에 더 알아보고 싶은 것',
+            subtitle: '이번 조사 뒤 더 궁금해진 점을 자유롭게 적어보세요 (선택 입력)',
+            placeholder: '예: 다른 나라의 환경 회복 사례가 더 궁금해졌다',
+            maxLength: 200,
+            initial: cur
+          }, apply);
+        } else {
+          const txt = window.prompt('다음에 더 알아보고 싶은 것을 적어주세요 (선택)', cur);
+          if (txt !== null) apply(txt);
+        }
+      },
+      { base: 0x102238, hover: 0x1a3a56, edge: 0x6fb7d6, text: '#dff1ff' });
 
     // 하단 버튼 — 통일된 표현: '← 미리보기로' (뒤) / '📤 송부하기' (최종 액션)
     fancyButton(this, 250, 566, 220, 42, '← 미리보기로',
@@ -7293,8 +7289,8 @@ ${tmpl.signature}`;
         // registry에 자기 평가 저장 (사건별 누적용으로 caseId 키와 함께)
         const review = {
           ...this.reviewScores,
-          wantNext: this.wantNext,
-          wantNextLabel: (wantOptions.find(o => o.id === this.wantNext) || {}).label || '',
+          wantNext: this.wantNextText ? 'custom' : null,
+          wantNextLabel: this.wantNextText || '',
         };
         this.registry.set('learningReview', review);
         // 사건별 누적 회고(LearningTreeScene용)
