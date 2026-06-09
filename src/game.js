@@ -2089,6 +2089,40 @@ const CASE_LIST = [
   },
 ];
 
+// ── 사건 해금 상태 계산 (순차 해금) ────────────────────────────
+//  신입 교육(intro) → 사라진 바다(aralsea) → 깨어진 평화(ukraine)
+//   → 오래된 갈등(palestine) → UN 본부(unhq).
+//  각 사건은 '바로 앞' 사건을 완료해야 열린다. UN 본부는 본 3사건 모두 완료해야 열림.
+const CASE_SEQUENCE = ['intro', 'aralsea', 'ukraine', 'palestine'];
+function caseUnlockState(c, compList) {
+  const mainDone = ['aralsea', 'ukraine', 'palestine'].every(id => compList.includes(id));
+  const isIntro  = (c.id === 'intro');
+  const isFinale = !!c.isSpeechHub;
+  let prereqId = null;
+  if (!isIntro && !isFinale) {
+    const si = CASE_SEQUENCE.indexOf(c.id);
+    prereqId = (si > 0) ? CASE_SEQUENCE[si - 1] : 'intro';
+  }
+  const prereqDone   = prereqId ? compList.includes(prereqId) : true;
+  const lockedBySeq  = !isIntro && !isFinale && !prereqDone;
+  const lockedFinale = isFinale && !mainDone;
+  const statusAvail  = (c.status === 'available');
+  const available    = statusAvail && !lockedBySeq && !lockedFinale;
+  const lockKind = available ? null
+    : (lockedFinale ? 'finale' : (lockedBySeq ? 'seq' : 'soon'));
+  return { available, lockKind, prereqId };
+}
+// 잠긴 사건의 안내 문구 (호버 정보·토스트·힌트 공통)
+function caseLockReason(lockKind, prereqId) {
+  if (lockKind === 'finale') return '3개 사건을 모두 마치면 열립니다';
+  if (lockKind === 'seq') {
+    if (prereqId === 'intro') return '먼저 「신입 교육」을 마치세요';
+    const pc = CASE_LIST.find(x => x.id === prereqId);
+    return '먼저 「' + (pc ? pc.title : '앞 임무') + '」을(를) 마치세요';
+  }
+  return '후속 업데이트 예정';
+}
+
 class CaseSelectScene extends Phaser.Scene {
   constructor() { super('CaseSelectScene'); }
 
@@ -2148,7 +2182,9 @@ class CaseSelectScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     // 우측 카운터: 완료 / 진입가능 / 전체
     const completedCount = (this.registry.get('completedCases') || []).length;
-    const availCount = CASE_LIST.filter(c => c.status === 'available').length;
+    const _compForCount = (this.registry.get('completedCases') || []);
+    const availCount = CASE_LIST.filter(
+      c => caseUnlockState(c, _compForCount).available).length;
     this.add.text(listX + listW - 12, listY + 16,
       '★ ' + completedCount + '  ·  진입 ' + availCount + ' / ' + CASE_LIST.length, {
       fontFamily: FONT, fontSize: '11px', color: '#7aa6c8'
@@ -2193,12 +2229,14 @@ class CaseSelectScene extends Phaser.Scene {
     // 사건별 핵심 키워드를 한 줄씩 미리 보여 학생이 hover 전부터 흐름 파악 가능
     const introDone = (this.registry.get('completedCases') || []).includes('intro');
     this.defaultInfo = introDone
-      ? ('좌측 카드에 커서를 올리면 자세한 브리핑이 표시됩니다.\n\n' +
+      ? ('좌측 카드에 커서를 올리면 자세한 브리핑이 표시됩니다.\n' +
+         '임무는 순서대로 하나씩 열립니다.\n\n' +
          '· 「사라진 바다」 아랄해 — 냉전이 남긴 수자원 분쟁\n' +
          '· 「깨어진 평화」 러우 전쟁 — 식량·에너지 위기\n' +
          '· 「오래된 갈등」 이팔 — 종교·민족 + 인도주의')
-      : ('🎓 먼저 「신입 교육 — UN 본부」를 마쳐야\n' +
-         '본 임무 세 가지가 잠금 해제됩니다.\n\n' +
+      : ('🎓 먼저 「신입 교육 — UN 본부」를 마치면\n' +
+         '첫 임무 「사라진 바다」가 열립니다.\n' +
+         '임무는 순서대로 하나씩 열립니다.\n\n' +
          '디렉터 한센과 P.E.A.C.E. 학습 모델 —\n' +
          '인식 → 관찰 → 성찰 → 실천 — 을 체험하세요.');
     // 폰트 11px + lineSpacing 2 -- 한 줄 ~13px -> 패널 가용 줄 ~8줄 (안전 마진)
@@ -2279,18 +2317,9 @@ class CaseSelectScene extends Phaser.Scene {
       catch (e) { return []; }
     })();
     const completed = compList.includes(c.id);
-    // 튜토리얼(intro)이 끝나야 본 3사건 잠금 해제. intro 자체는 항상 열림.
-    const introDone = compList.includes('intro');
-    const isIntro = (c.id === 'intro');
-    const isFinale = !!c.isSpeechHub;   // UN 본부(연설 허브)
-    // UN 본부는 본 3사건을 모두 마쳐야 열림
-    const mainDone = ['aralsea', 'ukraine', 'palestine'].every(id => compList.includes(id));
-    const lockedByIntro = !isIntro && !isFinale && !introDone;
-    const lockedFinale = isFinale && !mainDone;
-    const available = (c.status === 'available') && !lockedByIntro && !lockedFinale;
-    // 잠금 종류 — 'tutorial' = 튜토리얼 미완료, 'finale' = 3사건 미완료, 'soon' = 준비중
-    const lockKind = lockedFinale ? 'finale'
-      : (lockedByIntro ? 'tutorial' : (!available ? 'soon' : null));
+    // 순차 해금 — 신입교육→사라진바다→깨어진평화→오래된갈등→UN본부
+    //   (각 사건은 바로 앞 사건을 완료해야 열림. caseUnlockState 공통 사용)
+    const { available, lockKind, prereqId } = caseUnlockState(c, compList);
 
     const g = this.add.graphics();
     const drawCard = (hover) => {
@@ -2315,11 +2344,17 @@ class CaseSelectScene extends Phaser.Scene {
     // 아이콘 — 작은 도형으로 (지구본/물결/평화)
     this.drawCaseIcon(ig, x + 40, y + 40, c);
 
-    // 제목
+    // 상태 배지 폭(통일·축소) — 제목이 배지 밑으로 안 들어가도록 먼저 폭 확보
+    const badgeW = 52, badgeH = 20;
+    const badgeX = x + w - 16, badgeY = y + 14;
+    const titleMaxW = (badgeX - badgeW - 8) - (x + 78);
+
+    // 제목 — 길면(예: UN 본부 · 총회 연설) 배지에 가려지지 않게 폰트 자동 축소
     const titleText = this.add.text(x + 78, y + 14, c.title, {
       fontFamily: FONT_TITLE, fontSize: '17px',
       color: available ? '#ffe9b8' : '#7a8a98', fontStyle: 'bold'
     });
+    { let _fs = 17; while (titleText.width > titleMaxW && _fs > 11) { _fs -= 1; titleText.setFontSize(_fs); } }
     // 부제 — wordWrap + 작은 폰트로 카드 폭 밖으로 안 튀어나가게 (이용빈 피드백)
     const subT = this.add.text(x + 78, y + 36, c.subtitle, {
       fontFamily: FONT, fontSize: '11px', lineSpacing: 1,
@@ -2332,39 +2367,25 @@ class CaseSelectScene extends Phaser.Scene {
       color: available ? '#a8c4dc' : '#5a6470'
     });
 
-    // 상태 배지 (우상단) — 진입/준비중/완료
-    const badgeX = x + w - 16, badgeY = y + 14;
+    // 상태 배지 (우상단) — 통일된 작은 크기. 잠금은 종류와 무관하게 '잠금'으로 통일.
     const bg2 = this.add.graphics();
-    if (completed) {
-      // 완료된 사건 — 황금색 배지
-      bg2.fillStyle(0x3a2e10, 1); bg2.fillRect(badgeX - 64, badgeY, 64, 20);
-      bg2.lineStyle(1, 0xffd96a, 1); bg2.strokeRect(badgeX - 64, badgeY, 64, 20);
-      this.add.text(badgeX - 32, badgeY + 10, '★  완료', {
-        fontFamily: FONT, fontSize: '11px', color: '#ffd96a'
+    const drawBadge = (fill, edge, label, color) => {
+      bg2.fillStyle(fill, 1); bg2.fillRect(badgeX - badgeW, badgeY, badgeW, badgeH);
+      bg2.lineStyle(1, edge, 1); bg2.strokeRect(badgeX - badgeW, badgeY, badgeW, badgeH);
+      this.add.text(badgeX - badgeW / 2, badgeY + badgeH / 2, label, {
+        fontFamily: FONT, fontSize: '11px', color
       }).setOrigin(0.5);
-    } else if (available) {
-      bg2.fillStyle(0x2e6b58, 1); bg2.fillRect(badgeX - 60, badgeY, 60, 20);
-      bg2.lineStyle(1, 0x7fd07f, 1); bg2.strokeRect(badgeX - 60, badgeY, 60, 20);
-      this.add.text(badgeX - 30, badgeY + 10, '✓  진입', {
-        fontFamily: FONT, fontSize: '11px', color: '#d7ffe0'
-      }).setOrigin(0.5);
-    } else {
-      bg2.fillStyle(0x4a3a22, 1); bg2.fillRect(badgeX - 80, badgeY, 80, 20);
-      bg2.lineStyle(1, 0xc9a36b, 1); bg2.strokeRect(badgeX - 80, badgeY, 80, 20);
-      this.add.text(badgeX - 40, badgeY + 10,
-        lockKind === 'tutorial' ? '🔒  튜토리얼' : '🔒  준비중', {
-        fontFamily: FONT, fontSize: '11px', color: '#ffe9b8'
-      }).setOrigin(0.5);
-    }
+    };
+    if (completed)      drawBadge(0x3a2e10, 0xffd96a, '★ 완료', '#ffd96a');
+    else if (available) drawBadge(0x2e6b58, 0x7fd07f, '✓ 진입', '#d7ffe0');
+    else                drawBadge(0x4a3a22, 0xc9a36b, '🔒 잠금', '#ffe9b8');
 
     // 잠긴 카드 안내 — 지역 줄 아래에 동적 배치 (고정 위치는 2줄 부제와 겹쳤음, 이용빈 피드백).
     //   카드 높이를 넘으면 생략 — 🔒 배지와 하단 브리핑이 사유를 함께 안내하므로 무방.
     if (!available) {
       const hintY = regT.y + regT.height + 1;
       if (hintY + 12 <= y + h) {
-        this.add.text(x + 78, hintY,
-          lockKind === 'finale' ? '— 3개 사건을 모두 마치면 열립니다'
-            : (lockKind === 'tutorial' ? '— 먼저 신입 교육을 마치세요' : '— 후속 업데이트 예정'), {
+        this.add.text(x + 78, hintY, '— ' + caseLockReason(lockKind, prereqId), {
           fontFamily: FONT, fontSize: '10px', color: '#6e7a86', fontStyle: 'italic'
         });
       }
@@ -2385,10 +2406,11 @@ class CaseSelectScene extends Phaser.Scene {
         info = '▶  ' + c.title + '\n   ' + c.subtitle + '\n   지역: ' + c.region;
         // brief 필드 있으면 한 줄 띄우고 자세한 설명 추가 (PDF 양식 선정 이유 기반)
         if (c.brief) info += '\n\n' + c.brief;
-      } else if (lockKind === 'tutorial') {
-        info = '🔒  ' + c.title + '\n   먼저 「신입 교육 — UN 본부」를 마치세요.\n   디렉터 한센과 P.E.A.C.E. 학습 모델 체험.';
       } else {
-        info = '🔒  ' + c.title + ' — 준비 중\n   ' + c.subtitle + '\n   다음 업데이트에서 만날 수 있어요.';
+        info = '🔒  ' + c.title + ' — 잠금\n   ' + caseLockReason(lockKind, prereqId) + '.';
+        if (lockKind === 'seq' && prereqId === 'intro') {
+          info += '\n   디렉터 한센과 P.E.A.C.E. 학습 모델 체험.';
+        }
       }
       this.infoText.setText(info);
     });
@@ -2405,11 +2427,7 @@ class CaseSelectScene extends Phaser.Scene {
       // 이미 다른 카드 클릭으로 fadeOut 진행 중이면 무시 (다중 호출 방지)
       if (this.leaving) return;
       if (!available) {
-        if (lockKind === 'tutorial') {
-          this.flashToast('🔒  먼저 「신입 교육 — UN 본부」를 마치세요.');
-        } else {
-          this.flashToast('🔒  이 사건은 준비 중입니다 — 다음 업데이트에서 만나요!');
-        }
+        this.flashToast('🔒  ' + caseLockReason(lockKind, prereqId));
         return;
       }
       this.leaving = true;
