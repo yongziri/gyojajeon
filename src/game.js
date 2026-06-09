@@ -7366,6 +7366,9 @@ ${tmpl.signature}`;
   // ── 발송 완료 / 엔딩 ──────────────────────────────────────
   buildSent(body) {
     this.mode = 'sent';
+    // leavingEnd 플래그 명시 리셋 -- 옛 잔재로 인해 모든 버튼(처음으로 등)이
+    // 무반응이 되는 버그 방어 (사용자 피드백: "처음으로 눌러도 반응 안 함")
+    this.leavingEnd = false;
     this.clearAll();
     if (window.SFX) window.SFX.play('send');   // 송부 팡파레
 
