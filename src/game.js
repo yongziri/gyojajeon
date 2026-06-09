@@ -2414,14 +2414,15 @@ class CaseSelectScene extends Phaser.Scene {
       }
       this.leaving = true;
 
-      // ── UN 본부(연설 허브) → SpeechScene 직행 (리셋·브리핑 없음) ──
+      // ── UN 본부(연설 허브) → 브리핑(뉴욕 지도) 경유 → SpeechScene ──
       if (c.isSpeechHub) {
         // 저장본 복원 — 사건별 수집 근거(caseClues)·완료 목록을 SpeechScene이 읽을 수 있게
         const sv = (typeof loadGameState === 'function') ? loadGameState() : null;
         if (sv) { try { restoreRegistryFromSave(this.registry, sv); } catch (e) {} }
+        this.registry.set('caseId', 'unhq');   // 브리핑·지도가 UN 본부로 표시되도록
         this.cameras.main.fadeOut(380, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete',
-          () => this.scene.start('SpeechScene'));
+          () => this.scene.start('BriefingScene'));
         return;
       }
 
@@ -3028,9 +3029,10 @@ class LearningTreeScene extends Phaser.Scene {
         () => {
           if (this.leaving) return;
           this.leaving = true;
+          this.registry.set('caseId', 'unhq');   // 브리핑(뉴욕 지도) 경유
           this.cameras.main.fadeOut(260, 0, 0, 0);
           this.cameras.main.once('camerafadeoutcomplete',
-            () => this.scene.start('SpeechScene'));
+            () => this.scene.start('BriefingScene'));
         },
         { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
       fancyButton(this, 750, 575, 150, 30, '← 임무 선택', goCaseSelect,
@@ -3187,6 +3189,10 @@ class BriefingScene extends Phaser.Scene {
     const W = GAME_W, H = GAME_H;
     const id = this.registry.get('caseId') || 'aralsea';
     const c = CASE_LIST.find(x => x.id === id) || CASE_LIST[0];
+    // UN 본부(연설 허브)면 "현장 이동"이 아니라 "총회장/단상" 톤으로 표기
+    const isHub = !!c.isSpeechHub;
+    const moveLabel  = isHub ? '총회장으로 이동 중'      : '현장으로 이동 중';
+    const enterLabel = isHub ? '▶  클릭하여 단상에 오르기' : '▶  클릭하여 현장 진입';
 
     // ── 배경: 어두운 코발트 + 격자 (선택 화면과 톤 일치) ───────
     const bg = this.add.graphics();
@@ -3281,6 +3287,7 @@ class BriefingScene extends Phaser.Scene {
     // 동일 좌표계라 사용자가 디버그 픽커로 보정한 정확 위치 자동 반영)
     const EVENT_LABELS = {
       intro:     { label: 'UN HQ · NYC',       name: 'North America'   },
+      unhq:      { label: 'UN HQ · NYC',       name: 'North America'   },
       aralsea:   { label: 'Moynaq',            name: 'Aral Sea Region' },
       ukraine:   { label: 'Kyiv',              name: 'Ukraine'         },
       palestine: { label: 'Jerusalem / Gaza',  name: 'Palestine'       },
@@ -3373,7 +3380,7 @@ class BriefingScene extends Phaser.Scene {
     };
     fillBar(0);
 
-    const loadingText = this.add.text(480, 540, '현장으로 이동 중', {
+    const loadingText = this.add.text(480, 540, moveLabel, {
       fontFamily: FONT, fontSize: '14px', color: '#cfe9ff'
     }).setOrigin(0.5);
     const skipText = this.add.text(480, 565, '클릭하여 건너뛰기  ·  SPACE / ENTER', {
@@ -3413,7 +3420,7 @@ class BriefingScene extends Phaser.Scene {
       delay: 380, loop: true,
       callback: () => {
         dots = (dots + 1) % 4;
-        loadingText.setText('현장으로 이동 중' + '.'.repeat(dots));
+        loadingText.setText(moveLabel + '.'.repeat(dots));
       }
     });
 
@@ -3428,7 +3435,7 @@ class BriefingScene extends Phaser.Scene {
         // 자동 진행 대신 사용자 입력 대기 — 안내문·점 애니메이션 멈춤
         this.barReady = true;
         if (this.dotTimer) { this.dotTimer.remove(); this.dotTimer = null; }
-        loadingText.setText('▶  클릭하여 현장 진입');
+        loadingText.setText(enterLabel);
         loadingText.setColor('#ffe9b8');
         this.tweens.add({
           targets: loadingText, alpha: 0.6, duration: 700,
@@ -3448,9 +3455,11 @@ class BriefingScene extends Phaser.Scene {
     if (this.briefDone) return;
     this.briefDone = true;
     if (this.dotTimer) this.dotTimer.remove();
+    // UN 본부면 WorldScene(현장)이 아니라 SpeechScene(총회 연설)으로
+    const dest = (this.registry.get('caseId') === 'unhq') ? 'SpeechScene' : 'WorldScene';
     this.cameras.main.fadeOut(280, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('WorldScene');
+      this.scene.start(dest);
     });
   }
 }
