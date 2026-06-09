@@ -382,7 +382,7 @@
       <input id="room" value="aralsea-1" />
     </div>
     <button id="connectBtn">연결</button>
-    <button id="clearBtn" class="gray">보드 초기화</button>
+    <button id="clearBtn" class="gray" title="화면과 브로커에 보존된 학생 기록을 모두 삭제 — 재연결해도 옛 학생이 다시 뜨지 않습니다">보드 초기화</button>
     <button id="printBtn" class="gray">🖨 학급 리포트</button>
     <button id="csvBtn" class="gray">📋 CSV 다운로드</button>
     <div class="ctl"><label>🔎</label>
@@ -1065,6 +1065,28 @@
 
     $('connectBtn').addEventListener('click', connect);
     $('clearBtn').addEventListener('click', () => {
+      const ids = Object.keys(students);
+      const room = curRoom || $('room').value.trim() || 'aralsea-1';
+      // ⚠️ 핵심: 게임은 상태를 retain(보존) 메시지로 발행하므로, 화면만 비우면
+      //    재연결 시 브로커가 옛 학생을 그대로 다시 내려준다(이용빈 피드백).
+      //    → 각 학생 토픽에 "빈 페이로드 + retain:true"를 보내 브로커의 보존
+      //      메시지 자체를 삭제해야 재연결해도 되살아나지 않는다.
+      if (ids.length && client && client.connected) {
+        if (!confirm('이 교실(' + room + ')의 학생 기록을 모두 초기화합니다.\n' +
+            '브로커에 보존된 기록까지 지워, 재연결해도 다시 나타나지 않습니다.\n계속할까요?')) {
+          return;
+        }
+        ids.forEach(id => {
+          try {
+            client.publish('aralsea/' + room + '/student/' + id, '',
+              { qos: 0, retain: true });
+          } catch (e) { /* 무시 */ }
+        });
+      } else if (ids.length && (!client || !client.connected)) {
+        // 미연결이면 브로커 정리 불가 — 화면만 비우면 재연결 시 옛 학생이 되살아남
+        alert('먼저 "연결"을 눌러 교실에 연결한 뒤 초기화하면\n' +
+          '브로커에 보존된 기록까지 깨끗이 지워집니다.\n(지금은 화면만 비웁니다)');
+      }
       for (const k in students) delete students[k];
       render();
     });
