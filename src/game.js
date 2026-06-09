@@ -3871,10 +3871,11 @@ class WorldScene extends Phaser.Scene {
         }
       } catch (e) { /* fail-safe — 잠금 검사 실패해도 진입 허용 */ }
       this.entering = true;
-      // 대화·퀴즈와 동일한 오버레이 패턴(pause+launch) — scene.start는 WorldScene를
-      // 매번 종료/재생성해 재진입 시 멈추는 버그가 있었음(이문호 교사 피드백).
-      this.scene.pause();
-      this.scene.launch('InvestigationScene');
+      // 옛 패턴 회귀 — scene.start('InvestigationScene').
+      // f081d9b 의 pause+launch 패턴은 이동/재시작 시 모든 SceneManager 트릭이
+      // 작동 안 했음. scene.start 는 WorldScene 매번 종료/재생성하므로 옛
+      // "재진입 멈춤" 버그가 회귀할 수 있으나 사용자 우선 요청.
+      this.scene.start('InvestigationScene');
     });
 
     // UN 우편함 (편지 쓰기 입구) — scale 고정 (꿈틀 제거)
@@ -6174,17 +6175,10 @@ class InvestigationScene extends Phaser.Scene {
     loc.moves.forEach((m, i) => {
       const y = 478 + i * 48;
       const b = fancyButton(this, 480, y, 380, 40, '▶  ' + m.label, () => {
-        // 이전 6번 SceneManager 트릭 모두 실패. 100% 작동 보장 패턴 ──
-        //   진행도 저장 + 페이지 reload (URL 파라미터 ?scene=Investigation).
-        //   TitleScene line 1448 디버그 라우터가 InvestigationScene 직진.
-        //   BGM·자산 잠시 다시 로드 단점 있지만 멈춤보다 압도적으로 나음.
+        // 옛 패턴 회귀 — scene.restart(). f081d9b 의 launch 패턴이 회귀되면서
+        // 정상 작동 복원 (페이지 reload 제거).
         this.registry.set('invLoc', m.to);
-        try { saveGameState(this.registry); } catch (e) {}
-        const params = new URLSearchParams();
-        params.set('scene', 'Investigation');
-        params.set('case', this.registry.get('caseId') || 'aralsea');
-        params.set('loc', m.to);
-        location.search = '?' + params.toString();
+        this.scene.restart();
       }, theme);
       b.g.setDepth(7); b.zone.setDepth(8); b.t.setDepth(8);
       this.overlay.push(b.g, b.zone, b.t);
@@ -6332,9 +6326,9 @@ class InvestigationScene extends Phaser.Scene {
   }
 
   leave() {
-    // 오버레이 종료 → WorldScene 재개 (대화·조사 닫기와 동일 패턴)
-    this.scene.stop();
-    this.scene.resume('WorldScene');
+    // 옛 패턴 회귀 — scene.start('WorldScene'). pause+launch 패턴이 이동을
+    // 막던 문제로 사용자 분노. 진입과 동일하게 scene.start 로 통일.
+    this.scene.start('WorldScene');
   }
 
   update() {
