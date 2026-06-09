@@ -771,7 +771,8 @@
           '<div class="tagScroll">' +
             (liveTagCards || '<p style="color:#7a8590;font-style:italic">아직 학생 입력 없음</p>') +
           '</div>';
-        return;
+        // ⚠️ 여기서 return하면 아래 학생 카드 그리드가 렌더되지 않아
+        //    "노트가 있으면 학생이 안 뜨는" 버그가 됨 → return 제거(그리드까지 진행)
       } else if (false) {
         td.innerHTML = '<h3>💭 학급 감정 태그 분포 (단서별 학생 반응)</h3>' +
           Object.keys(TAG_INFO).map(k => {
