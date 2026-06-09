@@ -7355,8 +7355,9 @@ ${tmpl.signature}`;
     if (this.wantNextText === undefined) {
       this.wantNextText = (this.registry.get('learningReview') || {}).wantNextLabel || '';
     }
+    // 버튼 라벨 — 본문 노출 X (이용빈 피드백 통일). 자수만 표시. 클릭 시 모달.
     const wnLabel = () => this.wantNextText
-      ? '✍ "' + this.wantNextText.slice(0, 56) + (this.wantNextText.length > 56 ? '…' : '') + '"   (수정)'
+      ? '✍  ' + this.wantNextText.length + '자 작성됨  ·  보기·수정'
       : '✏️  여기를 눌러 자유롭게 적어보세요';
     this.wantNextBtn = fancyButton(this, 480, wY + 64, 856, 40, wnLabel(),
       () => {
@@ -7960,8 +7961,9 @@ class ReflectionScene extends Phaser.Scene {
       this.registry.set('caseUserRefl', m);
       this.registry.set('userReflection', this.userStmt || '');
     };
+    // 버튼 라벨 — 본문 노출 X (이용빈 피드백 통일). 자수만 표시. 클릭 시 모달.
     const userBtnLabel = () => this.userStmt
-      ? '✍  내 생각: "' + this.userStmt.slice(0, 38) + (this.userStmt.length > 38 ? '…' : '') + '"  (수정)'
+      ? '✍  내 생각  ✓  ' + this.userStmt.length + '자 작성됨  ·  보기·수정'
       : '✍  내 생각도 직접 한 문장 적어보기 (선택)';
     this.userStmtBtn = fancyButton(this, 480, 510, 700, 30, userBtnLabel(),
       () => {
