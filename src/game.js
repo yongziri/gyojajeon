@@ -2118,25 +2118,18 @@ class CaseSelectScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     }).setOrigin(0, 0.5);
 
-    // hover-out 시 복원할 기본 안내문 — PDF 양식 페이지 11 "주제 선정" 기반
+    // hover-out 시 복원할 기본 안내문 — 패널 영역(infoH 146) 안에 fit 하도록 압축
     // 사건별 핵심 키워드를 한 줄씩 미리 보여 학생이 hover 전부터 흐름 파악 가능
     const introDone = (this.registry.get('completedCases') || []).includes('intro');
     this.defaultInfo = introDone
-      ? ('좌측 임무 카드 위에 커서를 올리면 자세한 브리핑이 표시됩니다.\n' +
-         '카드를 클릭하면 출발합니다.\n\n' +
+      ? ('좌측 카드에 커서를 올리면 자세한 브리핑이 표시됩니다.\n\n' +
          '· 「사라진 바다」 아랄해 — 냉전이 남긴 수자원 분쟁\n' +
-         '   ↳ 60년 만에 호수 90%가 사라진 환경 재앙. 환경적 세계시민성 탐구.\n' +
-         '· 「깨어진 평화」 러시아·우크라이나 전쟁 — 식량·에너지 위기\n' +
-         '   ↳ 곡물·에너지 가격 폭등이 우리 일상까지 닿는 사례.\n' +
-         '· 「오래된 갈등」 이스라엘·팔레스타인 — 종교·민족 + 인도주의\n' +
-         '   ↳ 천 년의 공존과 대규모 난민 위기. 역사·현재 시각 통합.')
+         '· 「깨어진 평화」 러우 전쟁 — 식량·에너지 위기\n' +
+         '· 「오래된 갈등」 이팔 — 종교·민족 + 인도주의')
       : ('🎓 먼저 「신입 교육 — UN 본부」를 마쳐야\n' +
          '본 임무 세 가지가 잠금 해제됩니다.\n\n' +
-         '디렉터 한센과 만나 P.E.A.C.E. 학습 모델 —\n' +
-         '인식 → 관찰 → 성찰 → 실천 — 을\n' +
-         '직접 체험하세요.\n\n' +
-         '튜토리얼 종료 후 본 임무 3가지(아랄해·우크라이나·팔레스타인)\n' +
-         '의 자세한 브리핑이 카드별로 표시됩니다.');
+         '디렉터 한센과 P.E.A.C.E. 학습 모델 —\n' +
+         '인식 → 관찰 → 성찰 → 실천 — 을 체험하세요.');
     this.infoText = this.add.text(infoX + 14, infoY + 38, this.defaultInfo, {
       fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', lineSpacing: 3,
       wordWrap: { width: infoW - 28 }
