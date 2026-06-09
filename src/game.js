@@ -3013,7 +3013,9 @@ class LearningTreeScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '12px', color: '#dfffdf'
     });
 
-    // 하단 — (좌) UN 연설하기(통합·1회)  (우) 사건 선택
+    // 하단 — 임무 선택으로 돌아가기.
+    //  (UN 본부 연설은 이제 '임무 선택' 화면의 정식 카드로 진입하므로,
+    //   학습 트리의 별도 '연설하기' 버튼은 중복 → 제거. 사용자 피드백.)
     const goCaseSelect = () => {
       if (this.leaving) return;
       this.leaving = true;
@@ -3021,26 +3023,8 @@ class LearningTreeScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete',
         () => this.scene.start('CaseSelectScene'));
     };
-    // UN 본부(연설)는 본 3사건을 모두 마쳐야 열림 — 그 전엔 임무 선택만
-    const mainDone3 = ['aralsea', 'ukraine', 'palestine']
-      .every(id => (this.registry.get('completedCases') || []).includes(id));
-    if (mainDone3) {
-      fancyButton(this, 470, 575, 240, 30, '🏛  UN 본부 — 연설하기',
-        () => {
-          if (this.leaving) return;
-          this.leaving = true;
-          this.registry.set('caseId', 'unhq');   // 브리핑(뉴욕 지도) 경유
-          this.cameras.main.fadeOut(260, 0, 0, 0);
-          this.cameras.main.once('camerafadeoutcomplete',
-            () => this.scene.start('BriefingScene'));
-        },
-        { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
-      fancyButton(this, 750, 575, 150, 30, '← 임무 선택', goCaseSelect,
-        { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
-    } else {
-      fancyButton(this, 700, 575, 160, 30, '← 임무 선택', goCaseSelect,
-        { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
-    }
+    fancyButton(this, 480, 575, 180, 32, '← 임무 선택', goCaseSelect,
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
   }
 
   // 안내인 대화 다시 보기 — STORIES[cid] 노드를 start부터 순서대로 따라가며
