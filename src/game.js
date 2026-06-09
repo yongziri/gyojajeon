@@ -7397,10 +7397,43 @@ ${tmpl.signature}`;
 
     // 완성 보고서 패널 (넉넉히)
     panel(this, 480, 330, 920, 456, 0xfff8e7, 0x6a4f2a);
-    this.add.text(44, 120, finalBody, {
+    // 본문 — 길면 패널 밖으로 잘리므로 스크롤(컨테이너+마스크+휠/드래그/스크롤바)
+    const VIEW_TOP = 116, VIEW_BOTTOM = 548, VIEW_H = VIEW_BOTTOM - VIEW_TOP;
+    const content = this.add.container(0, 0);
+    const bodyText = this.add.text(44, 120, finalBody, {
       fontFamily: FONT, fontSize: '14px', color: '#0a0a14',
-      wordWrap: { width: 872 }, lineSpacing: 6, resolution: 2
+      wordWrap: { width: 856 }, lineSpacing: 6, resolution: 2
     });
+    content.add(bodyText);
+    const maskShape = this.add.graphics();
+    maskShape.fillStyle(0xffffff, 1); maskShape.fillRect(28, VIEW_TOP, 904, VIEW_H);
+    maskShape.setVisible(false);
+    content.setMask(maskShape.createGeometryMask());
+    const overflow = Math.max(0, (120 + bodyText.height) - VIEW_BOTTOM + 6);
+    if (overflow > 0) {
+      const sbX = 922, sbW = 7;
+      const track = this.add.graphics();
+      track.fillStyle(0xd8c6a0, 0.95); track.fillRoundedRect(sbX, VIEW_TOP, sbW, VIEW_H, 3);
+      const thumbH = Math.max(40, VIEW_H * (VIEW_H / (overflow + VIEW_H)));
+      const thumb = this.add.rectangle(sbX + sbW / 2, VIEW_TOP + thumbH / 2, sbW, thumbH, 0x6a4f2a, 0.95);
+      this.add.text(480, VIEW_BOTTOM + 4, '▲▼ 스크롤하여 보고서 전체 보기', {
+        fontFamily: FONT, fontSize: '11px', color: '#8a6a3a'
+      }).setOrigin(0.5);
+      const clampScroll = () => {
+        content.y = Phaser.Math.Clamp(content.y, -overflow, 0);
+        const frac = overflow ? (-content.y / overflow) : 0;
+        thumb.y = VIEW_TOP + thumbH / 2 + (VIEW_H - thumbH) * frac;
+      };
+      let drag = false, dY = 0, dCy = 0;
+      const onWheel = (p, o, dx, dy) => { content.y -= dy * 0.5; clampScroll(); };
+      const onDown = (p) => { if (p.y < VIEW_TOP || p.y > VIEW_BOTTOM) return; drag = true; dY = p.y; dCy = content.y; };
+      const onMove = (p) => { if (!drag) return; content.y = dCy + (p.y - dY); clampScroll(); };
+      const onUp = () => { drag = false; };
+      this.input.on('wheel', onWheel);
+      this.input.on('pointerdown', onDown);
+      this.input.on('pointermove', onMove);
+      this.input.on('pointerup', onUp);
+    }
 
     // 게임 루프 마무리 — 4 버튼 (강조: 🖨 인쇄 + 다른 사건 선택) + fade
     const leaveTo = (sceneKey) => {
@@ -7410,18 +7443,16 @@ ${tmpl.signature}`;
       this.cameras.main.once('camerafadeoutcomplete',
         () => this.scene.start(sceneKey));
     };
+    // 하단 3버튼 (에셋·라이선스 버튼 제거 — 사용자 요청) — 가운데 정렬
     // 🖨 인쇄 — 보고서를 #printReport 에 채우고 window.print() 호출
-    fancyButton(this, 130, 578, 180, 40, '🖨  보고서 인쇄',
+    fancyButton(this, 230, 578, 190, 40, '🖨  보고서 인쇄',
       () => this.printReport(),
       { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xffd96a, text: '#ffe9b8' });
     // UN 연설은 사건마다 하지 않고 학습 트리에서 마지막에 한 번 (이문호 교사 피드백)
-    fancyButton(this, 320, 578, 180, 40, '🌳  나의 조사 기록',
+    fancyButton(this, 480, 578, 190, 40, '🌳  나의 조사 기록',
       () => leaveTo('LearningTreeScene'),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
-    fancyButton(this, 510, 578, 160, 40, '에셋·라이선스',
-      () => leaveTo('CreditsScene'),
-      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
-    fancyButton(this, 680, 578, 140, 40, '🏠  처음으로',
+    fancyButton(this, 730, 578, 160, 40, '🏠  처음으로',
       () => leaveTo('TitleScene'),
       { base: 0x2e6b58, hover: 0x3e8b73, edge: 0xffe9b8, text: '#ffffff' });
   }
