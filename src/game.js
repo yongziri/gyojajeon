@@ -6453,6 +6453,7 @@ class InvestigationScene extends Phaser.Scene {
   showRecord() {
     if (this.examine) this.toggleExamine();
     this.clearOverlay();
+    this._recScrollCleanup = null;   // 단서 기록 스크롤 입력 리스너 정리용
     if (typeof this.clearInspectPrompt === 'function') this.clearInspectPrompt();
     // 화면 전체 어둡게 — 명령 바·맵까지 비활성화 효과
     const bg = this.add.rectangle(480, 300, 960, 600, 0x000000, 0.78)
@@ -6490,11 +6491,12 @@ class InvestigationScene extends Phaser.Scene {
           fontFamily: FONT, fontSize: '14px', color: '#9fb5d2'
         }).setOrigin(0.5).setDepth(32));
     } else {
-      // 장소(맵)별 그룹화 — 이문호 교사 피드백 반영
+      // 장소(맵)별 그룹화 — 컨테이너에 담아 뷰포트 마스크로 스크롤(버튼 가림 방지)
       //   각 장소 헤더 + 그 장소 종합 감정(있을 때) + 단서 한 줄당 하나(●)
       //   ※ 텍스트가 두 줄 이상이면 실제 높이(text.height)만큼 curY 증가
-      //     (단서 두 줄짜리가 다음 항목과 겹치는 문제 — 이문호 교사 피드백)
       const locTags = this.registry.get('locationTags') || {};
+      const cont = this.add.container(0, 0).setDepth(32);
+      const items = [];
       let curY = 128;
       Object.entries(CASE.locations).forEach(([lid, loc]) => {
         const locEvs = loc.spots
@@ -6503,11 +6505,11 @@ class InvestigationScene extends Phaser.Scene {
           .map(s => s.evidence);
         if (locEvs.length === 0) return;
         // 장소 헤더
-        this.overlay.push(this.add.text(80, curY,
+        items.push(this.add.text(80, curY,
           '📍  ' + loc.name + '   (' + locEvs.length + '개)', {
           fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
           fontStyle: 'bold'
-        }).setDepth(32));
+        }));
         curY += 22;
         // 장소 종합 감정 (있을 때) — 두 줄 이상도 안전
         if (locTags[lid]) {
@@ -6515,8 +6517,8 @@ class InvestigationScene extends Phaser.Scene {
             '💭 ' + locTags[lid].label, {
             fontFamily: FONT, fontSize: '12px', color: '#9fb5d2',
             wordWrap: { width: 720 }, lineSpacing: 3, fontStyle: 'italic'
-          }).setDepth(32);
-          this.overlay.push(fb);
+          });
+          items.push(fb);
           curY += Math.max(22, fb.height + 4);
         }
         // 단서 1열 한 줄당 — ● 이름 — 짧은 설명
@@ -6524,40 +6526,86 @@ class InvestigationScene extends Phaser.Scene {
           const ai = getArea(e);
           // 영역 배지 (없으면 ● 만)
           if (ai) {
-            const tg = this.add.graphics().setDepth(32);
+            const tg = this.add.graphics();
             tg.fillStyle(ai.color, 1); tg.fillRect(98, curY + 2, 36, 16);
-            this.overlay.push(tg);
-            this.overlay.push(this.add.text(116, curY + 10, ai.label, {
+            items.push(tg);
+            items.push(this.add.text(116, curY + 10, ai.label, {
               fontFamily: FONT, fontSize: '10px', color: '#0a1828',
               fontStyle: 'bold'
-            }).setOrigin(0.5).setDepth(33));
+            }).setOrigin(0.5));
           }
           // 단서명 + 한 줄 설명 — 실제 height로 다음 행 위치 계산
           const txt = this.add.text(ai ? 144 : 98, curY,
             '● ' + e.name + '  —  ' + e.desc, {
             fontFamily: FONT, fontSize: '12px', color: '#cfe9ff',
             wordWrap: { width: ai ? 720 : 760 }, lineSpacing: 2
-          }).setDepth(32);
-          this.overlay.push(txt);
+          });
+          items.push(txt);
           curY += Math.max(22, txt.height + 4);
         });
         curY += 10;   // 장소 간 여백
       });
+      cont.add(items);
+      this.overlay.push(cont);
+
+      // ── 뷰포트 마스크 + 휠/드래그/스크롤바 (닫기 버튼 위까지만 표시) ──
+      const VIEW_TOP = 120, VIEW_BOTTOM = 500, VIEW_H = VIEW_BOTTOM - VIEW_TOP;
+      const maskShape = this.add.graphics().setDepth(31);
+      maskShape.fillStyle(0xffffff, 1);
+      maskShape.fillRect(PX + 6, VIEW_TOP, PW - 12, VIEW_H);
+      maskShape.setVisible(false);
+      cont.setMask(maskShape.createGeometryMask());
+      this.overlay.push(maskShape);
+      // 패널 영역 클릭은 닫지 않도록 가림(드래그 스크롤 가능) — 배경(여백) 클릭만 닫힘
+      const panelZone = this.add.zone(480, 300, PW, PH).setInteractive().setDepth(31);
+      this.overlay.push(panelZone);
+
+      const overflow = Math.max(0, curY - VIEW_BOTTOM);
+      if (overflow > 0) {
+        const sbX = PX + PW - 18, sbW = 6;
+        const track = this.add.graphics().setDepth(33);
+        track.fillStyle(0x1a2a3a, 0.85); track.fillRoundedRect(sbX, VIEW_TOP, sbW, VIEW_H, 3);
+        const thumbH = Math.max(40, VIEW_H * (VIEW_H / (overflow + VIEW_H)));
+        const thumb = this.add.rectangle(sbX + sbW / 2, VIEW_TOP + thumbH / 2, sbW, thumbH, 0xe8b86a, 0.95).setDepth(34);
+        this.overlay.push(track, thumb);
+        const clamp = () => {
+          cont.y = Phaser.Math.Clamp(cont.y, -overflow, 0);
+          const frac = overflow ? (-cont.y / overflow) : 0;
+          thumb.y = VIEW_TOP + thumbH / 2 + (VIEW_H - thumbH) * frac;
+        };
+        let drag = false, dY = 0, dCy = 0;
+        const onWheel = (p, o, dx, dy) => { cont.y -= dy * 0.5; clamp(); };
+        const onDown = (p) => { if (p.y < VIEW_TOP || p.y > VIEW_BOTTOM) return; drag = true; dY = p.y; dCy = cont.y; };
+        const onMove = (p) => { if (!drag) return; cont.y = dCy + (p.y - dY); clamp(); };
+        const onUp = () => { drag = false; };
+        this.input.on('wheel', onWheel);
+        this.input.on('pointerdown', onDown);
+        this.input.on('pointermove', onMove);
+        this.input.on('pointerup', onUp);
+        this._recScrollCleanup = () => {
+          this.input.off('wheel', onWheel); this.input.off('pointerdown', onDown);
+          this.input.off('pointermove', onMove); this.input.off('pointerup', onUp);
+        };
+      }
     }
     // 닫기 버튼 — 패널 안 하단 가운데, fancyButton 스타일로 통일
-    const done = () => this.clearOverlay();
+    const done = () => {
+      if (this._recScrollCleanup) { this._recScrollCleanup(); this._recScrollCleanup = null; }
+      this.clearOverlay();
+    };
     const closeBtn = fancyButton(this, 480, 530, 200, 46, '✕  닫기', done, {
       base: 0x352910, hover: 0x5c4718, edge: 0xe8b86a, text: '#ffe9b8'
     });
     closeBtn.g.setDepth(33); closeBtn.zone.setDepth(34); closeBtn.t.setDepth(34);
     this.overlay.push(closeBtn.g, closeBtn.zone, closeBtn.t);
-    // 배경 클릭으로도 닫기 (단, 패널 내부는 닫지 않음)
+    // 배경(패널 밖 여백) 클릭으로도 닫기 — 패널 안은 panelZone이 가려 안 닫힘
     bg.on('pointerdown', done);
     // ESC 키로도 닫기 — 학생 키보드 친화 (AAAAAAA-1)
     this.input.keyboard.once('keydown-ESC', done);
   }
 
   clearOverlay() {
+    if (this._recScrollCleanup) { this._recScrollCleanup(); this._recScrollCleanup = null; }
     this.overlay.forEach(o => o.destroy());
     this.overlay = [];
   }
