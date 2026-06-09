@@ -378,7 +378,7 @@ const CITIZENS_BY_CASE = {
         reward: {
           id: 'unrwa', area: 'behavioral',
           name: 'UNRWA의 손길',
-          desc: 'UNRWA는 학교 700곳·진료소 140곳을 운영하며 7십만 명에 가까운 아동을 가르친다. 인도주의가 멈추면 평화의 기반이 무너진다.'
+          desc: 'UNRWA는 학교 약 700곳·진료소 약 140곳을 운영하며 50만 명이 넘는 아동을 가르친다. 인도주의가 멈추면 평화의 기반이 무너진다.'
         }
       }
     }
