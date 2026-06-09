@@ -1816,9 +1816,12 @@ function hasResumableSave() {
   const s = loadGameState();
   if (!s || !s.caseId) return false;
   const done = (s.completedCases || []).includes(s.caseId);
-  // 완료되지 않았고 단계가 ≥1 이면 이어하기 노출
-  return !done && (s.stage || 1) >= 1 &&
-         ((s.enemyDefeated) || (s.evidence && s.evidence.length > 0));
+  // 완료되지 않았고 실제 진행 흔적이 있으면 이어하기 노출
+  //   (CaseSelectScene 재진입 resume 조건과 동일 기준 — 일관성)
+  return !!(!done &&
+         ((s.enemyDefeated) || (s.evidence && s.evidence.length > 0) ||
+          (s.coreClues && s.coreClues.length > 0) ||
+          (s.stage || 1) > 1 || s.reportSent || s.reflectionDone));
 }
 
 // 사건별 UN 보고서 템플릿 — 수신처 후보·다짐 목록·헤더·권고 단락
@@ -2335,6 +2338,36 @@ class CaseSelectScene extends Phaser.Scene {
         return;
       }
       this.leaving = true;
+
+      // ── 진행 중이던 사건을 다시 고르면 → 저장된 진행도로 "이어하기" ──
+      //   홈 버튼 "진행도는 그대로 저장됩니다" 약속 이행 (사용자 피드백:
+      //   "저장된다는데 임무 선택에서 다시 고르면 처음부터 시작함").
+      //   리셋·브리핑을 건너뛰고 WorldScene으로 직행. 실제 진행이 있을 때만.
+      const save = (typeof loadGameState === 'function') ? loadGameState() : null;
+      const resuming = !!(save && save.caseId === c.id &&
+        !((save.completedCases || []).includes(c.id)) &&
+        (save.enemyDefeated ||
+         (save.evidence && save.evidence.length > 0) ||
+         (save.coreClues && save.coreClues.length > 0) ||
+         (save.stage || 1) > 1 || save.reportSent || save.reflectionDone));
+      if (resuming) {
+        restoreRegistryFromSave(this.registry, save);
+        try { setCase(c.id); setStory(c.id); setCitizens(c.id); } catch (e) {}
+        // 옛/타사건 잔여 단서 정리 — 개수 꼬임 방지
+        try {
+          const valid = new Set();
+          Object.values(CASE.locations).forEach(l =>
+            (l.spots || []).forEach(s => { if (s.evidence) valid.add(s.evidence.id); }));
+          this.registry.set('evidence',
+            (this.registry.get('evidence') || []).filter(e => e && valid.has(e.id)));
+        } catch (e) {}
+        this.cameras.main.fadeOut(380, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete',
+          () => this.scene.start('WorldScene'));
+        return;
+      }
+
+      // ── 새로 시작 — 진행도 리셋 후 브리핑 ──
       // 사건 ID를 registry에 저장. intro는 cases.js/dialogue.js의
       // setCase/setCitizens는 호출 안 함 (해당 데이터가 없으므로 default 유지).
       this.registry.set('caseId', c.id);
