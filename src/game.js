@@ -2731,12 +2731,14 @@ class LearningTreeScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '12px', color: '#fff8d0'
     }).setOrigin(0.5);
 
-    // 사건별 카드 (본 사건 3개만 표시 — 미완료는 회색)
+    // 사건별 카드 — 스크롤 가능 영역 (사용자 피드백: "여기도 스크롤 있어야해")
+    //   children.list 슬라이스로 카드 그리기 후 객체 자동 수집 → Container 묶기
+    //   → mask + wheel + 스크롤바
     // intro(튜토리얼)는 학습 트리에서 제외
-    // 새 layout: cardH=140, gap=6 → 3*146-6=432 (startY 90 ~ end 522, list 안 fit)
     const cardH = 154, cardW = 880, gap = 6;
     const startY = 88;
     const treeCases = CASE_LIST.filter(c => c.id !== 'intro');
+    const _cardsBeforeIdx = this.children.list.length;
     treeCases.forEach((c, i) => {
       const y = startY + i * (cardH + gap);
       const done = completed.includes(c.id);
@@ -2919,6 +2921,61 @@ class LearningTreeScene extends Phaser.Scene {
         });
       }
     });
+
+    // ── 카드 스크롤 설정 (사용자 피드백: "여기도 스크롤 있어야해") ──
+    // 카드 forEach 후 새로 추가된 child 객체 수집 → 가시 영역(86~535) 마스크
+    // wheel 로 카드 영역 y 조정. fancyButton(zone) 도 자식으로 포함.
+    const _cardObjs = this.children.list.slice(_cardsBeforeIdx);
+    const _SCROLL_TOP = 86, _SCROLL_BOTTOM = 535;
+    const _SCROLL_H = _SCROLL_BOTTOM - _SCROLL_TOP;
+    const _totalCardsH = treeCases.length * (cardH + gap);
+    const _cardOverflow = Math.max(0, (startY + _totalCardsH) - _SCROLL_BOTTOM);
+    if (_cardOverflow > 0) {
+      // 각 객체 원래 y 저장
+      _cardObjs.forEach(o => { if (o && typeof o.y === 'number') o._origY = o.y; });
+      // 시각 마스크 (좌우 풀폭, 카드 영역만)
+      const _mask = this.make.graphics({ add: false });
+      _mask.fillRect(0, _SCROLL_TOP, GAME_W, _SCROLL_H);
+      const _maskObj = _mask.createGeometryMask();
+      _cardObjs.forEach(o => { if (o && o.setMask) o.setMask(_maskObj); });
+
+      // 우측 스크롤바
+      const _sbX = 942, _sbW = 6;
+      const _track = this.add.graphics().setDepth(50);
+      _track.fillStyle(0x1a2a3a, 0.8);
+      _track.fillRoundedRect(_sbX, _SCROLL_TOP, _sbW, _SCROLL_H, 3);
+      const _thumbH = Math.max(40, _SCROLL_H * (_SCROLL_H / _totalCardsH));
+      const _thumb = this.add.graphics().setDepth(51);
+      const _drawThumb = () => {
+        const pct = (_cardOverflow > 0) ? (-this._lpScroll / _cardOverflow) : 0;
+        _thumb.clear();
+        _thumb.fillStyle(0x7fd07f, 0.95);
+        _thumb.fillRoundedRect(_sbX, _SCROLL_TOP + (_SCROLL_H - _thumbH) * pct,
+          _sbW, _thumbH, 3);
+      };
+
+      this._lpScroll = 0;
+      const _apply = () => {
+        this._lpScroll = Phaser.Math.Clamp(this._lpScroll, -_cardOverflow, 0);
+        _cardObjs.forEach(o => {
+          if (o && typeof o._origY === 'number') o.y = o._origY + this._lpScroll;
+        });
+        _drawThumb();
+      };
+      _drawThumb();
+
+      // 마우스 휠
+      this.input.on('wheel', (p, objs, dx, dy) => {
+        if (!this.scene.isActive('LearningTreeScene')) return;
+        this._lpScroll -= dy * 0.5;
+        _apply();
+      });
+
+      // 안내 텍스트
+      this.add.text(480, _SCROLL_BOTTOM + 2, '↕ 마우스 휠로 스크롤', {
+        fontFamily: FONT, fontSize: '10px', color: '#7fd07f'
+      }).setOrigin(0.5).setDepth(50);
+    }
 
     // 하단 종합 요약 — 완료 개수 + 평균 평가 (카드 영역 끝 532 이후)
     const ftY = 540;
