@@ -2855,8 +2855,9 @@ class LearningTreeScene extends Phaser.Scene {
             { key: 'reflector', icon: '📊', label: '자기 성찰',   color: '#c9a36b' },
             { key: 'balanced',  icon: '🌐', label: '균형 시민',   color: '#cfe9ff' },
           ];
-          // 카드 우측 상단에 뱃지 모음 (한 줄)
-          let bx = x + 360, by = y + 38;
+          // 카드 우측 — 메달(y+14~42) 아래에 뱃지 모음 (한 줄, 우측 정렬)
+          //   (이전 'x' 미정의 변수로 학습 트리 화면이 크래시하던 버그 수정)
+          let bx = cardW + 16, by = y + 48;
           badgeDefs.forEach(bd => {
             if (!badges[bd.key]) return;
             this.add.text(bx, by, bd.icon, {
