@@ -1779,7 +1779,7 @@ const SAVE_FIELDS = [
   'quizSolved', 'invLoc', 'reportSent', 'reflectionDone',
   'reflection', 'speech', 'completedCases', 'caseBadges', 'caseReviews',
   'learningReview', 'evidenceTags', 'locationTags', 'userPledge', 'userReflection',
-  'caseClues', 'caseSpeeches',
+  'caseClues', 'caseSpeeches', 'casePledges', 'caseUserRefl',
 ];
 function saveGameState(registry) {
   if (typeof localStorage === 'undefined') return;
@@ -6975,10 +6975,12 @@ class LetterScene extends Phaser.Scene {
       });
     });
 
-    // ✍ 내 다짐 한 줄 (선택) — 학생 자기 글 입력
-    if (!this.userPledge) {
-      this.userPledge = this.registry.get('userPledge') || '';
-    }
+    // ✍ 내 다짐 한 줄 (선택) — 학생 자기 글 입력 (사건별로 따로 보관)
+    const _pcid = this.registry.get('caseId') || 'aralsea';
+    const _cp = this.registry.get('casePledges') || {};
+    this.userPledge = _cp[_pcid] || '';
+    // 보고서·대시보드 readers가 보는 작업용 키도 현재 사건 값으로 동기화
+    this.registry.set('userPledge', this.userPledge);
     const upLabel = () => this.userPledge
       ? '✍ 내 다짐: "' + this.userPledge.slice(0, 50) + (this.userPledge.length > 50 ? '…' : '') + '"  (수정)'
       : '✍ 내 다짐 한 줄 직접 적기 (선택)';
@@ -6988,6 +6990,11 @@ class LetterScene extends Phaser.Scene {
         const cur = this.userPledge || '';
         const apply = (text) => {
           this.userPledge = (text || '').trim().slice(0, 200);
+          // 사건별 보관 + 작업용 키 동기화
+          const cid = this.registry.get('caseId') || 'aralsea';
+          const cp = this.registry.get('casePledges') || {};
+          cp[cid] = this.userPledge;
+          this.registry.set('casePledges', cp);
           this.registry.set('userPledge', this.userPledge);
           this.userPledgeBtn.t.setText(upLabel());
           this.buildCompose();
@@ -7741,6 +7748,10 @@ class ReflectionScene extends Phaser.Scene {
     setCfgBarVisible(false);
     this.cameras.main.fadeIn(260, 0, 0, 0);
 
+    // ⚠️ scene.restart 재진입 시 이전 인스턴스의 _arrowObjs(파괴된 화살표 보유)가
+    //    남아 refreshArrows가 죽은 객체에 setColor → 멈춤. 매 create마다 새로 초기화.
+    this._arrowObjs = [];
+
     // 사용 가능한 단서 — 현장 단서(evidence)
     this.allClues = this.registry.get('evidence') || [];
     // 인과 사슬 3슬롯: 0=원인, 1=과정, 2=결과
@@ -7842,8 +7853,18 @@ class ReflectionScene extends Phaser.Scene {
     });
     this.drawAllStatements();
 
-    // ── ✍ 자기 작성 (선택) — 학생 본인 한 문장 ─────────────────
-    this.userStmt = this.registry.get('userReflection') || '';
+    // ── ✍ 자기 작성 (선택) — 학생 본인 한 문장 (사건별로 따로 보관) ──
+    const _rcid = this.registry.get('caseId') || 'aralsea';
+    this.userStmt = (this.registry.get('caseUserRefl') || {})[_rcid] || '';
+    this.registry.set('userReflection', this.userStmt);   // 작업용 키 동기화
+    // 사건별 저장 헬퍼
+    this._saveUserStmt = () => {
+      const cid = this.registry.get('caseId') || 'aralsea';
+      const m = this.registry.get('caseUserRefl') || {};
+      m[cid] = this.userStmt || '';
+      this.registry.set('caseUserRefl', m);
+      this.registry.set('userReflection', this.userStmt || '');
+    };
     const userBtnLabel = () => this.userStmt
       ? '✍  내 생각: "' + this.userStmt.slice(0, 38) + (this.userStmt.length > 38 ? '…' : '') + '"  (수정)'
       : '✍  내 생각도 직접 한 문장 적어보기 (선택)';
@@ -7852,8 +7873,8 @@ class ReflectionScene extends Phaser.Scene {
         const cur = this.userStmt || '';
         const apply = (text) => {
           this.userStmt = (text || '').trim().slice(0, 200);
-          // 입력 즉시 저장 — "닫기"로 나가도 본인 작성 보존
-          this.registry.set('userReflection', this.userStmt);
+          // 입력 즉시 저장 — "닫기"로 나가도 본인 작성 보존 (사건별)
+          this._saveUserStmt();
           this.userStmtBtn.t.setText(userBtnLabel());
         };
         if (window.PEACE && typeof window.PEACE.openTextInputModal === 'function') {
@@ -7883,7 +7904,7 @@ class ReflectionScene extends Phaser.Scene {
           cur);
         if (txt !== null) {
           this.userStmt = txt.trim().slice(0, 200);
-          this.registry.set('userReflection', this.userStmt);
+          this._saveUserStmt();
           this.userStmtBtn.t.setText(userBtnLabel());
         }
       },
@@ -8117,7 +8138,7 @@ class ReflectionScene extends Phaser.Scene {
       statementText: ((this.stmtPool || REFLECTION_STATEMENTS).find(s => s.id === this.statementId) || {}).text || '',
       userStatement: this.userStmt || '',   // 학생이 직접 쓴 한 문장 (선택)
     });
-    this.registry.set('userReflection', this.userStmt || '');
+    if (this._saveUserStmt) this._saveUserStmt(); else this.registry.set('userReflection', this.userStmt || '');
     this.registry.set('reflectionDone', true);
     reportProgress(this, { reflectionDone: true, userReflection: this.userStmt || '' });
 
