@@ -1779,6 +1779,7 @@ const SAVE_FIELDS = [
   'quizSolved', 'invLoc', 'reportSent', 'reflectionDone',
   'reflection', 'speech', 'completedCases', 'caseBadges', 'caseReviews',
   'learningReview', 'evidenceTags', 'locationTags', 'userPledge', 'userReflection',
+  'caseClues', 'caseSpeeches',
 ];
 function saveGameState(registry) {
   if (typeof localStorage === 'undefined') return;
@@ -2019,6 +2020,30 @@ const CASE_LIST = [
     ],
     code: 'CASE-003  PALESTINE',
   },
+  {
+    // 사건 4 — UN 본부 (연설문 작성 허브). 조사 사건이 아니라,
+    // 3개 사건을 모두 마친 뒤 수집 근거를 골라 UN 총회 연설문을 만드는 최종 단계.
+    // 클릭 시 BriefingScene/WorldScene이 아니라 SpeechScene(=UN본부)으로 진입.
+    id: 'unhq',
+    title: 'UN 본부 · 총회 연설',
+    subtitle: '조사한 근거로 세계에 평화를 연설하기',
+    region: '북미 · 뉴욕 · UN 총회장',
+    brief: '세 사건의 조사를 마친 조사관은 UN 총회 단상에 선다.\n사건 하나를 골라, 직접 모은 근거들을 순서대로 배열해 세계 평화를 호소하는 연설문을 작성한다.\nP.E.A.C.E.의 마지막 단계 — 실천(Enacting).',
+    status: 'available',
+    accent: 0x7fd07f,
+    guide: { name: 'UN 총회' },
+    mapX: 520, mapY: 208,   // 뉴욕 (intro와 동일 — UN 본부)
+    mission: [
+      '세 사건의 조사를 모두 마쳤다.',
+      '이제 UN 총회 단상에 설 차례.',
+      '',
+      '사건 하나를 골라, 직접 모은 근거를',
+      '순서대로 배열해 세계 평화를 호소하는',
+      '연설문을 완성하라.',
+    ],
+    code: 'CASE-FINAL  UN-HQ',
+    isSpeechHub: true,   // 특수 카드 표시 — 진입/잠금 로직 분기
+  },
 ];
 
 class CaseSelectScene extends Phaser.Scene {
@@ -2089,7 +2114,7 @@ class CaseSelectScene extends Phaser.Scene {
     // 각 사건 카드 — listH(490) 안에 4개 fit
     // 계산: listY(90) + 헤더(44) + 4*(cardH+gap) - gap ≤ listY + listH(580)
     //   → 4*cardH + 3*gap ≤ 446. cardH=104, gap=6 → 416+18=434 ✓ (안전 마진 12)
-    const cardH = 104, gap = 6;
+    const cardH = 84, gap = 5;   // 5장(intro+3사건+UN본부) 수용: 5*84+4*5=440 ≤ 446
     this.cards = [];
     CASE_LIST.forEach((c, i) => {
       const cy = listY + 44 + i * (cardH + gap);
@@ -2203,15 +2228,26 @@ class CaseSelectScene extends Phaser.Scene {
 
   // 좌측 패널의 사건 카드 1개를 그린다
   buildCaseCard(x, y, w, h, c) {
-    // 송부 완료된 사건은 ✓ 표시 (다시 진입 가능)
-    const completed = (this.registry.get('completedCases') || []).includes(c.id);
+    // 완료 사건 목록 — 레지스트리 우선, 비었으면(리로드 직후) 저장본에서
+    const compList = (() => {
+      const r = this.registry.get('completedCases') || [];
+      if (r.length) return r;
+      try { const s = loadGameState(); return (s && s.completedCases) || []; }
+      catch (e) { return []; }
+    })();
+    const completed = compList.includes(c.id);
     // 튜토리얼(intro)이 끝나야 본 3사건 잠금 해제. intro 자체는 항상 열림.
-    const introDone = (this.registry.get('completedCases') || []).includes('intro');
+    const introDone = compList.includes('intro');
     const isIntro = (c.id === 'intro');
-    const lockedByIntro = !isIntro && !introDone;
-    const available = (c.status === 'available') && !lockedByIntro;
-    // 잠금 종류 — 'tutorial' = 튜토리얼 미완료, 'soon' = 콘텐츠 준비중
-    const lockKind = lockedByIntro ? 'tutorial' : (!available ? 'soon' : null);
+    const isFinale = !!c.isSpeechHub;   // UN 본부(연설 허브)
+    // UN 본부는 본 3사건을 모두 마쳐야 열림
+    const mainDone = ['aralsea', 'ukraine', 'palestine'].every(id => compList.includes(id));
+    const lockedByIntro = !isIntro && !isFinale && !introDone;
+    const lockedFinale = isFinale && !mainDone;
+    const available = (c.status === 'available') && !lockedByIntro && !lockedFinale;
+    // 잠금 종류 — 'tutorial' = 튜토리얼 미완료, 'finale' = 3사건 미완료, 'soon' = 준비중
+    const lockKind = lockedFinale ? 'finale'
+      : (lockedByIntro ? 'tutorial' : (!available ? 'soon' : null));
 
     const g = this.add.graphics();
     const drawCard = (hover) => {
@@ -2278,20 +2314,12 @@ class CaseSelectScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    // 하단 — intro(튜토리얼)는 P.E.A.C.E. 학습 모델 배지(4수업 단계). 본 사건은 별도 표기 없음
-    if (available && isIntro) {
-      const tg = this.add.graphics();
-      tg.fillStyle(0xffd96a, 0.9);
-      tg.fillRect(x + 16, y + 80, w - 32, 20);
-      tg.lineStyle(1, 0xb88a3a, 1);
-      tg.strokeRect(x + 16, y + 80, w - 32, 20);
-      this.add.text(x + w / 2, y + 90, '🎓  P.E.A.C.E. 학습 모델 — 인식 → 관찰 → 성찰 → 실천', {
-        fontFamily: FONT, fontSize: '10px', color: '#3a2410', fontStyle: 'bold'
-      }).setOrigin(0.5);
-    } else if (!available) {
-      this.add.text(x + 78, y + 85,
-        '— 후속 업데이트 예정', {
-        fontFamily: FONT, fontSize: '11px', color: '#6e7a86', fontStyle: 'italic'
+    // 잠긴 카드 안내 (84px 카드에 맞춰 위로). intro 학습모델 배지는 호버 안내로 대체(공간 절약).
+    if (!available) {
+      this.add.text(x + 78, y + 66,
+        lockKind === 'finale' ? '— 3개 사건을 모두 마치면 열립니다'
+          : (lockKind === 'tutorial' ? '— 먼저 신입 교육을 마치세요' : '— 후속 업데이트 예정'), {
+        fontFamily: FONT, fontSize: '10px', color: '#6e7a86', fontStyle: 'italic'
       });
     }
     // (본 사건의 인지/정서/행동 3색 배지는 제거됨 — UNESCO 3영역은 단서별
@@ -2338,6 +2366,17 @@ class CaseSelectScene extends Phaser.Scene {
         return;
       }
       this.leaving = true;
+
+      // ── UN 본부(연설 허브) → SpeechScene 직행 (리셋·브리핑 없음) ──
+      if (c.isSpeechHub) {
+        // 저장본 복원 — 사건별 수집 근거(caseClues)·완료 목록을 SpeechScene이 읽을 수 있게
+        const sv = (typeof loadGameState === 'function') ? loadGameState() : null;
+        if (sv) { try { restoreRegistryFromSave(this.registry, sv); } catch (e) {} }
+        this.cameras.main.fadeOut(380, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete',
+          () => this.scene.start('SpeechScene'));
+        return;
+      }
 
       // ── 진행 중이던 사건을 다시 고르면 → 저장된 진행도로 "이어하기" ──
       //   홈 버튼 "진행도는 그대로 저장됩니다" 약속 이행 (사용자 피드백:
@@ -2876,11 +2915,11 @@ class LearningTreeScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete',
         () => this.scene.start('CaseSelectScene'));
     };
-    if (compCount >= 1) {
-      const sp = this.registry.get('speech');
-      const spDone = !!(sp && sp.fullText);
-      fancyButton(this, 470, 575, 240, 30,
-        spDone ? '🕊  UN 연설문 (작성됨 · 보기/수정)' : '🕊  UN 연설하기 (조사 마무리)',
+    // UN 본부(연설)는 본 3사건을 모두 마쳐야 열림 — 그 전엔 임무 선택만
+    const mainDone3 = ['aralsea', 'ukraine', 'palestine']
+      .every(id => (this.registry.get('completedCases') || []).includes(id));
+    if (mainDone3) {
+      fancyButton(this, 470, 575, 240, 30, '🏛  UN 본부 — 연설하기',
         () => {
           if (this.leaving) return;
           this.leaving = true;
@@ -4562,6 +4601,17 @@ class WorldScene extends Phaser.Scene {
     const completed = this.registry.get('completedCases') || [];
     if (!completed.includes(caseId)) completed.push(caseId);
     this.registry.set('completedCases', completed);
+    // 사건별 수집 근거 — 현재 단서(없으면 cases.js 전체 단서)로 채움 (UN본부 연설용)
+    const allClues = this.registry.get('caseClues') || {};
+    let evs = (this.registry.get('evidence') || []).slice();
+    if (evs.length === 0) {
+      try {
+        Object.values((CASES[caseId] || {}).locations || {}).forEach(l =>
+          (l.spots || []).forEach(s => { if (s.evidence) evs.push(s.evidence); }));
+      } catch (e) {}
+    }
+    allClues[caseId] = evs;
+    this.registry.set('caseClues', allClues);
     // 자기평가 더미
     this.registry.set('learningReview', {
       goalMet: 5, factConf: 5, actionConf: 5,
@@ -7302,6 +7352,10 @@ ${tmpl.signature}`;
       completed.push(caseId);
       this.registry.set('completedCases', completed);
     }
+    // 사건별 수집 근거 저장 — UN 본부 연설문 작성에서 사용 (사건마다 따로 보관)
+    const allClues = this.registry.get('caseClues') || {};
+    allClues[caseId] = (this.registry.get('evidence') || []).slice();
+    this.registry.set('caseClues', allClues);
     // 뱃지 계산 — 학생의 학습 성취 시각화 (학습 트리에 표시됨)
     const badges = this.computeBadges();
     const allBadges = this.registry.get('caseBadges') || {};
@@ -8094,186 +8148,315 @@ class SpeechScene extends Phaser.Scene {
     setCfgBarVisible(false);
     this.cameras.main.fadeIn(280, 0, 0, 0);
     this.leaving = false;
-    this.picked = new Set();        // 본문 문장 3개
-    this.closing = null;             // 마무리 문장 1개
-
-    // 배경 — UN 연단 톤
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(0x10202e, 0x10202e, 0x1a3a52, 0x152e44, 1);
-    bg.fillRect(0, 0, GAME_W, GAME_H);
-
-    // 상단 헤더
-    panel(this, 480, 40, 880, 60, 0x1a2a3a, 0xc9a36b);
-    this.add.text(480, 30, '🕊  UN 연설문 작성  ·  Enacting (E)', {
-      fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    this.add.text(480, 54, 'PEACE 마지막 단계 — 세계 평화를 호소하는 짧은 연설문', {
-      fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
-    }).setOrigin(0.5);
-
-    // ── 본문 문장 6장 (3개 선택) ───────────────────────────────
-    this.add.text(40, 84, '①  연설문에 담을 문장 3개를 선택하세요', {
-      fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
-      fontStyle: 'bold'
-    });
-
-    this.phraseObjs = [];
-    const cardW = 440, cardH = 56, gap = 8;
-    SPEECH_PHRASES.forEach((p, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const x = 40 + col * (cardW + 20);
-      const y = 108 + row * (cardH + gap);
-      const g = this.add.graphics();
-      const draw = (sel) => {
-        g.clear();
-        g.fillStyle(sel ? 0x2e4a36 : 0x0e2238, 1);
-        g.fillRect(x, y, cardW, cardH);
-        g.lineStyle(2, sel ? 0x7fd07f : 0x2a5a82, 1);
-        g.strokeRect(x, y, cardW, cardH);
-        g.fillStyle(sel ? 0x7fd07f : 0x2a5a82, 1);
-        g.fillRect(x, y, 4, cardH);
-      };
-      draw(false);
-      const t = this.add.text(x + 16, y + cardH / 2, p.text, {
-        fontFamily: FONT, fontSize: '12px', color: '#e6efff',
-        wordWrap: { width: cardW - 30 }, lineSpacing: 2
-      }).setOrigin(0, 0.5);
-      const zone = this.add.zone(x + cardW / 2, y + cardH / 2, cardW, cardH)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => {
-        if (this.picked.has(p.id)) {
-          this.picked.delete(p.id);
-        } else if (this.picked.size < 3) {
-          this.picked.add(p.id);
-        }
-        this.phraseObjs.forEach(po => po.draw(this.picked.has(po.id)));
-        this.refreshStatus();
-        if (window.SFX) window.SFX.play('click');
-      });
-      this.phraseObjs.push({ id: p.id, draw });
-    });
-
-    // ── 마무리 문장 3장 (1개 선택) ─────────────────────────────
-    this.add.text(40, 320, '②  연설문 마무리 한 문장', {
-      fontFamily: FONT_TITLE, fontSize: '15px', color: '#ffd96a',
-      fontStyle: 'bold'
-    });
-
-    this.closingObjs = [];
-    const cW = 280, cH = 50, cGap = 14;
-    const totalCW = cW * 3 + cGap * 2;
-    const startCX = (GAME_W - totalCW) / 2;
-    SPEECH_CLOSINGS.forEach((c, i) => {
-      const x = startCX + i * (cW + cGap);
-      const y = 348;
-      const g = this.add.graphics();
-      const draw = (sel) => {
-        g.clear();
-        g.fillStyle(sel ? 0x4a3a22 : 0x0e2238, 1);
-        g.fillRect(x, y, cW, cH);
-        g.lineStyle(2, sel ? 0xffd96a : 0x2a5a82, 1);
-        g.strokeRect(x, y, cW, cH);
-      };
-      draw(false);
-      this.add.text(x + cW / 2, y + cH / 2, c.text, {
-        fontFamily: FONT_TITLE, fontSize: '14px', color: '#ffe9b8',
-        fontStyle: 'bold'
-      }).setOrigin(0.5);
-      const zone = this.add.zone(x + cW / 2, y + cH / 2, cW, cH)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => {
-        this.closing = (this.closing === c.id) ? null : c.id;
-        this.closingObjs.forEach(co => co.draw(this.closing === co.id));
-        this.refreshStatus();
-        if (window.SFX) window.SFX.play('click');
-      });
-      this.closingObjs.push({ id: c.id, draw });
-    });
-
-    // ── 미리보기 영역 ─────────────────────────────────────────
-    const pvY = 412;
-    const pvg = this.add.graphics();
-    pvg.fillStyle(0x0a1828, 0.9); pvg.fillRect(40, pvY, 880, 100);
-    pvg.lineStyle(2, 0xc9a36b, 0.8); pvg.strokeRect(40, pvY, 880, 100);
-    pvg.fillStyle(0xc9a36b, 1); pvg.fillRect(40, pvY, 4, 100);
-
-    this.add.text(54, pvY + 8, '📜 연설문 미리보기', {
-      fontFamily: FONT, fontSize: '11px', color: '#c9a36b'
-    });
-    this.previewText = this.add.text(54, pvY + 28,
-      '(아직 비어 있음 — 위 카드를 선택하면 채워집니다)', {
-      fontFamily: FONT, fontSize: '13px', color: '#a8c4dc', fontStyle: 'italic',
-      wordWrap: { width: 850 }, lineSpacing: 4
-    });
-
-    // ── 하단 상태 + 버튼 ──────────────────────────────────────
-    this.statusText = this.add.text(480, 532, '', {
-      fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
-    }).setOrigin(0.5);
-    this.refreshStatus();
-
-    fancyButton(this, 280, 568, 220, 42, '🕊  연설 마치기',
-      () => this.tryFinish(),
-      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
-    fancyButton(this, 680, 568, 220, 42, '← 나중에',
-      () => this.leaveBack(),
-      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    // 레지스트리가 비었으면(디버그 직접 진입·리로드) 저장본에서 완료 목록·근거 복원
+    if (!(this.registry.get('completedCases') || []).length) {
+      try { const s = loadGameState(); if (s) restoreRegistryFromSave(this.registry, s); } catch (e) {}
+    }
+    if (window.SFX) window.SFX.playBGM(BGM_CASESELECT);
+    this.drawHall();
+    this.stepLayer = [];
+    this.showPickCase();
   }
 
-  refreshStatus() {
-    const filled = this.picked.size;
+  // UN 총회장 픽셀아트 배경 (한 번만)
+  drawHall() {
+    const g = this.add.graphics().setDepth(0);
+    // 벽 — 어두운 청록 그라데이션
+    g.fillGradientStyle(0x0c1a26, 0x0c1a26, 0x081119, 0x081119, 1);
+    g.fillRect(0, 0, GAME_W, GAME_H);
+    // 뒷벽 금빛 패널 (UN 총회장 특유의 금색 벽)
+    g.fillStyle(0x6a5526, 1); g.fillRect(150, 24, 660, 250);
+    for (let i = 0; i < 16; i++) {
+      g.fillStyle(i % 2 ? 0x7a6530 : 0x5e4a22, 1);
+      g.fillRect(158 + i * 41, 30, 30, 238);
+    }
+    // 큰 UN 엠블럼 (지구 + 월계수)
+    g.fillStyle(0x1d5e8a, 1); g.fillCircle(480, 150, 70);
+    g.fillStyle(0xbfe0f5, 1); g.fillCircle(480, 150, 60);
+    g.fillStyle(0x2a6a9a, 1); g.fillCircle(480, 150, 52);
+    g.lineStyle(2, 0xeaf4ff, 0.65);
+    g.strokeCircle(480, 150, 52);
+    g.strokeCircle(480, 150, 30);
+    g.lineBetween(428, 150, 532, 150);
+    g.lineBetween(480, 98, 480, 202);
+    // 월계수 — 양옆 흰 점선 호
+    g.lineStyle(4, 0xeaf4ff, 0.8);
+    g.beginPath(); g.arc(480, 152, 78, Phaser.Math.DegToRad(120), Phaser.Math.DegToRad(240), false); g.strokePath();
+    g.beginPath(); g.arc(480, 152, 78, Phaser.Math.DegToRad(-60), Phaser.Math.DegToRad(60), false); g.strokePath();
+    // 연단 (단상)
+    g.fillStyle(0x10303f, 1); g.fillRect(412, 286, 136, 96);
+    g.lineStyle(3, 0x2a6a9a, 1); g.strokeRect(412, 286, 136, 96);
+    g.fillStyle(0x2a6a9a, 0.85); g.fillCircle(480, 318, 17);
+    g.fillStyle(0xbfe0f5, 0.9); g.fillCircle(480, 318, 9);
+    // 객석 (앞쪽 좌석 줄)
+    for (let r = 0; r < 4; r++) {
+      for (let cI = 0; cI < 19; cI++) {
+        g.fillStyle((r + cI) % 2 ? 0x14242f : 0x1a2c38, 1);
+        g.fillRect(30 + cI * 50, 404 + r * 16, 42, 11);
+      }
+    }
+    // 전체 톤다운 (카드 가독성)
+    const dim = this.add.graphics().setDepth(1);
+    dim.fillStyle(0x050d15, 0.62); dim.fillRect(0, 0, GAME_W, GAME_H);
+    // 헤더
+    const hp = this.add.graphics().setDepth(2);
+    hp.fillStyle(0x12222e, 0.95); hp.fillRoundedRect(40, 10, 880, 56, 10);
+    hp.lineStyle(2, 0xc9a36b, 1); hp.strokeRoundedRect(40, 10, 880, 56, 10);
+    this.add.text(480, 28, '🏛  UN 본부 · 총회 연설  ·  Enacting (E)', {
+      fontFamily: FONT_TITLE, fontSize: '20px', color: '#ffe9b8', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(3);
+    this.add.text(480, 52, '조사한 근거로 세계 평화를 호소하는 연설문', {
+      fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
+    }).setOrigin(0.5).setDepth(3);
+  }
+
+  clearStep() {
+    (this.stepLayer || []).forEach(o => { if (o && o.destroy) o.destroy(); });
+    this.stepLayer = [];
+  }
+
+  // ── 1단계: 연설할 사건 고르기 ───────────────────────────────
+  showPickCase() {
+    this.step = 'pick';
+    this.clearStep();
+    const L = this.stepLayer;
+    L.push(this.add.text(480, 104, '어느 사건을 세계에 연설하시겠습니까?', {
+      fontFamily: FONT_TITLE, fontSize: '17px', color: '#ffd96a', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(5));
+
+    const cases = CASE_LIST.filter(c => ['aralsea', 'ukraine', 'palestine'].includes(c.id));
+    const compList = this.registry.get('completedCases') || [];
+    const caseClues = this.registry.get('caseClues') || {};
+    const cw = 270, ch = 160, gap = 24;
+    const totalW = cw * 3 + gap * 2, sx0 = (GAME_W - totalW) / 2;
+    cases.forEach((c, i) => {
+      const cx = sx0 + i * (cw + gap), cy = 180;
+      const done = compList.includes(c.id);
+      const nClues = (caseClues[c.id] || []).length;
+      const g = this.add.graphics().setDepth(5);
+      const draw = (hover) => {
+        g.clear();
+        g.fillStyle(done ? (hover ? 0x18384a : 0x0e2636) : 0x141c24, done ? 1 : 0.7);
+        g.fillRect(cx, cy, cw, ch);
+        g.lineStyle(2, done ? (hover ? c.accent : 0x3a6a8a) : 0x33414a, 1);
+        g.strokeRect(cx, cy, cw, ch);
+        g.fillStyle(c.accent, done ? 1 : 0.4); g.fillRect(cx, cy, 5, ch);
+      };
+      draw(false); L.push(g);
+      L.push(this.add.text(cx + 18, cy + 18, c.title, {
+        fontFamily: FONT_TITLE, fontSize: '17px',
+        color: done ? '#ffe9b8' : '#6e7a86', fontStyle: 'bold'
+      }).setDepth(6));
+      L.push(this.add.text(cx + 18, cy + 46, c.subtitle, {
+        fontFamily: FONT, fontSize: '11px', color: done ? '#cfe9ff' : '#5a6470',
+        wordWrap: { width: cw - 36 }, lineSpacing: 2
+      }).setDepth(6));
+      L.push(this.add.text(cx + 18, cy + ch - 34,
+        done ? ('🔎 모은 근거 ' + nClues + '개 · 클릭') : '🔒 아직 조사하지 않음', {
+        fontFamily: FONT, fontSize: '12px', color: done ? '#7fd07f' : '#7a8a98'
+      }).setDepth(6));
+      const zone = this.add.zone(cx + cw / 2, cy + ch / 2, cw, ch)
+        .setInteractive({ useHandCursor: true }).setDepth(7);
+      zone.on('pointerover', () => draw(true));
+      zone.on('pointerout', () => draw(false));
+      zone.on('pointerdown', () => {
+        if (!done) { this.flashToast('아직 조사하지 않은 사건입니다.'); return; }
+        if (window.SFX) window.SFX.play('click');
+        this.showCompose(c);
+      });
+      L.push(zone);
+    });
+
+    const back = fancyButton(this, 480, 568, 240, 42, '← 임무 선택으로',
+      () => this.leaveBack(),
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    back.g.setDepth(6); back.zone.setDepth(7); back.t.setDepth(7);
+    L.push(back.g, back.zone, back.t);
+  }
+
+  // ── 2단계: 근거 배열 + 마무리 + 미리보기 ─────────────────────
+  showCompose(c) {
+    this.step = 'compose';
+    this.clearStep();
+    const L = this.stepLayer;
+    this.selCase = c.id;
+    this.selCaseTitle = c.title;
+    this.order = [];        // 선택한 근거 id (선택 순서 = 배열 순서)
+    this.closing = null;
+    const MAXSEL = 4;
+
+    // 근거 목록 — 저장된 수집 단서(없으면 cases.js 전체)
+    let clues = ((this.registry.get('caseClues') || {})[c.id] || []).slice();
+    if (clues.length === 0) {
+      try {
+        Object.values((CASES[c.id] || {}).locations || {}).forEach(l =>
+          (l.spots || []).forEach(s => { if (s.evidence) clues.push(s.evidence); }));
+      } catch (e) {}
+    }
+    this.composeClues = clues;
+
+    L.push(this.add.text(40, 80, '①  ' + c.title + ' — 연설에 담을 근거를 순서대로 고르세요 (최대 ' + MAXSEL + '개)', {
+      fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffd96a', fontStyle: 'bold'
+    }).setDepth(5));
+
+    // 근거 카드 — 2열, 최대 12개(6행)
+    this.clueObjs = [];
+    const cwid = 430, chei = 33, cgap = 5;
+    clues.slice(0, 12).forEach((e, i) => {
+      const col = i % 2, row = Math.floor(i / 2);
+      const ex = 40 + col * (cwid + 20), ey = 102 + row * (chei + cgap);
+      const g = this.add.graphics().setDepth(5);
+      const idxOf = () => this.order.indexOf(e.id);
+      const draw = () => {
+        g.clear(); const sel = idxOf() >= 0;
+        g.fillStyle(sel ? 0x2e4a36 : 0x0e2238, 1); g.fillRect(ex, ey, cwid, chei);
+        g.lineStyle(2, sel ? 0x7fd07f : 0x2a5a82, 1); g.strokeRect(ex, ey, cwid, chei);
+      };
+      draw(); L.push(g);
+      const numT = this.add.text(ex + 10, ey + chei / 2, '', {
+        fontFamily: FONT_TITLE, fontSize: '13px', color: '#7fd07f', fontStyle: 'bold'
+      }).setOrigin(0, 0.5).setDepth(6);
+      const nameT = this.add.text(ex + 32, ey + chei / 2, e.name, {
+        fontFamily: FONT, fontSize: '12px', color: '#e6efff'
+      }).setOrigin(0, 0.5).setDepth(6);
+      L.push(numT, nameT);
+      const refreshNum = () => { const k = idxOf(); numT.setText(k >= 0 ? (k + 1) + '.' : '•'); };
+      refreshNum();
+      const zone = this.add.zone(ex + cwid / 2, ey + chei / 2, cwid, chei)
+        .setInteractive({ useHandCursor: true }).setDepth(7);
+      zone.on('pointerdown', () => {
+        const k = idxOf();
+        if (k >= 0) this.order.splice(k, 1);
+        else if (this.order.length < MAXSEL) this.order.push(e.id);
+        else { this.flashToast('최대 ' + MAXSEL + '개까지 고를 수 있어요.'); return; }
+        this.clueObjs.forEach(o => { o.draw(); o.refreshNum(); });
+        this.refreshComposePreview();
+        if (window.SFX) window.SFX.play('click');
+      });
+      L.push(zone);
+      this.clueObjs.push({ draw, refreshNum });
+    });
+
+    // 마무리 문장 (1개)
+    L.push(this.add.text(40, 350, '②  마무리 한 문장', {
+      fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffd96a', fontStyle: 'bold'
+    }).setDepth(5));
+    this.closingObjs = [];
+    const cW = 280, cH = 38, cGap = 14;
+    const totalCW = cW * 3 + cGap * 2, startCX = (GAME_W - totalCW) / 2;
+    SPEECH_CLOSINGS.forEach((cl, i) => {
+      const x = startCX + i * (cW + cGap), yy = 372;
+      const g = this.add.graphics().setDepth(5);
+      const draw = (sel) => {
+        g.clear();
+        g.fillStyle(sel ? 0x4a3a22 : 0x0e2238, 1); g.fillRect(x, yy, cW, cH);
+        g.lineStyle(2, sel ? 0xffd96a : 0x2a5a82, 1); g.strokeRect(x, yy, cW, cH);
+      };
+      draw(false); L.push(g);
+      L.push(this.add.text(x + cW / 2, yy + cH / 2, cl.text, {
+        fontFamily: FONT_TITLE, fontSize: '13px', color: '#ffe9b8', fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(6));
+      const zone = this.add.zone(x + cW / 2, yy + cH / 2, cW, cH)
+        .setInteractive({ useHandCursor: true }).setDepth(7);
+      zone.on('pointerdown', () => {
+        this.closing = (this.closing === cl.id) ? null : cl.id;
+        this.closingObjs.forEach(co => co.draw(this.closing === co.id));
+        this.refreshComposePreview();
+        if (window.SFX) window.SFX.play('click');
+      });
+      this.closingObjs.push({ id: cl.id, draw });
+    });
+
+    // 미리보기
+    const pvY = 422;
+    const pvg = this.add.graphics().setDepth(5);
+    pvg.fillStyle(0x0a1828, 0.92); pvg.fillRect(40, pvY, 880, 86);
+    pvg.lineStyle(2, 0xc9a36b, 0.8); pvg.strokeRect(40, pvY, 880, 86);
+    pvg.fillStyle(0xc9a36b, 1); pvg.fillRect(40, pvY, 4, 86);
+    L.push(pvg);
+    L.push(this.add.text(54, pvY + 7, '📜 연설문 미리보기', {
+      fontFamily: FONT, fontSize: '11px', color: '#c9a36b'
+    }).setDepth(6));
+    this.previewText = this.add.text(54, pvY + 26,
+      '(근거를 순서대로 고르고 마무리 문장을 선택하세요)', {
+      fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', fontStyle: 'italic',
+      wordWrap: { width: 850 }, lineSpacing: 3
+    }).setDepth(6);
+    L.push(this.previewText);
+
+    this.statusText = this.add.text(480, 522, '', {
+      fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
+    }).setOrigin(0.5).setDepth(6);
+    L.push(this.statusText);
+    this.refreshComposePreview();
+
+    const fin = fancyButton(this, 290, 566, 230, 40, '🕊  연설 마치기',
+      () => this.tryFinish(),
+      { base: 0x4a3a22, hover: 0x6a5a3a, edge: 0xc9a36b, text: '#ffe9b8' });
+    fin.g.setDepth(6); fin.zone.setDepth(7); fin.t.setDepth(7);
+    const bk = fancyButton(this, 670, 566, 230, 40, '← 사건 다시 선택',
+      () => this.showPickCase(),
+      { base: 0x2b3a52, hover: 0x3c5170, edge: 0x6fb7d6, text: '#dff1ff' });
+    bk.g.setDepth(6); bk.zone.setDepth(7); bk.t.setDepth(7);
+    L.push(fin.g, fin.zone, fin.t, bk.g, bk.zone, bk.t);
+  }
+
+  // 연설문 본문 조립 (도입 + 배열한 근거 + 마무리)
+  buildSpeechText() {
+    const intro = '존경하는 의장님, 그리고 각국 대표 여러분. 저는 ' +
+      (this.selCaseTitle || '국제 분쟁') + ' 현장을 직접 조사한 P.E.A.C.E. 조사관입니다.';
+    const body = this.order.map(id => {
+      const e = (this.composeClues || []).find(x => x.id === id);
+      return e ? e.desc : '';
+    }).filter(Boolean).join('  ');
+    const closingText = this.closing
+      ? (SPEECH_CLOSINGS.find(c => c.id === this.closing) || {}).text : '';
+    return { intro, body, closingText,
+      fullText: intro + '  ' + body + (closingText ? '  ' + closingText : '') };
+  }
+
+  refreshComposePreview() {
+    const n = (this.order || []).length;
     const closingOk = !!this.closing;
     if (this.statusText) {
-      this.statusText.setText(
-        '본문 문장 ' + filled + '/3   ·   마무리 ' +
-        (closingOk ? '선택됨' : '미선택'));
-      this.statusText.setColor(
-        (filled === 3 && closingOk) ? '#7fd07f' : '#cfe9ff');
+      this.statusText.setText('근거 ' + n + '개 배열   ·   마무리 ' + (closingOk ? '선택됨' : '미선택'));
+      this.statusText.setColor((n >= 1 && closingOk) ? '#7fd07f' : '#cfe9ff');
     }
-    // 미리보기 갱신
     if (this.previewText) {
-      const pickedTexts = SPEECH_PHRASES
-        .filter(p => this.picked.has(p.id))
-        .map(p => p.text);
-      const closingText = this.closing
-        ? (SPEECH_CLOSINGS.find(c => c.id === this.closing) || {}).text
-        : '';
-      if (pickedTexts.length === 0 && !closingText) {
-        this.previewText.setText('(아직 비어 있음 — 위 카드를 선택하면 채워집니다)');
-        this.previewText.setColor('#a8c4dc');
-        this.previewText.setStyle({ fontStyle: 'italic' });
+      if (n === 0 && !closingOk) {
+        this.previewText.setText('(근거를 순서대로 고르고 마무리 문장을 선택하세요)');
+        this.previewText.setColor('#a8c4dc'); this.previewText.setStyle({ fontStyle: 'italic' });
       } else {
-        this.previewText.setText(
-          pickedTexts.join('  ') + (closingText ? '  ' + closingText : '')
-        );
-        this.previewText.setColor('#ffe9b8');
-        this.previewText.setStyle({ fontStyle: 'normal' });
+        const s = this.buildSpeechText();
+        this.previewText.setText(s.fullText);
+        this.previewText.setColor('#ffe9b8'); this.previewText.setStyle({ fontStyle: 'normal' });
       }
     }
   }
 
   tryFinish() {
     if (this.leaving) return;
-    if (this.picked.size < 3 || !this.closing) {
-      this.flashToast('본문 3문장 + 마무리 1문장을 모두 선택해주세요.');
+    if ((this.order || []).length < 1 || !this.closing) {
+      this.flashToast('근거를 1개 이상 배열하고, 마무리 문장을 선택해주세요.');
       return;
     }
     this.leaving = true;
-    // registry에 저장 — 인쇄 보고서·학습 트리에 인용됨
-    const pickedTexts = SPEECH_PHRASES
-      .filter(p => this.picked.has(p.id))
-      .map(p => p.text);
-    const closingText = (SPEECH_CLOSINGS.find(c => c.id === this.closing) || {}).text;
-    this.registry.set('speech', {
-      phrases: pickedTexts,
-      closing: closingText,
-      fullText: pickedTexts.join(' ') + ' ' + closingText,
-    });
+    const s = this.buildSpeechText();
+    const bodyNames = this.order.map(id => {
+      const e = (this.composeClues || []).find(x => x.id === id);
+      return e ? e.name : '';
+    }).filter(Boolean);
+    const speechObj = {
+      caseId: this.selCase, caseTitle: this.selCaseTitle,
+      phrases: bodyNames, closing: s.closingText, fullText: s.fullText,
+    };
+    this.registry.set('speech', speechObj);
+    // 사건별 연설 보관 (각 사건마다 따로)
+    const allSp = this.registry.get('caseSpeeches') || {};
+    allSp[this.selCase] = speechObj;
+    this.registry.set('caseSpeeches', allSp);
     if (window.SFX) window.SFX.play('send');
     reportProgress(this, { speechDone: true });
-
     this.cameras.main.fadeOut(280, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('LearningTreeScene');
