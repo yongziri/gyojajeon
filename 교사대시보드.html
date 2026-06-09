@@ -758,9 +758,9 @@
             '</div>';
         });
         td.innerHTML =
-          '<h3>💭 학급 단서별 자유 입력 — 학생이 직접 쓴 생각 (총 ' + totalTags + '개)</h3>' +
+          '<h3>💭 학급 장소별 조사 노트 — 학생이 직접 쓴 생각 (총 ' + totalTags + '개)</h3>' +
           '<p style="margin:0 0 8px;font-size:12px;color:#9aa6ad">' +
-            '참여 학생 ' + withTagCount + '명 · 단서마다 한 문장 자유 입력 (자기 모니터링)' +
+            '참여 학생 ' + withTagCount + '명 · 장소마다 조사 노트 한 편 자유 입력 (자기 모니터링)' +
           '</p>' +
           '<div class="tagScroll">' +
             (liveTagCards || '<p style="color:#7a8590;font-style:italic">아직 학생 입력 없음</p>') +
@@ -857,7 +857,7 @@
             '<span class="val">★ ' + avg + ' / 5.0</span></div>');
         }
         if (d.tagsCount) {
-          parts.push('<div><span class="lbl">💭 단서별 생각</span> ' +
+          parts.push('<div><span class="lbl">💭 조사 노트</span> ' +
             '<span class="val">' + d.tagsCount + '개 작성</span></div>');
         }
         // 보고서·연설문 작성 여부 — 상세창에서 본문 열람 가능 표시
@@ -1022,18 +1022,18 @@
             'color:#fff8d0">' + esc(label) + '</span>';
         }).filter(x => x).join('');
         sections.push(
-          '<section><h4>💭 단서별 자유 입력 — 학생이 직접 쓴 생각 (Self-monitoring)</h4>' +
+          '<section><h4>💭 장소별 조사 노트 — 학생이 직접 쓴 생각 (Self-monitoring)</h4>' +
           '<div class="tagList">' + tagItems + '</div>' +
           '<p style="color:#7a8590;margin-top:6px">' +
-            '총 ' + (d.tagsCount || 0) + '개 단서에 한 문장 작성' +
+            '총 ' + (d.tagsCount || 0) + '곳에서 조사 노트 작성' +
           '</p></section>'
         );
       } else if (d.tagsCount > 0) {
         // tags 객체가 없고 카운트만 있는 옛 페이로드
         sections.push(
-          '<section><h4>💭 단서별 자유 입력 (Self-monitoring)</h4>' +
+          '<section><h4>💭 장소별 조사 노트 (Self-monitoring)</h4>' +
           '<p style="color:#7a8590">' +
-            '총 ' + d.tagsCount + '개 단서에 한 문장 작성' +
+            '총 ' + d.tagsCount + '곳에서 조사 노트 작성' +
           '</p></section>'
         );
       }
@@ -1112,11 +1112,11 @@
       };
       const header = [
         '번호', '이름(학번)', '단계', '보고서송부',
-        '현장단서', '핵심단서', '단서별생각수',
+        '현장단서', '핵심단서', '조사노트수',
         'P.E.A.C.E.총점', '등급',
         '사실이해', '연결', '실천', '국제협력',
         '인과사슬', '자기성찰(카드)', '내 생각(자유)', '내 다짐(자유)',
-        '단서별 자유입력 모음',
+        '장소별 조사 노트 모음',
         '자기평가평균',
         'UN 연설문', 'UN 보고서 본문',
       ];
@@ -1254,7 +1254,7 @@
             '<td class="num">★ ' + avgReview + ' / 5.0</td></tr>' +
         '</table>' +
 
-        '<h2>💭 학급 단서별 자유 입력 — 학생이 직접 쓴 생각 (총 ' + totalTags + '개)</h2>' +
+        '<h2>💭 학급 장소별 조사 노트 — 학생이 직접 쓴 생각 (총 ' + totalTags + '개)</h2>' +
         tagItemsHtml +
 
         '<h2>👥 학생별 학습 흔적</h2>' +

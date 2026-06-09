@@ -3502,16 +3502,14 @@ function reportProgress(scene, extra) {
     // 자기주도성 데이터 — 본문이 짧으므로 그대로 발행
     const refl = r.get('reflection') || null;
     const review = r.get('learningReview') || null;
-    const tags = r.get('evidenceTags') || {};
+    // 자유 입력 생각 — 입력 단위가 "단서별"에서 "장소별 조사 노트"로 바뀜
+    //   (이문호 교사 피드백: 단서마다 10회 → 장소마다 1회로 통합).
+    //   evidenceTags엔 호환을 위해 같은 노트가 단서 수만큼 복제돼 있으므로,
+    //   대시보드에는 중복 없는 실제 장소별 노트(locationTags)를 보낸다.
+    const noteTags = r.get('locationTags') || {};
     // 학생이 작성한 보고서 본문·UN 연설문 — 교사 상세창에서 그대로 열람 (이용빈 피드백)
     const speechObj = r.get('speech') || null;
     const reportBody = (r.get('reportBody') || '').trim();
-
-    // 감정 태그 분포 집계 (어떤 감정을 몇 번 골랐는지) — 학급 통계에 사용
-    const tagCount = {};
-    Object.values(tags).forEach(t => {
-      if (t && t.id) tagCount[t.id] = (tagCount[t.id] || 0) + 1;
-    });
 
     // P.E.A.C.E. 4차원 점수 자동 산출 (대시보드에 전송, 공감 차원 제외)
     let peace = null;
@@ -3541,12 +3539,11 @@ function reportProgress(scene, extra) {
         actionConf: review.actionConf,
         wantNext:   review.wantNextLabel || '',
       } : null,
-      tagCount,                                     // { custom: N } (RRRRR-1 자유 입력 후엔 의미 작음)
-      tagsCount: Object.keys(tags).length,          // 부착된 태그 총 개수
-      // 학생이 단서마다 직접 쓴 한 문장 (자유 입력 — 대시보드에서 학습 흔적 표시)
+      // 학생이 장소마다 직접 쓴 조사 노트 (자유 입력 — 대시보드 학습 흔적 표시)
+      tagsCount: Object.keys(noteTags).length,      // 작성한 조사 노트 개수(장소별)
       tags: Object.fromEntries(
-        Object.entries(tags).map(([eid, t]) => [
-          eid, { label: (t && t.label) || '' }
+        Object.entries(noteTags).map(([locId, t]) => [
+          locId, { label: (t && t.label) || '' }
         ])
       ),
       peace,                                        // { dims, total, max, grade }
