@@ -512,6 +512,17 @@
       custom: { label: '내 생각', color: '#c9a36b' },
     };
     const stars = (n) => '★'.repeat(n || 0) + '☆'.repeat(5 - (n || 0));
+    // 학생의 조사 노트 라벨 — 중복 제거(옛 빌드는 같은 장소 노트를 단서 수만큼
+    // 복제 전송하므로, 교사 화면에선 같은 문장 한 번만 표시).
+    const uniqLabels = (d) => {
+      if (!d || !d.tags) return [];
+      const seen = new Set(), out = [];
+      Object.values(d.tags).forEach(t => {
+        const l = (t && t.label) ? String(t.label).trim() : '';
+        if (l && !seen.has(l)) { seen.add(l); out.push(l); }
+      });
+      return out;
+    };
 
     let client = null;
     let curRoom = null;
@@ -731,21 +742,16 @@
       // (이전엔 5종 감정 분포였으나 자유 타이핑이 되어 합계만 의미)
       let totalTags = 0, withTagCount = 0;
       list.forEach(d => {
-        if (d.tagsCount) {
-          totalTags += d.tagsCount;
-          if (d.tagsCount > 0) withTagCount++;
-        }
+        const n = uniqLabels(d).length;   // 중복 제거 개수
+        if (n > 0) { totalTags += n; withTagCount++; }
       });
       const td = $('tagDist');
       if (totalTags > 0) {
         td.style.display = 'block';
-        // 학생별 자유 입력 카드 — 학생이 직접 쓴 한 문장 모음 (실제 본문 표시)
+        // 학생별 자유 입력 카드 — 학생이 직접 쓴 한 문장 모음 (중복 제거)
         let liveTagCards = '';
         list.forEach(d => {
-          if (!d.tags) return;
-          const items = Object.values(d.tags)
-            .map(t => (t && t.label) ? t.label : '')
-            .filter(x => x);
+          const items = uniqLabels(d);
           if (items.length === 0) return;
           liveTagCards +=
             '<div style="margin:8px 0;padding:10px 12px;border-left:3px solid #c9a36b;background:#1a2430">' +
@@ -856,9 +862,9 @@
           parts.push('<div><span class="lbl">📊 자기평가</span> ' +
             '<span class="val">★ ' + avg + ' / 5.0</span></div>');
         }
-        if (d.tagsCount) {
+        if (uniqLabels(d).length) {
           parts.push('<div><span class="lbl">💭 조사 노트</span> ' +
-            '<span class="val">' + d.tagsCount + '개 작성</span></div>');
+            '<span class="val">' + uniqLabels(d).length + '곳 작성</span></div>');
         }
         // 보고서·연설문 작성 여부 — 상세창에서 본문 열람 가능 표시
         if (d.reportBody || hasSpeech) {
@@ -1012,20 +1018,17 @@
         );
       }
 
-      // 3. 단서별 자유 입력 — 학생이 직접 쓴 한 문장 모음
-      if (d.tags && Object.keys(d.tags).length > 0) {
-        const tagItems = Object.keys(d.tags).map(eid => {
-          const t = d.tags[eid];
-          const label = (t && t.label) ? t.label : '';
-          if (!label) return '';
-          return '<span style="background:#c9a36b22;border-color:#c9a36b;' +
-            'color:#fff8d0">' + esc(label) + '</span>';
-        }).filter(x => x).join('');
+      // 3. 장소별 자유 입력 — 학생이 직접 쓴 한 문장 모음 (중복 제거)
+      const _ulabs = uniqLabels(d);
+      if (_ulabs.length > 0) {
+        const tagItems = _ulabs.map(label =>
+          '<span style="background:#c9a36b22;border-color:#c9a36b;' +
+          'color:#fff8d0">' + esc(label) + '</span>').join('');
         sections.push(
           '<section><h4>💭 장소별 조사 노트 — 학생이 직접 쓴 생각 (Self-monitoring)</h4>' +
           '<div class="tagList">' + tagItems + '</div>' +
           '<p style="color:#7a8590;margin-top:6px">' +
-            '총 ' + (d.tagsCount || 0) + '곳에서 조사 노트 작성' +
+            '총 ' + _ulabs.length + '곳에서 조사 노트 작성' +
           '</p></section>'
         );
       } else if (d.tagsCount > 0) {
@@ -1128,16 +1131,14 @@
         const avgRv = rv ? ((rv.goalMet + rv.factConf + rv.actionConf) / 3).toFixed(1) : '';
         const chain = (refl.chainNames && refl.chainNames.length === 3)
           ? refl.chainNames.join(' → ') : '';
-        // 단서별 자유 입력 모음 — 한 셀에 모든 학생 입력 합치기
-        const tagTexts = d.tags
-          ? Object.values(d.tags).map(t => (t && t.label) || '').filter(x => x).join(' / ')
-          : '';
+        // 장소별 자유 입력 모음 — 한 셀에 합치기 (중복 제거)
+        const tagTexts = uniqLabels(d).join(' / ');
         return [
           i + 1,
           d.name || d.id,
           d.reportSent ? '완료' : (STAGE_NAME[d.stage] || '1·인식'),
           d.reportSent ? 'Y' : '',
-          d.evidence || 0, d.cores || 0, d.tagsCount || 0,
+          d.evidence || 0, d.cores || 0, uniqLabels(d).length,
           p.total != null ? (p.total + '/' + (p.max || 12)) : '',
           p.grade || '',
           dims.cognition || 0, dims.connection || 0,
@@ -1187,7 +1188,7 @@
           revN++;
           revSum += (d.review.goalMet + d.review.factConf + d.review.actionConf) / 3;
         }
-        if (d.tagsCount) totalTags += d.tagsCount;
+        totalTags += uniqLabels(d).length;
       });
       const avgReview = revN ? (revSum / revN).toFixed(1) : '-';
 
@@ -1207,7 +1208,7 @@
               '<td class="num">' + stage + '</td>' +
               '<td class="num">' + (d.evidence || 0) + '/10</td>' +
               '<td class="num">' + (d.cores || 0) + '/3</td>' +
-              '<td class="num">' + (d.tagsCount || 0) + '</td>' +
+              '<td class="num">' + uniqLabels(d).length + '</td>' +
               '<td class="num">' + (avg !== '-' ? '★ ' + avg : '-') + '</td>' +
               '<td><span class="chain">' + esc(chainStr) + '</span></td>' +
               '<td><span class="stmt">' + esc(stmt) + '</span></td>' +
@@ -1217,10 +1218,7 @@
       // 자유 입력 모음 — 학생별로 실제 쓴 문장 나열 (요약 숫자가 아닌 본문)
       let tagItemsHtml = '';
       list.forEach(d => {
-        if (!d.tags) return;
-        const items = Object.values(d.tags)
-          .map(t => (t && t.label) ? esc(t.label) : '')
-          .filter(x => x);
+        const items = uniqLabels(d).map(l => esc(l));
         if (items.length === 0) return;
         tagItemsHtml +=
           '<div style="margin:8px 0;padding:8px 10px;border-left:3px solid #c9a36b;background:#fff8e7">' +
