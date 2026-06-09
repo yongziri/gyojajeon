@@ -1571,9 +1571,20 @@ class TitleScene extends Phaser.Scene {
         this.registry.set('evidence',
           (this.registry.get('evidence') || []).filter(e => e && valid.has(e.id)));
       } catch (e) { /* 무시 */ }
+      // 현재 사건이 진행 중이면 그 사건(WorldScene)으로, 완료/사이라면
+      // 임무 선택 허브(CaseSelectScene)로 — 완료 후에도 진행도가 사라지지 않게.
+      const compl = this.registry.get('completedCases') || [];
+      const curDone = compl.includes(cid);
+      const inProg = !curDone && (
+        this.registry.get('enemyDefeated') ||
+        ((this.registry.get('evidence') || []).length > 0) ||
+        ((this.registry.get('coreClues') || []).length > 0) ||
+        (this.registry.get('stage') || 1) > 1 ||
+        this.registry.get('reportSent') || this.registry.get('reflectionDone'));
+      const dest = inProg ? 'WorldScene' : 'CaseSelectScene';
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
-        this.scene.start('WorldScene');
+        this.scene.start(dest);
       });
     };
 
@@ -1601,10 +1612,13 @@ class TitleScene extends Phaser.Scene {
         ukraine:   '우크라이나',
         palestine: '팔레스타인',
       };
+      const curDoneT = save && (save.completedCases || []).includes(save.caseId);
       const caseLabel = (save && SHORT_TITLES[save.caseId]) || '진행 중';
       const stageNum = (save && save.stage) || 1;
-      fancyButton(this, 620, 525, 300, 44,
-        '▶  이어하기 · ' + caseLabel + ' · ' + stageNum + '단계',
+      const resumeLabel = curDoneT
+        ? '▶  이어하기 · 임무 선택으로'
+        : '▶  이어하기 · ' + caseLabel + ' · ' + stageNum + '단계';
+      fancyButton(this, 620, 525, 300, 44, resumeLabel,
         resumeGame,
         { base: 0x3a5a7a, hover: 0x4c6f93, edge: 0x6fb7d6, text: '#dff1ff' });
     } else {
@@ -1816,13 +1830,18 @@ function clearGameState() {
 function hasResumableSave() {
   const s = loadGameState();
   if (!s || !s.caseId) return false;
+  // ① 완료한 사건이 하나라도 있으면 이어하기 가능 — 완료 후에도 임무 선택 허브로
+  //    돌아가 진행도(완료 배지·UN 본부)를 이어갈 수 있어야 함 (사용자 피드백:
+  //    "완료 후 처음으로 누르니 새 게임밖에 없어서 다 초기화됨")
+  const REAL = ['intro', 'aralsea', 'ukraine', 'palestine'];
+  const completedAny = (s.completedCases || []).some(id => REAL.includes(id));
+  // ② 현재 사건이 진행 중(미완료 + 진행 흔적)이어도 이어하기
   const done = (s.completedCases || []).includes(s.caseId);
-  // 완료되지 않았고 실제 진행 흔적이 있으면 이어하기 노출
-  //   (CaseSelectScene 재진입 resume 조건과 동일 기준 — 일관성)
-  return !!(!done &&
-         ((s.enemyDefeated) || (s.evidence && s.evidence.length > 0) ||
-          (s.coreClues && s.coreClues.length > 0) ||
-          (s.stage || 1) > 1 || s.reportSent || s.reflectionDone));
+  const curInProgress = !done &&
+    ((s.enemyDefeated) || (s.evidence && s.evidence.length > 0) ||
+     (s.coreClues && s.coreClues.length > 0) ||
+     (s.stage || 1) > 1 || s.reportSent || s.reflectionDone);
+  return !!(completedAny || curInProgress);
 }
 
 // 사건별 UN 보고서 템플릿 — 수신처 후보·다짐 목록·헤더·권고 단락
@@ -7931,6 +7950,9 @@ class ReflectionScene extends Phaser.Scene {
   refreshArrows() {
     if (!this._arrowObjs) return;
     this._arrowObjs.forEach(({ arrow, idx }) => {
+      // 파괴된 화살표(재진입 잔재) 방어 — setColor가 null canvas에 그리면 멈춤
+      if (!arrow || arrow.active === false || !arrow.scene) return;
+      try {
       const active = !!this.slots[idx];
       arrow.setColor(active ? '#ffd96a' : '#3a4a5a');
       // 활성화 시 살짝 펄스
@@ -7943,6 +7965,7 @@ class ReflectionScene extends Phaser.Scene {
         arrow._pulseTween.stop(); arrow._pulseTween = null;
         arrow.setScale(1);
       }
+      } catch (e) { /* 파괴된 화살표 — 무시 */ }
     });
   }
 
