@@ -7352,9 +7352,9 @@ ${tmpl.signature}`;
       fontStyle: 'bold'
     });
     // 저장된 값 복원 (재진입 시)
-    if (this.wantNextText === undefined) {
-      this.wantNextText = (this.registry.get('learningReview') || {}).wantNextLabel || '';
-    }
+    // 매 진입 시 registry 에서 새로 로드 (인스턴스 잔재 방지)
+    // caseSelect 카드 클릭 시 learningReview = null 로 리셋되어 빈 상태로 시작.
+    this.wantNextText = (this.registry.get('learningReview') || {}).wantNextLabel || '';
     // 버튼 라벨 — 본문 노출 X (이용빈 피드백 통일). 자수만 표시. 클릭 시 모달.
     const wnLabel = () => this.wantNextText
       ? '✍  ' + this.wantNextText.length + '자 작성됨  ·  보기·수정'
