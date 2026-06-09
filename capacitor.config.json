@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.yongziri.peace",
+  "appName": "P.E.A.C.E.",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  }
+}
