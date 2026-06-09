@@ -7103,16 +7103,16 @@ class LetterScene extends Phaser.Scene {
     divider.lineStyle(1, 0xc9a36b, 0.4);
     divider.lineBetween(470, 140, 470, 540);
 
-    // 2) 나의 다짐 — 우측 칼럼 (480~920)
-    const PL_X = 480, PL_LIST_X = 510, PL_W = 410, PL_Y0 = 168;
+    // 2) 나의 다짐 — 우측 칼럼 (480~920). 다짐 문장은 길어서 줄바꿈 + 행 간격 확대.
+    const PL_X = 480, PL_LIST_X = 510, PL_W = 410, PL_Y0 = 168, PL_ROW_H = 42;
     this.sectionLabel(PL_X, 138, '2. 나의 다짐 (최대 3개 선택)');
     this.PLEDGES.forEach((p, i) => {
-      const y = PL_Y0 + i * ROW_H;
+      const y = PL_Y0 + i * PL_ROW_H;
       this.checkRow(PL_LIST_X, y, PL_W, p, this.pledgePicks.has(i), () => {
         if (this.pledgePicks.has(i)) this.pledgePicks.delete(i);
         else if (this.pledgePicks.size < 3) this.pledgePicks.add(i);
         this.buildCompose();
-      });
+      }, PL_W - 36);
     });
 
     // ✍ 내 다짐 한 줄 (선택) — 학생 자기 글 입력 (사건별로 따로 보관)
@@ -7187,7 +7187,7 @@ class LetterScene extends Phaser.Scene {
   }
 
   // 체크박스 행
-  checkRow(x, y, w, label, checked, cb) {
+  checkRow(x, y, w, label, checked, cb, wrapW) {
     const g = this.add.graphics().setDepth(3);
     g.fillStyle(0xffffff, 1); g.fillRect(x, y, 18, 18);
     g.fillStyle(0x3a2410, 1);
@@ -7199,11 +7199,12 @@ class LetterScene extends Phaser.Scene {
       g.fillRect(x + 8, y + 8, 6, 2); g.fillRect(x + 10, y + 6, 4, 2);
       g.fillRect(x + 12, y + 4, 2, 2);
     }
-    this.add.text(x + 26, y + 9, label, {
-      fontFamily: FONT, fontSize: '15px', color: '#1a1a2e'
-    }).setOrigin(0, 0.5).setDepth(3);
-    // 손가락 친화: 모바일에서 hit zone 높이 22 → 36으로 확장
-    const zoneH = window.IS_MOBILE ? 36 : 22;
+    // 긴 문장(다짐 등)이 패널 밖으로 잘리지 않도록 wrapW 지정 시 줄바꿈 (이용빈 피드백)
+    const style = { fontFamily: FONT, fontSize: '15px', color: '#1a1a2e' };
+    if (wrapW) { style.wordWrap = { width: wrapW }; style.lineSpacing = 2; }
+    this.add.text(x + 26, y + 9, label, style).setOrigin(0, 0.5).setDepth(3);
+    // 손가락 친화: 모바일 hit zone 확장. 줄바꿈 행은 더 높게.
+    const zoneH = wrapW ? 40 : (window.IS_MOBILE ? 36 : 22);
     const zone = this.add.zone(x + w / 2, y + 9, w, zoneH)
       .setInteractive({ useHandCursor: true }).setDepth(4);
     zone.on('pointerdown', () => cb());
