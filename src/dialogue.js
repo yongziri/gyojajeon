@@ -27,27 +27,27 @@ const STORIES = {
     },
     peace_p: {
       speaker: "한센",
-      text: "P — Perceive (인식). 사건의 안내인을 만나 상황을 듣는 단계일세. 이는 조사에서 인식 단계로 나타날거야.",
+      text: "P — Perceiving (인식). 사건의 안내인을 만나 상황을 듣는 단계일세. 이는 조사에서 인식 단계로 나타날거야.",
       next: "peace_e"
     },
     peace_e: {
       speaker: "한센",
-      text: "E — Explore (탐색). ▼ 표시된 🔍 조사 지점을 눌러, 사진 속 단서들을 관찰하는, 관찰 단계로 나타나지.",
+      text: "E — Exploring (탐색). ▼ 표시된 🔍 조사 지점을 눌러, 사진 속 단서들을 관찰하는, 관찰 단계로 나타나지.",
       next: "peace_a"
     },
     peace_a: {
       speaker: "한센",
-      text: "A — Analyze (분석). 머리 위에 (!)가 뜬 시민을 만나 인터뷰하며, 핵심 단서를 얻어. 앞과 마찬가지로 관찰하는 단계야.",
+      text: "A — Analyzing (분석). 머리 위에 (!)가 뜬 시민을 만나 인터뷰하며, 핵심 단서를 얻어. 앞과 마찬가지로 관찰하는 단계야.",
       next: "peace_c"
     },
     peace_c: {
       speaker: "한센",
-      text: "C — Connect (연결). 🪞 성찰의 의자에 앉아, 모은 단서들을 [원인 → 과정 → 결과] 인과 사슬로 이어 성찰하는 단계일세.",
+      text: "C — Connecting (연결). 🪞 성찰의 의자에 앉아, 모은 단서들을 [원인 → 과정 → 결과] 인과 사슬로 이어 성찰하는 단계일세.",
       next: "peace_e2"
     },
     peace_e2: {
       speaker: "한센",
-      text: "E — Enact (실천). 📮 파란 우편함에 UN 보고서를 송부하고, 연설을 통해 배운 것을 행동으로 옮기는 실천하는 단계라네.",
+      text: "E — Enacting (실천). 📮 파란 우편함에 UN 보고서를 송부하고, 연설을 통해 배운 것을 행동으로 옮기는 실천하는 단계라네.",
       next: "mission"
     },
     mission: {
