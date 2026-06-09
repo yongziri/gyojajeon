@@ -8644,7 +8644,8 @@ class SpeechScene extends Phaser.Scene {
       (this.selCaseTitle || '국제 분쟁') + ' 현장을 직접 조사한 P.E.A.C.E. 조사관입니다.';
     const body = this.order.map(id => {
       const e = (this.composeClues || []).find(x => x.id === id);
-      return e ? e.desc : '';
+      // 연설용 문장(speech)이 있으면 사용, 없으면 단서 설명(desc)로 폴백 (이용빈 피드백)
+      return e ? (e.speech || e.desc) : '';
     }).filter(Boolean).join('  ');
     const closingText = this.closing
       ? (SPEECH_CLOSINGS.find(c => c.id === this.closing) || {}).text : '';
