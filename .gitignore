@@ -24,3 +24,6 @@ npm-debug.log*
 
 # PWA 검증용 임시 결과
 _test/
+
+# WBI USB 자체완결 빌드 산출물(로컬 전용 — 직접 USB로 복사)
+usb/

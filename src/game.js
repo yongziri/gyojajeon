@@ -1245,6 +1245,19 @@ class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
 
   preload() {
+    // ── USB/오프라인(file://) 자체완결 빌드 지원 ──────────────────
+    //  window.IMG_DATA(경로→data:URI 맵)가 있으면 이미지·스프라이트시트 로드를
+    //  data:URI로 리다이렉트한다. file://에서 Phaser의 XHR 이미지 로딩이 막히는
+    //  문제를 우회 — 더블클릭만으로 그림이 정상 표시됨. (라이브/APK는 IMG_DATA가
+    //  없으므로 아무 영향 없음)
+    if (window.IMG_DATA) {
+      const L = this.load;
+      const map = window.IMG_DATA;
+      const _img = L.image.bind(L);
+      L.image = (key, url) => _img(key, (typeof url === 'string' && map[url]) || url);
+      const _ss = L.spritesheet.bind(L);
+      L.spritesheet = (key, url, cfg) => _ss(key, (typeof url === 'string' && map[url]) || url, cfg);
+    }
     // 로딩 안내 — 첫 진입 검은 화면에서 학생이 멈춤으로 오인하지 않도록
     //   배경 어두운 그라데이션 + 가운데 텍스트 + 진행도 %.
     const bgG = this.add.graphics();
