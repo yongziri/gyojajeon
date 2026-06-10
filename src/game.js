@@ -8559,6 +8559,9 @@ class SpeechScene extends Phaser.Scene {
   }
 
   clearStep() {
+    // 미리보기 스크롤 입력 리스너 정리 (단계 전환 시 누수·중복 방지)
+    if (this._pvScrollCleanup) { this._pvScrollCleanup(); this._pvScrollCleanup = null; }
+    this._pv = null; this._pvClamp = null;
     (this.stepLayer || []).forEach(o => { if (o && o.destroy) o.destroy(); });
     this.stepLayer = [];
   }
@@ -8715,24 +8718,71 @@ class SpeechScene extends Phaser.Scene {
       this.closingObjs.push({ id: cl.id, draw });
     });
 
-    // 미리보기
-    const pvY = 422;
+    // 미리보기 — 길면 스크롤(컨테이너+마스크+휠/드래그/스크롤바)
+    const pvY = 416, PVH = 104, PVX = 40, PVW = 880;
     const pvg = this.add.graphics().setDepth(5);
-    pvg.fillStyle(0x0a1828, 0.92); pvg.fillRect(40, pvY, 880, 86);
-    pvg.lineStyle(2, 0xc9a36b, 0.8); pvg.strokeRect(40, pvY, 880, 86);
-    pvg.fillStyle(0xc9a36b, 1); pvg.fillRect(40, pvY, 4, 86);
+    pvg.fillStyle(0x0a1828, 0.92); pvg.fillRect(PVX, pvY, PVW, PVH);
+    pvg.lineStyle(2, 0xc9a36b, 0.8); pvg.strokeRect(PVX, pvY, PVW, PVH);
+    pvg.fillStyle(0xc9a36b, 1); pvg.fillRect(PVX, pvY, 4, PVH);
     L.push(pvg);
     L.push(this.add.text(54, pvY + 7, '📜 연설문 미리보기', {
       fontFamily: FONT, fontSize: '11px', color: '#c9a36b'
     }).setDepth(6));
-    this.previewText = this.add.text(54, pvY + 26,
+
+    // 본문은 컨테이너에 담아 박스(뷰포트) 안에서만 보이게 마스크
+    const PV_TOP = pvY + 26, PV_BOT = pvY + PVH - 8, PV_H = PV_BOT - PV_TOP;
+    const pvCont = this.add.container(0, 0).setDepth(6);
+    this.previewText = this.add.text(54, PV_TOP,
       '(근거를 순서대로 고르고 마무리 문장을 선택하세요)', {
       fontFamily: FONT, fontSize: '12px', color: '#a8c4dc', fontStyle: 'italic',
-      wordWrap: { width: 850 }, lineSpacing: 3
-    }).setDepth(6);
-    L.push(this.previewText);
+      wordWrap: { width: 820 }, lineSpacing: 3
+    });
+    pvCont.add(this.previewText);
+    L.push(pvCont);
+    const pvMask = this.add.graphics().setDepth(5);
+    pvMask.fillStyle(0xffffff, 1); pvMask.fillRect(PVX + 5, PV_TOP, PVW - 10, PV_H);
+    pvMask.setVisible(false);
+    pvCont.setMask(pvMask.createGeometryMask());
+    L.push(pvMask);
 
-    this.statusText = this.add.text(480, 522, '', {
+    // 스크롤바 — 내용이 넘칠 때만 표시(refreshComposePreview에서 갱신)
+    const sbX = PVX + PVW - 14, sbW = 6;
+    const pvTrack = this.add.graphics().setDepth(7).setVisible(false);
+    pvTrack.fillStyle(0x1a2a3a, 0.85); pvTrack.fillRoundedRect(sbX, PV_TOP, sbW, PV_H, 3);
+    const pvThumb = this.add.rectangle(sbX + sbW / 2, PV_TOP, sbW, 20, 0xc9a36b, 0.95)
+      .setOrigin(0.5, 0).setDepth(8).setVisible(false);
+    L.push(pvTrack, pvThumb);
+    this._pv = { cont: pvCont, track: pvTrack, thumb: pvThumb, TOP: PV_TOP, H: PV_H, overflow: 0 };
+    this._pvClamp = () => {
+      const ov = this._pv.overflow;
+      pvCont.y = Phaser.Math.Clamp(pvCont.y, -ov, 0);
+      if (ov > 0) {
+        const thumbH = Math.max(20, PV_H * (PV_H / (ov + PV_H)));
+        pvThumb.height = thumbH;
+        pvThumb.y = PV_TOP + (PV_H - thumbH) * (-pvCont.y / ov);
+      }
+    };
+    let pvDrag = false, pvDY = 0, pvDCy = 0;
+    const onWheel = (p, o, dx, dy) => {
+      if (this._pv.overflow <= 0 || p.y < PV_TOP || p.y > PV_BOT) return;
+      pvCont.y -= dy * 0.5; this._pvClamp();
+    };
+    const onDown = (p) => {
+      if (this._pv.overflow <= 0 || p.y < PV_TOP || p.y > PV_BOT) return;
+      pvDrag = true; pvDY = p.y; pvDCy = pvCont.y;
+    };
+    const onMove = (p) => { if (!pvDrag) return; pvCont.y = pvDCy + (p.y - pvDY); this._pvClamp(); };
+    const onUp = () => { pvDrag = false; };
+    this.input.on('wheel', onWheel);
+    this.input.on('pointerdown', onDown);
+    this.input.on('pointermove', onMove);
+    this.input.on('pointerup', onUp);
+    this._pvScrollCleanup = () => {
+      this.input.off('wheel', onWheel); this.input.off('pointerdown', onDown);
+      this.input.off('pointermove', onMove); this.input.off('pointerup', onUp);
+    };
+
+    this.statusText = this.add.text(480, 530, '', {
       fontFamily: FONT, fontSize: '12px', color: '#cfe9ff'
     }).setOrigin(0.5).setDepth(6);
     L.push(this.statusText);
@@ -8779,6 +8829,15 @@ class SpeechScene extends Phaser.Scene {
         const s = this.buildSpeechText();
         this.previewText.setText(s.fullText);
         this.previewText.setColor('#ffe9b8'); this.previewText.setStyle({ fontStyle: 'normal' });
+      }
+      // 내용이 바뀌면 맨 위부터 다시 보이게 + 스크롤바 표시 여부 갱신
+      if (this._pv) {
+        this._pv.cont.y = 0;
+        this._pv.overflow = Math.max(0, this.previewText.height - this._pv.H);
+        const show = this._pv.overflow > 0;
+        this._pv.track.setVisible(show);
+        this._pv.thumb.setVisible(show);
+        if (this._pvClamp) this._pvClamp();
       }
     }
   }
