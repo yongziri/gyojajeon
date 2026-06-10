@@ -1,9 +1,10 @@
-const CACHE = 'vanished-sea-v253';
+const CACHE = 'vanished-sea-v254';
 const PRECACHE = [
   './',
   './index.html',
   './vendor/phaser.min.js',
   './vendor/mqtt.min.js',
+  './vendor/html2canvas.min.js',
   './src/audio.js',
   './src/telemetry.js',
   './src/dialogue.js',
