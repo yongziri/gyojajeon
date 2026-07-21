@@ -508,7 +508,10 @@
   <!-- 인쇄용 학급 리포트 (평소엔 숨김) -->
   <div id="printPanel"></div>
 
-  <script src="node_modules/mqtt/dist/mqtt.min.js"></script>
+  <!-- MQTT — 배포본에 포함되는 vendor 경로 사용.
+       (node_modules 는 .gitignore 대상이라 GitHub Pages 에 올라가지 않아
+        라이브에서 404 → 실시간 연결 불가 문제가 있었음) -->
+  <script src="vendor/mqtt.min.js"></script>
   <script>
   (function () {
     const BROKER = 'wss://broker.emqx.io:8084/mqtt';
